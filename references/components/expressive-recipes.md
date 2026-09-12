@@ -514,4 +514,59 @@ Toggle buttons morph resting shapes: **Round when unselected, Square when select
   outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
   outline-offset: var(--md-sys-focus-ring-gap);
 }
+
+---
+
+## 7. Search Bar (Integrated Focus & Suppressing Inner Browser Outlines)
+
+> [!CAUTION]
+> **Common Pitfall**: In web browsers, native `<input>` elements automatically render a sharp rectangular user-agent focus outline when focused. When placing an `<input>` inside a pill-shaped Material Design container (`--md-sys-shape-corner-full`), you **must** set `outline: 2px solid transparent;` (or `outline-color: transparent;`) and `border: none;` on the inner input, while letting the parent container handle `:focus-within` with the MD3E focus ring. Otherwise, an ugly rectangular browser input box will appear trapped inside the pill!
+
+```html
+<div class="md3e-search-bar" role="search">
+  <span class="material-symbols-outlined md3e-search-icon">search</span>
+  <input type="text" placeholder="Search..." aria-label="Search content">
+  <button class="md3e-icon-btn" aria-label="Voice search">
+    <span class="material-symbols-outlined">mic</span>
+  </button>
+</div>
+```
+
+```css
+.md3e-search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-3);
+  height: 56px;
+  padding-inline: var(--md-sys-spacing-4);
+  background-color: var(--md-sys-color-surface-container-high);
+  border-radius: var(--md-sys-shape-corner-full); /* 9999px pill */
+  width: 100%;
+  max-width: 480px;
+  cursor: text;
+  transition: background-color var(--md-sys-motion-fast-effects);
+}
+
+/* Container handles the visible MD3E focus ring */
+.md3e-search-bar:focus-within {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+  background-color: var(--md-sys-color-surface-container-highest);
+}
+
+/* Inner native input: suppress default browser rectangular outline */
+.md3e-search-bar input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
+  font: inherit;
+  font-size: var(--md-sys-typescale-body-large-size);
+  padding: 0;
+  height: 100%;
+  outline: 2px solid transparent; /* Suppresses browser UA focus rectangle; preserves Windows High Contrast mode */
+  box-shadow: none;
+}
+```
+
 ```
