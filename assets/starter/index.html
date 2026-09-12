@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en" data-motion-scheme="expressive" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Material 3 Expressive (MD3E) Interactive Showcase</title>
+
+<!-- Material Symbols Icons font -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+
+<!-- MD3E Design Tokens and Motion Springs -->
+<link rel="stylesheet" href="../tokens/md3e-tokens.css">
+<link rel="stylesheet" href="../tokens/md3e-motion.css">
+<link rel="stylesheet" href="../tokens/md3e-material-web.css">
+
+<!-- Load Google's official Material Web Components via ESM CDN -->
+<script type="module">
+  import 'https://esm.run/@material/web/all.js';
+</script>
+
+<style>
+  /* --------------------------------------------------------------------------
+   * Reset & Base Styles — Strictly token-driven
+   * ------------------------------------------------------------------------ */
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding-bottom: 120px; /* Leave space for floating toolbar */
+    background: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    font-family: var(--md-sys-typescale-plain-font);
+    font-size: var(--md-sys-typescale-body-large-size);
+    line-height: var(--md-sys-typescale-body-large-line-height);
+    letter-spacing: var(--md-sys-typescale-body-large-tracking);
+    transition: background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects);
+  }
+
+  .shell {
+    max-width: 1080px;
+    margin-inline: auto;
+    padding: var(--md-sys-spacing-6);
+  }
+
+  /* --- Top App Bar --- */
+  .app-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    padding-inline: var(--md-sys-spacing-4);
+    background: var(--md-sys-color-surface-container);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .app-bar__start, .app-bar__end {
+    display: flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+  }
+  .app-bar h1 {
+    margin: 0;
+    font-family: var(--md-sys-typescale-brand-font);
+    font-size: var(--md-sys-typescale-title-large-size);
+    line-height: var(--md-sys-typescale-title-large-line-height);
+    font-weight: var(--md-sys-typescale-title-large-emphasized-weight);
+  }
+
+  /* --- Section Cards --- */
+  .section-card {
+    margin-block: var(--md-sys-spacing-6);
+    padding: var(--md-sys-spacing-6);
+    background: var(--md-sys-color-surface-container-low);
+    border-radius: var(--md-sys-shape-corner-large);
+    border: 1px solid var(--md-sys-color-outline-variant);
+  }
+  .section-card h2 {
+    margin: 0 0 var(--md-sys-spacing-2);
+    font-size: var(--md-sys-typescale-headline-small-size);
+    line-height: var(--md-sys-typescale-headline-small-line-height);
+    font-weight: var(--md-sys-typescale-headline-small-emphasized-weight);
+  }
+  .section-card p {
+    margin: 0 0 var(--md-sys-spacing-4);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  .demo-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--md-sys-spacing-4);
+    align-items: center;
+    margin-block: var(--md-sys-spacing-3);
+  }
+
+  /* --- Pure MD3E Buttons (5 Sizes & Square Shape) --- */
+  .md3e-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--md-sys-spacing-2);
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    border-radius: var(--md-sys-shape-corner-full);
+    transition: transform var(--md-sys-motion-fast-spatial),
+                border-radius var(--md-sys-motion-default-spatial),
+                background-color var(--md-sys-motion-fast-effects);
+  }
+  .md3e-btn:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+  .md3e-btn--filled {
+    background: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+  }
+  .md3e-btn--tonal {
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+  }
+  .md3e-btn--outlined {
+    background: transparent;
+    color: var(--md-sys-color-primary);
+    box-shadow: inset 0 0 0 1px var(--md-sys-color-outline);
+  }
+
+  /* Size implementations */
+  .md3e-btn--xs {
+    height: 32px;
+    min-height: var(--md-sys-touch-target-min);
+    padding-inline: 12px;
+    font-size: var(--md-sys-typescale-label-medium-size);
+  }
+  .md3e-btn--s {
+    height: 40px;
+    min-height: var(--md-sys-touch-target-min);
+    padding-inline: 16px;
+    font-size: var(--md-sys-typescale-label-large-size);
+  }
+  .md3e-btn--m {
+    height: 56px;
+    min-height: 56px;
+    padding-inline: 24px;
+    font-size: var(--md-sys-typescale-title-medium-size);
+  }
+  .md3e-btn--l {
+    height: 96px;
+    min-height: 96px;
+    padding-inline: 48px;
+    font-size: var(--md-sys-typescale-headline-small-size);
+  }
+
+  /* Square shapes */
+  .md3e-btn--square.md3e-btn--s { border-radius: var(--md-sys-shape-corner-medium); }
+  .md3e-btn--square.md3e-btn--m { border-radius: var(--md-sys-shape-corner-large); }
+
+  /* --- Split Button --- */
+  .split-btn {
+    display: inline-flex;
+    align-items: stretch;
+    height: 40px;
+    min-height: var(--md-sys-touch-target-min);
+    border-radius: var(--md-sys-shape-corner-full);
+    overflow: hidden;
+    background: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+  }
+  .split-btn__action, .split-btn__trigger {
+    display: inline-flex;
+    align-items: center;
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--md-sys-typescale-label-large-size);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+    padding-inline: var(--md-sys-spacing-4);
+  }
+  .split-btn__trigger {
+    padding-inline: var(--md-sys-spacing-2);
+    border-left: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  }
+  .split-btn__action:hover, .split-btn__trigger:hover {
+    background: color-mix(in srgb, currentColor 12%, transparent);
+  }
+  .split-btn__action:focus-visible, .split-btn__trigger:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: -2px;
+  }
+
+  /* --- Button Group (Continuous Silhouette) --- */
+  .btn-group {
+    display: inline-flex;
+    border-radius: var(--md-sys-shape-corner-medium);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    overflow: hidden;
+    background: var(--md-sys-color-surface-container);
+  }
+  .btn-group__item {
+    display: grid;
+    place-items: center;
+    width: var(--md-sys-touch-target-min);
+    height: var(--md-sys-touch-target-min);
+    border: none;
+    background: transparent;
+    color: var(--md-sys-color-on-surface);
+    cursor: pointer;
+    transition: background-color var(--md-sys-motion-fast-effects);
+  }
+  .btn-group__item + .btn-group__item {
+    border-inline-start: 1px solid var(--md-sys-color-outline-variant);
+  }
+  .btn-group__item[aria-pressed="true"] {
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+  }
+  .btn-group__item:hover {
+    background: color-mix(in srgb, currentColor 8%, transparent);
+  }
+  .btn-group__item:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: -2px;
+  }
+
+  /* --- Toggle Button with Shape Morph --- */
+  .toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+    min-height: var(--md-sys-touch-target-min);
+    padding-inline: var(--md-sys-spacing-4);
+    border: none;
+    cursor: pointer;
+    font: inherit;
+    font-size: var(--md-sys-typescale-label-large-size);
+    background: var(--md-sys-color-surface-container);
+    color: var(--md-sys-color-on-surface-variant);
+    border-radius: var(--md-sys-shape-corner-full);
+    transition: border-radius var(--md-sys-motion-default-spatial),
+                background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects);
+  }
+  .toggle-btn[aria-pressed="true"] {
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    border-radius: var(--md-sys-shape-corner-medium);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+  }
+  .toggle-btn:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  /* --- Expressive Loading Indicator (Morphing Shape) --- */
+  .loading-box {
+    display: inline-grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+  }
+  .loading-morph {
+    width: 32px;
+    height: 32px;
+    background: var(--md-sys-color-primary);
+    animation: shape-morph 2.4s var(--md-sys-motion-default-spatial) infinite;
+  }
+  @keyframes shape-morph {
+    0% {
+      border-radius: var(--md-sys-shape-corner-full);
+      transform: rotate(0deg) scale(1);
+      background: var(--md-sys-color-primary);
+    }
+    25% {
+      border-radius: var(--md-sys-shape-corner-medium);
+      transform: rotate(90deg) scale(0.85);
+      background: var(--md-sys-color-secondary);
+    }
+    50% {
+      border-radius: var(--md-sys-shape-corner-extra-large-increased);
+      transform: rotate(180deg) scale(1.05);
+      background: var(--md-sys-color-tertiary);
+    }
+    75% {
+      border-radius: 4px 28px 4px 28px;
+      transform: rotate(270deg) scale(0.9);
+      background: var(--md-sys-color-primary-container);
+    }
+    100% {
+      border-radius: var(--md-sys-shape-corner-full);
+      transform: rotate(360deg) scale(1);
+      background: var(--md-sys-color-primary);
+    }
+  }
+
+  /* --- Floating Toolbar (Superseding bottom app bar) --- */
+  .toolbar-floating {
+    position: fixed;
+    inset-block-end: var(--md-sys-spacing-6);
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-1);
+    height: 56px;
+    padding-inline: var(--md-sys-spacing-2);
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface);
+    border-radius: var(--md-sys-shape-corner-full);
+    box-shadow: var(--md-sys-elevation-level3);
+    z-index: 100;
+  }
+  .toolbar-btn {
+    display: grid;
+    place-items: center;
+    width: var(--md-sys-touch-target-min);
+    height: var(--md-sys-touch-target-min);
+    border: none;
+    background: transparent;
+    color: var(--md-sys-color-on-surface-variant);
+    border-radius: var(--md-sys-shape-corner-full);
+    cursor: pointer;
+    transition: background-color var(--md-sys-motion-fast-effects);
+  }
+  .toolbar-btn:hover {
+    background: color-mix(in srgb, currentColor 8%, transparent);
+    color: var(--md-sys-color-on-surface);
+  }
+  .toolbar-btn:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+  .toolbar-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--md-sys-color-outline-variant);
+    margin-inline: var(--md-sys-spacing-1);
+  }
+
+  /* Accessibility: prefers-reduced-motion path */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header / App Bar -->
+<header class="app-bar">
+  <div class="app-bar__start">
+    <button class="toolbar-btn" aria-label="Open navigation menu">
+      <span class="material-symbols-outlined">menu</span>
+    </button>
+    <h1>Material 3 Expressive (MD3E)</h1>
+  </div>
+  <div class="app-bar__end">
+    <!-- Theme & Scheme Controls -->
+    <md-text-button id="btn-theme-toggle" aria-label="Toggle theme">
+      <md-icon slot="icon">dark_mode</md-icon>
+      Dark Mode
+    </md-text-button>
+    <md-text-button id="btn-color-variant" aria-label="Toggle vibrant colors">
+      <md-icon slot="icon">palette</md-icon>
+      Vibrant
+    </md-text-button>
+  </div>
+</header>
+
+<main class="shell">
+
+  <!-- Section 1: Button Hierarchy & 5 Sizes -->
+  <section class="section-card">
+    <h2>1. Button Hierarchy & MD3E 5-Size Scale</h2>
+    <p>Exactly one filled button per view. Five sizes (XS 32dp, S 40dp, M 56dp, L 96dp) and square shapes.</p>
+    
+    <div class="demo-row">
+      <button class="md3e-btn md3e-btn--filled md3e-btn--s">Filled (Primary)</button>
+      <button class="md3e-btn md3e-btn--tonal md3e-btn--s">Tonal</button>
+      <button class="md3e-btn md3e-btn--outlined md3e-btn--s">Outlined</button>
+      <button class="md3e-btn md3e-btn--filled md3e-btn--xs">Extra Small (32)</button>
+      <button class="md3e-btn md3e-btn--tonal md3e-btn--m">Medium (56)</button>
+      <button class="md3e-btn md3e-btn--filled md3e-btn--s md3e-btn--square">Square (12r)</button>
+      <button class="md3e-btn md3e-btn--tonal md3e-btn--m md3e-btn--square">Square M (16r)</button>
+    </div>
+  </section>
+
+  <!-- Section 2: Expressive Components (Split Button, Button Group, Toggle Button, Morphing Loader) -->
+  <section class="section-card">
+    <h2>2. New Expressive Components (May 2025+)</h2>
+    <p>Components introduced in MD3E to enhance expression, continuous silhouettes, and shape morphing.</p>
+
+    <div class="demo-row">
+      <!-- Split Button -->
+      <div class="split-btn">
+        <button class="split-btn__action" type="button">
+          <span class="material-symbols-outlined" style="font-size: 18px; margin-right: 6px;">send</span>
+          Publish
+        </button>
+        <button class="split-btn__trigger" aria-label="More options" type="button">
+          <span class="material-symbols-outlined">arrow_drop_down</span>
+        </button>
+      </div>
+
+      <!-- Button Group -->
+      <div class="btn-group" role="group" aria-label="Alignment">
+        <button class="btn-group__item" aria-label="Align left" aria-pressed="true">
+          <span class="material-symbols-outlined">format_align_left</span>
+        </button>
+        <button class="btn-group__item" aria-label="Align center" aria-pressed="false">
+          <span class="material-symbols-outlined">format_align_center</span>
+        </button>
+        <button class="btn-group__item" aria-label="Align right" aria-pressed="false">
+          <span class="material-symbols-outlined">format_align_right</span>
+        </button>
+      </div>
+
+      <!-- Toggle Button with Shape Morph -->
+      <button class="toggle-btn" aria-pressed="false" id="demo-toggle" aria-label="Save bookmark">
+        <span class="material-symbols-outlined">bookmark</span>
+        <span>Toggle Morph</span>
+      </button>
+
+      <!-- Expressive Loading Indicator -->
+      <div style="display: inline-flex; align-items: center; gap: 8px;">
+        <div class="loading-box" role="status" aria-label="Loading...">
+          <div class="loading-morph"></div>
+        </div>
+        <span style="font-size: var(--md-sys-typescale-label-large-size); color: var(--md-sys-color-on-surface-variant);">
+          Shape Loader
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: Official @material/web Web Components styled with MD3E Tokens -->
+  <section class="section-card">
+    <h2>3. Official @material/web Components Bridge</h2>
+    <p>Google's official web components seamlessly adopting MD3E token roles, shapes, and sizes via <code>md3e-material-web.css</code>.</p>
+
+    <div class="demo-row">
+      <!-- MWC Buttons with MD3E Size Classes -->
+      <md-filled-button class="md3e-size-s">
+        <md-icon slot="icon">cloud_upload</md-icon>
+        MWC Small (40)
+      </md-filled-button>
+
+      <md-filled-tonal-button class="md3e-size-m">
+        <md-icon slot="icon">star</md-icon>
+        MWC Medium (56)
+      </md-filled-tonal-button>
+
+      <md-outlined-button class="md3e-size-m md3e-shape-square">
+        <md-icon slot="icon">crop_square</md-icon>
+        MWC Square
+      </md-outlined-button>
+
+      <!-- Medium FAB (80dp, corner 20dp) -->
+      <md-fab class="md3e-fab-medium" aria-label="Compose message">
+        <md-icon slot="icon">edit</md-icon>
+      </md-fab>
+
+      <!-- Standard Selection Controls -->
+      <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px;">
+        <md-switch checked aria-label="Airplane mode"></md-switch>
+        <span>Wi-Fi</span>
+      </label>
+
+      <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px;">
+        <md-checkbox checked aria-label="Option A"></md-checkbox>
+        <span>Notifications</span>
+      </label>
+    </div>
+
+    <!-- Inputs & Sliders -->
+    <div class="demo-row" style="margin-top: 16px;">
+      <md-outlined-text-field label="Workspace Name" value="antigravity-project" style="flex: 1; min-width: 240px;"></md-filled-text-field>
+      <div style="flex: 1; min-width: 240px;">
+        <span style="font-size: 12px; color: var(--md-sys-color-on-surface-variant);">Volume / Slider</span>
+        <md-slider value="75" aria-label="Volume slider"></md-slider>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Floating Toolbar (Replacing deprecated bottom app bar) -->
+<nav class="toolbar-floating" aria-label="Floating toolbar">
+  <button class="toolbar-btn" aria-label="Home">
+    <span class="material-symbols-outlined">home</span>
+  </button>
+  <button class="toolbar-btn" aria-label="Search">
+    <span class="material-symbols-outlined">search</span>
+  </button>
+  <div class="toolbar-divider" role="separator"></div>
+  <button class="toolbar-btn" aria-label="Favorite">
+    <span class="material-symbols-outlined">favorite</span>
+  </button>
+  <button class="toolbar-btn" aria-label="Share">
+    <span class="material-symbols-outlined">share</span>
+  </button>
+  <div class="toolbar-divider" role="separator"></div>
+  <button class="toolbar-btn" style="color: var(--md-sys-color-primary);" aria-label="Add new">
+    <span class="material-symbols-outlined">add_circle</span>
+  </button>
+</nav>
+
+<script>
+  // Dark mode toggle
+  const themeBtn = document.getElementById('btn-theme-toggle');
+  themeBtn.addEventListener('click', () => {
+    const isDark = document.documentElement.dataset.theme === 'dark';
+    document.documentElement.dataset.theme = isDark ? 'light' : 'dark';
+  });
+
+  // Vibrant color variant toggle
+  const variantBtn = document.getElementById('btn-color-variant');
+  variantBtn.addEventListener('click', () => {
+    const isVibrant = document.documentElement.dataset.colorVariant === 'vibrant';
+    if (isVibrant) {
+      delete document.documentElement.dataset.colorVariant;
+    } else {
+      document.documentElement.dataset.colorVariant = 'vibrant';
+    }
+  });
+
+  // Toggle button demo
+  const toggleBtn = document.getElementById('demo-toggle');
+  toggleBtn.addEventListener('click', () => {
+    const pressed = toggleBtn.getAttribute('aria-pressed') === 'true';
+    toggleBtn.setAttribute('aria-pressed', String(!pressed));
+  });
+
+  // Button group selection demo
+  document.querySelectorAll('.btn-group__item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.parentElement.querySelectorAll('.btn-group__item').forEach(b => b.setAttribute('aria-pressed', 'false'));
+      btn.setAttribute('aria-pressed', 'true');
+    });
+  });
+</script>
+
+</body>
+</html>
