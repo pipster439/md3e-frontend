@@ -469,9 +469,15 @@ trigger.addEventListener('click', () => {
 
 ---
 
-## 6. Toggle Buttons (Shape Morphing)
+## 6. Toggle Buttons (Shape Morphing & Animation Physics)
 
 Toggle buttons morph resting shapes: **Round when unselected, Square when selected**.
+
+> [!CAUTION]
+> **Common Pitfall: Why `9999px` breaks shape morph animations**:
+> In CSS, `var(--md-sys-shape-corner-full)` is defined as `9999px`. When animating `border-radius` between `9999px` and `12px` (`corner-medium`), the browser numerically interpolates from 9999 down to 12. However, for a 40px height button, the browser visually clamps any corner radius $\ge 20\text{px}$ to half the button's height. Because 99.8% of the numerical range [12, 9999] lies above 20px, the button remains visually clamped as a full pill for 99.8% of the duration, then snaps suddenly into a square in the final 1–2 frames! In reverse (12px to 9999px), it crosses 20px in the very first frame, showing zero animation.
+> 
+> **The Fix**: For a standard 40px button, use `var(--md-sys-shape-corner-large-increased)` (`20px`) for the unselected pill state. Since $20\text{px} = \frac{40\text{px}}{2}$, it renders as a geometrically perfect pill, while keeping the interpolation range tightly bounded to $[12\text{px}, 20\text{px}]$. Every millisecond of the spring physics curve is fully visible in both directions!
 
 ```html
 <button class="md3e-toggle-btn" aria-pressed="false" onclick="this.setAttribute('aria-pressed', this.getAttribute('aria-pressed') === 'true' ? 'false' : 'true')">
@@ -482,24 +488,45 @@ Toggle buttons morph resting shapes: **Round when unselected, Square when select
 
 ```css
 .md3e-toggle-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--md-sys-spacing-2);
-  min-height: var(--md-sys-touch-target-min);
+  height: 40px;
   padding-inline: var(--md-sys-spacing-4);
   font: inherit;
   font-size: var(--md-sys-typescale-label-large-size);
   cursor: pointer;
   border: none;
+  user-select: none;
   
-  /* Unselected state: Round shape, surface-container fill */
+  /* Unselected state: Round shape (20px on 40px height = exact pill), surface-container fill */
   background: var(--md-sys-color-surface-container);
   color: var(--md-sys-color-on-surface-variant);
-  border-radius: var(--md-sys-shape-corner-full);
+  border-radius: var(--md-sys-shape-corner-large-increased); /* 20px */
   
   transition: border-radius var(--md-sys-motion-default-spatial),
               background-color var(--md-sys-motion-fast-effects),
-              color var(--md-sys-motion-fast-effects);
+              color var(--md-sys-motion-fast-effects),
+              transform var(--md-sys-motion-fast-spatial);
+}
+
+/* Touch target hit area (48px) */
+.md3e-toggle-btn::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  min-height: var(--md-sys-touch-target-min);
+  min-width: var(--md-sys-touch-target-min);
+}
+
+.md3e-toggle-btn:active {
+  transform: scale(0.97);
 }
 
 .md3e-toggle-btn[aria-pressed="true"] {
@@ -510,10 +537,15 @@ Toggle buttons morph resting shapes: **Round when unselected, Square when select
   font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
 }
 
+.md3e-toggle-btn[aria-pressed="true"] .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1;
+}
+
 .md3e-toggle-btn:focus-visible {
   outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
   outline-offset: var(--md-sys-focus-ring-gap);
 }
+```
 
 ---
 
