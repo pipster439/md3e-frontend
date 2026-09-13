@@ -1,13 +1,14 @@
 # Motion — Material 3 Expressive
 
 Sources: <https://m3.material.io/styles/motion/overview/how-it-works>,
-<https://m3.material.io/styles/motion/overview/specs>
+<https://m3.material.io/styles/motion/overview/specs>,
+<https://developer.android.com/reference/kotlin/androidx/compose/material3/MotionScheme>.
 
 ## Springs replace duration + easing
 
-M3E introduced a **physics system**. It replaces the previous
-duration-and-easing model for component motion. You no longer say "300ms
-ease-in-out"; you say "default spatial spring" and the system resolves it.
+M3E introduced a **physics system** for component motion. Springs are useful
+for Material-style interactions, while CSS duration-and-easing animations remain
+valid for other intentional motion and compatibility needs.
 
 A spring has three attributes:
 
@@ -24,15 +25,13 @@ zero. Retargeting an animation that is already running just works.
 
 Two preset **schemes**:
 
-- **Expressive** — Material's opinionated default. Overshoots the final value
-  to add bounce. Use it for most situations, especially hero moments and key
-  interactions.
+- **Expressive** — recommended for prominent UI elements and hero interactions.
+  Spatial motion can overshoot to add bounce.
 - **Standard** — minimal bounce, eases into place. Use it for utilitarian
   products.
 
-Most motion in a product should use one scheme; swap to the other only to
-emphasise a moment. The scheme is applied **at product level** — it is not part
-of the token name, which is what makes it swappable.
+Choose the scheme to fit the interaction and product. A product-level scheme
+helps components feel consistent, with selective changes for emphasis.
 
 Two **types**:
 
@@ -90,7 +89,7 @@ overshoot (values above 1 are legal in `linear()`). Output lives in
 ```
 
 ```css
-/* forbidden: this is the pre-Expressive model */
+/* Valid CSS timing when a spring is not the right fit */
 .card { transition: transform 300ms cubic-bezier(0.2, 0, 0, 1); }
 ```
 
@@ -101,9 +100,8 @@ Pick the token by asking two questions:
 | **moves / resizes / reshapes** | `fast-spatial` | `default-spatial` | `slow-spatial` |
 | **fades / recolours** | `fast-effects` | `default-effects` | `slow-effects` |
 
-Never use a spatial spring for opacity or colour, and never use an effects
-spring for position — an effects spring will not bounce, and a spatial spring
-on colour does not compute.
+Use effects specs for bounded properties such as colour and opacity, and
+spatial specs for geometry. This avoids unwanted overshoot on bounded values.
 
 Switch the scheme for the whole product with one attribute:
 
@@ -111,18 +109,9 @@ Switch the scheme for the whole product with one attribute:
 <html data-motion-scheme="expressive">
 ```
 
-```js
-// Hand-rolled springs are legitimate when you need gesture handoff.
-// This is the expressive default spatial spring: damping 0.8, stiffness 380.
-element.animate(
-  [{ transform: "scale(1)" }, { transform: "scale(1.08)" }],
-  { duration: 460, easing: "var(--md-sys-motion-default-spatial)", fill: "both" }
-);
-```
-
-For gesture-driven motion, prefer a real spring integrator (Web Animations API
-with a spring easing, or a small physics loop) so a dragged element keeps its
-velocity when released. A CSS transition restarts from zero and feels dead.
+For gesture-driven motion that must carry release velocity, use a physics
+integrator that accepts the measured velocity. The sampled CSS `linear()`
+tokens approximate a spring but do not inherit gesture velocity automatically.
 
 ## Legacy layer
 
@@ -152,7 +141,7 @@ file already does this under `@media (prefers-reduced-motion: reduce)`.
 
 | Do | Don't |
 |---|---|
-| Use spring tokens for all component motion | Hand-write duration + easing |
+| Use spring tokens where they suit component motion | Treat all CSS timing as a specification failure |
 | One scheme for most of the product | Mix expressive and standard arbitrarily |
 | Spatial springs for position, size, shape | Spatial springs on colour, or effects springs on position |
 | Let `default` carry most motion | Use `fast` for large surfaces or `slow` for switches |
