@@ -47,8 +47,8 @@ variable font the spec's 700 maps to around `wght: 600`.
 | Body | All paragraph and descriptive text | Button labels |
 | Label | Buttons, chips, tabs, captions, badges | Multi-line prose |
 
-A product does not use all 15 styles. Pick the five or six that fit and use
-them consistently — the scale is a menu, not a checklist.
+A product need not use all 15 styles. Choose a consistent subset that fits;
+custom text styles can be appropriate for brand, localization or legibility.
 
 ## Emphasized styles
 
@@ -138,11 +138,9 @@ Hebrew.
 | Large | ~30% taller | Burmese, Telugu |
 | Extra large | ~100% taller | Nastaliq |
 
-Default to **medium** when the product ships any non-Latin script, and switch
-per detected language. Components with fixed heights are built for the small
-category and will overlap text if you ignore this — for a product that ships
-Chinese, Japanese or Korean, this is the difference between a working UI and a
-broken one.
+Choose line heights for the actual font and language, then test translated
+content and text zoom. Avoid a blanket language override without checking how
+the chosen font renders.
 
 ```css
 :lang(zh), :lang(ja), :lang(ko) {
@@ -155,7 +153,7 @@ broken one.
 
 | Don't | Do |
 |---|---|
-| `font-size: 13px` | A token — 13 is not on the scale |
+| Inconsistent ad hoc sizes | Start from a type token, then customize deliberately |
 | `font-weight: bold` sprinkled ad hoc | The emphasized weight token |
 | Uppercase button labels | Sentence case (uppercase was M2) |
 | Interchangeable "medium/bold" everywhere | Two weights: 400/500 baseline, 500/700 emphasized |
