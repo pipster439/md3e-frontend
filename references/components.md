@@ -42,7 +42,7 @@ navigation bar · navigation rail · progress indicators · sliders · carousel
 Each gained more configuration, more shape options, emphasized text and
 Expressive motion. Two structural changes matter beyond styling:
 
-- The **bottom app bar is deprecated**. Use a **docked toolbar** (same job,
+- The baseline **bottom app bar is no longer recommended** in Expressive. Consider a **docked toolbar** (same job,
   shorter, more flexible) or a **floating toolbar** (more actions, freer
   placement).
 - The **loading indicator** replaces most uses of the indeterminate circular
@@ -54,19 +54,19 @@ Other deprecations worth knowing, found on the spec pages:
 - **Baseline lists are "not recommended"** — use expressive lists.
 - **Baseline navigation bar / rail** configurations are superseded by the
   flexible Expressive ones.
-- The **small FAB (40dp)** and **surface FAB** are deprecated; a medium FAB
+- The **small FAB (40dp)** and **surface FAB** remain available but are no longer recommended; a medium FAB
   (80dp) was added.
 
 ## Button emphasis, in order
 
 `filled` → `filled tonal` → `elevated` → `outlined` → `text`
 
-Exactly one `filled` button per view. That is the point of the hierarchy — a
-screen with three filled buttons has no primary action.
+Use filled buttons for the actions needing strongest emphasis. The right count
+depends on the view and task; there is no universal one-per-view limit.
 
 | Variant | Container | Content | Use for |
 |---|---|---|---|
-| Filled | `primary` | `on-primary` | The one primary action |
+| Filled | `primary` | `on-primary` | High-emphasis action |
 | Filled tonal | `secondary-container` | `on-secondary-container` | Secondary action beside a filled button |
 | Elevated | `surface-container-low` | `primary` | Medium emphasis on a coloured or busy background |
 | Outlined | transparent + `outline` | `on-surface-variant` | Medium emphasis, neutral |
@@ -103,8 +103,9 @@ The two shapes must share the same pressed radius. Small button padding changed
 in the Expressive update: **16dp** is now recommended, 24dp is the M3 value and
 is no longer recommended.
 
-Extra small and small are below the 48dp minimum, so those controls must expand
-their tap area rather than their box.
+On touch-first layouts, check that extra-small and small controls have an
+adequate effective tap area. Android recommends 48dp; Web WCAG 2.2 AA has a
+24 CSS px target criterion with stated exceptions.
 
 ## Other frequently needed values
 
@@ -158,7 +159,8 @@ shape: round when unselected becomes square when selected, and if the unselected
 resting shape is square then the selected one should be round. Filter and input
 chips gained shape morphing in the Expressive update.
 
-Drive every morph with a spatial spring, never a hand-written transition.
+Spatial springs are a good default for Material-style shape morphs. Verify the
+motion's purpose and reduced-motion behaviour in the browser.
 
 ## Web implementation reality check
 
