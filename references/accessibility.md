@@ -1,5 +1,9 @@
 # Accessibility — Material 3 Expressive
 
+Sources: <https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum>,
+<https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced>,
+<https://developer.android.com/design/ui/mobile/guides/foundations/accessibility>.
+
 M3's accessibility requirements are part of the spec, not an afterthought.
 Several are the direct reason a token exists.
 
@@ -12,10 +16,10 @@ Several are the direct reason a token exists.
 | UI components, borders, icons | 3:1 |
 | Focus indicator | 3:1 against adjacent colours |
 
-The role system already satisfies this: `on-primary` against `primary`,
-`on-surface` against `surface`, and every other container/on-pair is generated
-to meet 4.5:1. This is the concrete reason not to mix an `on-` role with a
-container it does not belong to — you lose the guarantee silently.
+Matching roles such as `on-primary` on `primary` are the intended starting
+point. Check the rendered combination in each theme and state: custom palettes,
+opacity, images and overlays can change contrast. A role name alone cannot
+guarantee a WCAG ratio.
 
 M3 standardises **three contrast levels** — standard, medium, high. Offer a
 high-contrast path rather than assuming the default suits everyone. They are
@@ -30,32 +34,34 @@ selection needs an indicator, a check, or a shape change.
 
 ## Touch targets
 
-- Minimum interactive target: **48×48px**.
-- Recommended for a primary action: 56×56.
-- Minimum spacing between targets: 8px; 16–24px where motor precision is
-  limited.
-- The state layer is 40px; the target around it is still 48px.
+- **Android/Material touch guidance:** aim for at least 48×48dp of clickable
+  area even when the visual element is smaller.
+- **Web WCAG 2.2 AA:** pointer targets are at least 24×24 CSS px, with spacing,
+  inline, equivalent-control and other stated exceptions. WCAG AAA's enhanced
+  target criterion is 44×44 CSS px. Larger targets are often more usable.
+- Spacing should prevent accidental activation; there is no universal 8px
+  minimum that applies to every pair of controls.
 
-Expressive button sizes **XS (32)** and **S (40)** are below the minimum, and
-that is intentional — they must expand their tap area instead of their box:
+Expressive button sizes **XS (32)** and **S (40)** may benefit from a larger
+touch area in touch-first layouts. Verify the actual clickable area and spacing:
 
 ```css
 .btn-xs { height: 32px; position: relative; }
 .btn-xs::before {                       /* invisible 48px hit area */
   content: ""; position: absolute; inset: -8px;
-  border-radius: inherit;
+  border-radius: inherit; /* test overlap and clipping with neighbouring controls */
 }
 ```
 
-Icon buttons: the glyph is 24px, the target is 48px, achieved with padding or
-an overlay — never by enlarging the glyph.
+For a typical touch icon button, keep the glyph legible and give its hit area
+enough room through padding or layout. Check the component's own dimensions.
 
 ## Focus
 
-Every interactive element needs a visible focus indicator, and it must be at
-least as prominent as the hover state. M3E added an **inset focus ring** to
-replace opacity-only focus indication: a 2px ring with a 2px gap, drawn inside
-the component so it is not clipped by overflow.
+Every keyboard-focusable element needs a visible focus indicator. An inset
+ring is one useful Material treatment, but neither that position nor a
+specific 2px ring and 2px gap is a universal requirement. Check the indicator
+against WCAG focus visibility and contrast criteria.
 
 ```css
 :focus-visible {
@@ -67,7 +73,8 @@ the component so it is not clipped by overflow.
 Never `outline: none` without a replacement. If a component clips its overflow,
 draw the ring on a `::after` inset by 2px instead.
 
-Show focus only for keyboard use (`:focus-visible`), not on mouse click.
+`:focus-visible` is usually appropriate for keyboard focus. Do not suppress a
+visible focus indicator when a pointer-focused control still needs one.
 
 ## State completeness
 
@@ -130,7 +137,7 @@ Prefer rem for text and spacing, px for hairline borders and icon glyphs.
 - [ ] All contrast pairs use a matching `on-` role
 - [ ] A high-contrast path exists
 - [ ] Colour is never the only signal
-- [ ] Every target is ≥ 48×48 with ≥ 8px separation
+- [ ] Actual target area meets platform guidance and applicable WCAG criteria
 - [ ] Every interactive element has a visible `:focus-visible` indicator
 - [ ] Hover / focus / pressed / disabled / selected states all render
 - [ ] Icon-only controls have accessible names
