@@ -6,7 +6,7 @@ A value shown as `—` was not present in the rendered text (the spec presents i
 **Expressive changes to flag first:**
 
 - **Toolbars are new in M3 Expressive** (docked and floating); there is no toolbar in M3.
-- **The bottom app bar is deprecated in favour of toolbars** — explicitly, "It should be replaced with the docked toolbar, which is very similar and more flexible."
+- **The baseline bottom app bar is no longer recommended in favour of toolbars** — the guidance says, "It should be replaced with the docked toolbar, which is very similar and more flexible."
 - The baseline (M3) medium and large app bars, the baseline navigation bar, the baseline navigation rail, and the navigation drawer are all **no longer recommended** in M3 Expressive.
 - The baseline (divided) search style is **not recommended**; use the contained style.
 
