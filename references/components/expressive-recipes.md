@@ -9,7 +9,7 @@ Every recipe uses pure semantic HTML, MD3E CSS tokens (`--md-sys-*`), and spring
 ## 1. Toolbars (Docked & Floating)
 
 > [!IMPORTANT]
-> The bottom app bar is **deprecated** in M3E. Use a **Docked Toolbar** for fixed edge placement or a **Floating Toolbar** when actions need flexible placement or elevation.
+> The baseline bottom app bar is **no longer recommended** in M3E. Consider a **Docked Toolbar** for fixed edge placement or a **Floating Toolbar** when actions need flexible placement or elevation.
 
 ### 1.1 Floating Toolbar
 
@@ -424,7 +424,7 @@ trigger.addEventListener('click', () => {
   width: 32px;
   height: 32px;
   background: var(--md-sys-color-primary);
-  animation: md3e-shape-morph 2.4s var(--md-sys-motion-default-spatial) infinite;
+  animation: md3e-shape-morph 2.4s ease-in-out infinite;
 }
 
 @keyframes md3e-shape-morph {
