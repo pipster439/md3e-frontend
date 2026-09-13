@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """Audit front-end code for Material 3 Expressive (MD3E) compliance.
 
-Deterministic static checks for the rules that models and humans most often
-break when "doing Material Design": hardcoded colours, off-scale corner radii,
-duration/easing motion instead of springs, unfocusable controls, sub-48px
-targets and type sizes that are not on the scale.
+Heuristic static checks for potential design and accessibility issues. A
+finding needs contextual review; this script cannot certify Material or WCAG
+conformance from source text alone.
 
 Usage
 -----
@@ -19,22 +18,22 @@ hardcoded-colour checks, because that is exactly where raw values belong.
 
 Finding codes
 -------------
-    MD3E001  hardcoded hex colour                 (error)
-    MD3E002  hardcoded rgb()/hsl() colour         (error)
-    MD3E003  corner radius off the shape scale    (error)
-    MD3E004  duration/easing instead of a spring  (error)
-    MD3E005  focus indicator removed / missing    (error)
-    MD3E006  interactive target under 48px        (warn)
-    MD3E007  font-size off the type scale         (warn)
+    MD3E001  literal hex colour outside tokens    (info)
+    MD3E002  literal functional colour            (info)
+    MD3E003  radius outside default scale         (info)
+    MD3E004  hand-written motion timing           (info)
+    MD3E005  focus outline removed / absent       (warn)
+    MD3E006  small declared control dimension     (info)
+    MD3E007  font-size outside default scale      (info)
     MD3E008  no prefers-reduced-motion path       (warn)
     MD3E009  colour roles without a dark scheme   (warn)
     MD3E010  box-shadow used for elevation        (info)
-    MD3E011  border-radius: 50% instead of full   (warn)
+    MD3E011  percentage radius to review          (info)
     MD3E012  uppercase label text                 (info)
     MD3E013  `transition: all`                    (warn)
     MD3E014  icon-only control, no accessible name(warn)
-    MD3E015  deprecated bottom app bar            (info)
-    MD3E016  deprecated small FAB (40dp)          (warn)
+    MD3E015  bottom app bar no longer recommended  (info)
+    MD3E016  small FAB no longer recommended       (info)
 """
 
 from __future__ import annotations
@@ -60,7 +59,7 @@ SKIP_DIRS = {
 
 # --- Design system facts the checks are built on ---------------------------
 
-# Shape corner scale: ten steps. Anything else is off-scale.
+# Default shape corner scale; custom radii can be intentional.
 CORNER_SCALE_PX = {0.0, 4.0, 8.0, 12.0, 16.0, 20.0, 28.0, 32.0, 48.0}
 FULL_PX = {999.0, 9999.0, 1000.0}
 
@@ -68,7 +67,9 @@ FULL_PX = {999.0, 9999.0, 1000.0}
 TYPE_SCALE_PX = {11.0, 12.0, 14.0, 16.0, 22.0, 24.0, 28.0, 32.0, 36.0, 45.0, 57.0}
 TYPE_SCALE_REM = {round(v / 16.0, 5) for v in TYPE_SCALE_PX}
 
-MIN_TOUCH_TARGET = 48.0
+# Android recommends a 48dp touch area. CSS dimensions alone do not establish
+# the actual hit area or WCAG 2.2 AA target-size result.
+TOUCH_GUIDANCE_SIZE = 48.0
 
 HEX_RE = re.compile(
     r"#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})"
@@ -200,10 +201,11 @@ def check_radius(cx, prop, value, path, lineno, line) -> None:
     if is_var(value) or "inherit" in value:
         return
     if "50%" in value:
-        cx.add("MD3E011", "warn",
-               "`border-radius: 50%` is the pre-M3 roundedness hack. The shape "
-               "scale names this value.",
-               "Use var(--md-sys-shape-corner-full).", path, lineno, line)
+        cx.add("MD3E011", "info",
+               "Percentage radius: verify the intended circle, ellipse or pill.",
+               "50% is valid for circles on square boxes. For pill-shaped "
+               "component corners, consider var(--md-sys-shape-corner-full).",
+               path, lineno, line)
         return
     for slash_group in value.split("/"):
         for part in slash_group.strip().split():
@@ -212,11 +214,9 @@ def check_radius(cx, prop, value, path, lineno, line) -> None:
                 continue
             if 0 < px <= 2:
                 continue        # hairline helper, not a shape statement
-            cx.add("MD3E003", "error",
-                   f"Corner radius {px:g}px is not on the MD3E shape scale.",
-                   "Use one of the ten steps: none 0 / extra-small 4 / small 8 / "
-                   "medium 12 / large 16 / large-increased 20 / extra-large 28 / "
-                   "extra-large-increased 32 / extra-extra-large 48 / full.",
+            cx.add("MD3E003", "info",
+                   f"Corner radius {px:g}px is outside the default M3 shape scale.",
+                   "Check the component spec or document the custom shape choice.",
                    path, lineno, line)
 
 
@@ -228,17 +228,16 @@ def check_font_size(cx, prop, value, path, lineno, line) -> None:
     px = parse_px(value)
     if px is not None:
         if px not in TYPE_SCALE_PX:
-            cx.add("MD3E007", "warn",
-                   f"font-size {px:g}px is not on the M3 type scale.",
-                   "Use var(--md-sys-typescale-<role>-size). The scale is "
-                   "11 / 12 / 14 / 16 / 22 / 24 / 28 / 32 / 36 / 45 / 57.",
+            cx.add("MD3E007", "info",
+                   f"font-size {px:g}px is outside the default M3 type scale.",
+                   "Check readability and consistency; custom text styles are allowed.",
                    path, lineno, line)
         return
     m = re.fullmatch(r"(-?\d*\.?\d+)\s*rem", value.strip())
     if m and round(float(m.group(1)), 5) not in TYPE_SCALE_REM:
-        cx.add("MD3E007", "warn",
-               f"font-size {m.group(1)}rem is not on the M3 type scale.",
-               "Use var(--md-sys-typescale-<role>-size).", path, lineno, line)
+        cx.add("MD3E007", "info",
+               f"font-size {m.group(1)}rem is outside the default M3 type scale.",
+               "Check readability and consistency; custom text styles are allowed.", path, lineno, line)
 
 
 def check_motion(cx, prop, value, path, lineno, line) -> None:
@@ -248,13 +247,10 @@ def check_motion(cx, prop, value, path, lineno, line) -> None:
     has_easing = bool(EASING_KEYWORD_RE.search(value) or CURVE_FUNC_RE.search(value))
     if not (has_time or has_easing):
         return
-    cx.add("MD3E004", "error",
-           "Motion uses hand-written duration/easing instead of a spring token.",
-           "M3E replaces duration + easing with motion springs. Use "
-           "var(--md-sys-motion-default-spatial) for position, size, rotation "
-           "and corner radius, or var(--md-sys-motion-fast-effects) for colour "
-           "and opacity. Regenerate assets/tokens/md3e-motion.css with "
-           "scripts/spring_to_css.py if those tokens are missing.",
+    cx.add("MD3E004", "info",
+           "Hand-written motion timing: review whether a Material spring fits.",
+           "Spring tokens are useful for Material-style component motion. "
+           "Purposeful CSS duration/easing is also valid; honour reduced motion.",
            path, lineno, line)
 
 
@@ -264,14 +260,13 @@ def check_touch_target(cx, selector, prop, value, path, lineno, line) -> None:
     if not selector or not INTERACTIVE_SELECTOR_RE.search(selector) or is_var(value):
         return
     px = parse_px(value)
-    if px is None or px >= MIN_TOUCH_TARGET:
+    if px is None or px >= TOUCH_GUIDANCE_SIZE:
         return
-    cx.add("MD3E006", "warn",
-           f"Interactive element is {px:g}px on one axis; the minimum touch "
-           f"target is {MIN_TOUCH_TARGET:g}px.",
-           "Keep the visual element small but preserve a 48px hit area: "
-           "min-height: var(--md-sys-touch-target-min) plus padding, or a "
-           "::before overlay.", path, lineno, line)
+    cx.add("MD3E006", "info",
+           f"Control declares {px:g}px on one axis; verify its actual pointer target.",
+           "Android recommends a 48dp touch area. Web WCAG 2.2 AA uses "
+           "24 CSS px with stated exceptions; CSS dimensions alone cannot "
+           "measure the effective hit area.", path, lineno, line)
 
 
 def check_shadow(cx, prop, value, path, lineno, line) -> None:
@@ -329,7 +324,7 @@ class Checker:
             return
         hit = HEX_RE.search(value)
         if hit:
-            self.add("MD3E001", "error",
+            self.add("MD3E001", "info",
                      f"Hardcoded colour {hit.group(0)}.",
                      "Use a colour role, e.g. var(--md-sys-color-primary) or "
                      "var(--md-sys-color-surface-container-high). Roles carry "
@@ -341,7 +336,7 @@ class Checker:
             return
         m = FUNC_COLOR_RE.search(value)
         if m:
-            self.add("MD3E002", "error",
+            self.add("MD3E002", "info",
                      f"Hardcoded colour via {m.group(0).strip()[:-1]}(...).",
                      "Use a colour role token. A state layer is an overlay in "
                      "the content's on-colour at 0.08 hover / 0.10 focus / "
@@ -356,12 +351,10 @@ class Checker:
                      "Uppercasing was an M2 convention.",
                      self.path, lineno, line)
         if prop in ("outline", "outline-width") and value.strip() in ("none", "0", "0px"):
-            self.add("MD3E005", "error",
-                     "Focus outline removed.",
-                     "Keyboard users lose all positional feedback. Replace it "
-                     "with an inset focus ring: 2px solid "
-                     "var(--md-sys-color-secondary) and a 2px gap, applied on "
-                     ":focus-visible.",
+            self.add("MD3E005", "warn",
+                     "Focus outline removed; check for an equivalent visible indicator.",
+                     "An outline, border, shadow or other sufficiently visible "
+                     "focus treatment can work. Verify keyboard focus in the browser.",
                      self.path, lineno, line)
         if prop == "transition" and value.strip().startswith("all"):
             self.add("MD3E013", "warn",
@@ -424,15 +417,14 @@ class Checker:
                                  self.path, i, line)
             if re.search(r"bottom[-_]app[-_]bar", line, re.I):
                 self.add("MD3E015", "info",
-                         "Bottom app bar is deprecated in M3E.",
+                         "Baseline bottom app bar is no longer recommended in M3 Expressive.",
                          "Replace with a docked toolbar, or a floating toolbar "
                          "when actions need more room or flexible placement.",
                          self.path, i, line)
             if re.search(r"<md-fab[^>]*\bsize=[\"']small[\"']", line, re.I) or re.search(r"\b(fab[-_]small|small[-_]fab)\b", line, re.I):
-                self.add("MD3E016", "warn",
-                         "Small FAB (40dp) is deprecated in MD3E.",
-                         "Small FAB (40dp) was deprecated in M3 Expressive. "
-                         "Use Standard FAB (56dp) or Medium FAB (80dp, corner 20dp).",
+                self.add("MD3E016", "info",
+                         "Small FAB (40dp) remains available but is no longer recommended in M3 Expressive.",
+                         "Consider a larger FAB where it fits the action hierarchy.",
                          self.path, i, line)
 
 
@@ -500,8 +492,8 @@ def render_text(reports: list[FileReport], min_severity: str, scanned: int) -> N
     if not any(counts.values()):
         print("All checks passed. Nothing to fix.")
         return
-    print("Fix in this order: MD3E001/002 colour roles, MD3E004 motion springs, "
-          "MD3E005 focus, MD3E003 shape scale.")
+    print("Review findings in context, especially visible keyboard focus and "
+          "the actual pointer target area.")
 
 
 def main(argv: list[str] | None = None) -> int:
