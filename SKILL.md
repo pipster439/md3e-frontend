@@ -6,12 +6,15 @@ agent_created: true
 
 # MD3E frontend
 
-Make front-end code comply with Material 3 Expressive. The authority is
-<https://m3.material.io>; everything here is derived from it, not invented.
+Use Material 3 Expressive as the design reference. Check current component
+guidance at <https://m3.material.io> when a precise requirement matters. The
+bundled CSS tokens and auditor are implementation aids, not an official
+conformance certification; derived values and recommendations are identified
+in the reference files.
 
 **This is M3 Expressive, not M3.** Same system, evolved. Do not treat it as a
-new version (it is not "M4"), and do not regress to M2 conventions — no
-uppercase button labels, no `border-radius: 50%`, no duration/easing pairs.
+new version (it is not "M4"). Prefer the current component guidance over
+baseline M3 or M2 examples when implementing an Expressive component.
 
 ## How to use this skill
 
@@ -23,26 +26,27 @@ uppercase button labels, no `border-radius: 50%`, no duration/easing pairs.
 | Answer a spec question | Read the relevant reference file; do not answer from memory |
 | Pick colours / shapes / motion values | Read the reference; never guess a hex or a radius |
 
-## Non-negotiables
+## Defaults and accessibility checks
 
-1. **Never hardcode a colour.** Use `var(--md-sys-color-*)`. A role carries
-   light/dark and contrast behaviour; a hex value carries nothing.
-2. **Never pair a container with a foreign `on-` colour.** `primary` pairs with
-   `on-primary`, `secondary-container` with `on-secondary-container`. This is
-   what guarantees contrast.
-3. **Never invent a corner radius.** The shape scale has exactly ten steps.
-4. **Never write `transition: 300ms ease-in-out`.** Use a motion spring token.
-   Spatial springs for anything that moves, resizes or morphs; effects springs
-   for colour and opacity.
-5. **Never use a font size off the type scale.** Eleven sizes exist; pick one.
-6. **Always give interactive elements a ≥48px target** — expand the hit area if
-   the visual is smaller.
-7. **Always provide `:focus-visible`,** reduced-motion, and dark-mode paths.
-8. **Exactly one `filled` button per view.** Emphasis is a hierarchy, not a
-   preference.
-9. **Do not build a dark theme by inverting.** Redefine the same roles to
-   different tones.
-10. **Run the auditor before declaring the work done.**
+1. Prefer system colour roles for themeable UI. Define literal colours in a
+   palette or token layer when needed; verify actual contrast in each theme.
+   Matching container/`on-` roles are good defaults, not a contrast guarantee
+   after customization, overlays or state changes.
+2. Start with the corner-radius and type scales, then adjust for a documented
+   component need, brand choice or readability. The scales are defaults, not
+   exhaustive lists of permitted CSS values.
+3. Use the supplied spring tokens where they suit component motion. CSS
+   duration/easing transitions remain valid for other purposeful motion;
+   avoid animation that obscures state or ignores reduced-motion preferences.
+4. For touch-first layouts, aim for a 48×48 CSS px hit area. For Web WCAG 2.2
+   AA, assess the actual pointer target against 24×24 CSS px and its spacing
+   and other exceptions; a visible 32px or 40px control is not itself a failure.
+5. Keep keyboard focus visible and honour reduced-motion preferences. Offer
+   dark mode when the product calls for it. The focus treatment can use
+   `:focus-visible` or another accessible indicator.
+6. Use filled buttons for the actions that need highest emphasis; there is no
+   universal exactly-one-per-view rule.
+7. Run the auditor as a heuristic review, then verify findings in context.
 
 ## Phase 1 — Install the token layer
 
@@ -66,7 +70,7 @@ assets/tokens/md3e-material-web.css   (optional) bridge for @material/web compon
 Set the scheme and theme roots once:
 
 ```html
-<html data-motion-scheme="expressive">        <!-- Material's recommended default -->
+<html data-motion-scheme="expressive">        <!-- optional for prominent motion -->
 <html data-theme="dark">                       <!-- or leave to prefers-color-scheme -->
 <html data-color-variant="vibrant">            <!-- optional: Expressive colour range -->
 ```
@@ -85,11 +89,11 @@ Read `references/color.md`, `references/typography.md`, `references/shape.md`.
    action and text colour to a role. Surfaces come from the
    `surface-container-*` ladder, chosen by the elevation they should read as —
    never by an opacity you invent.
-2. **Typography.** Pick five or six styles from the 15 and use only those.
+2. **Typography.** Start with a small, consistent selection from the 15 styles.
    Apply emphasized styles where the spec calls for them — primary button
    labels, badges, the selected list/menu item, the extended FAB label — and
    nowhere else. If the product ships Chinese, Japanese or Korean, switch the
-   line-height tokens to the medium language-height category.
+   check line height with real translated content and adjust where needed.
 3. **Shape.** Assign radii from the ten-step scale. Use the three "increased"
    steps when you want emphasis without going full pill. Check nested radii for
    optical roundness (`outer − padding = inner`).
@@ -112,10 +116,12 @@ page instead.
 
 Two structural rules that get missed:
 
-- The **bottom app bar is deprecated** — use a docked or floating toolbar.
+- The baseline **bottom app bar is no longer recommended** for an Expressive
+  update; consider a docked toolbar.
 - The **loading indicator replaces** the indeterminate circular progress
   indicator for waits under about five seconds.
-- The **small FAB (40dp) is deprecated** — use standard (56dp) or medium (80dp).
+- The baseline **small FAB (40dp) remains available but is no longer
+  recommended** for an Expressive update; consider a larger FAB.
 
 ### Three component strategies
 
@@ -130,7 +136,7 @@ where it applies. See `references/accessibility.md`.
 
 Read `references/motion.md`.
 
-Apply spring tokens to every state change and transition. Choose by two
+Apply spring tokens to Material-style component motion where appropriate. Choose by two
 questions: *does it move or recolour?* (spatial vs effects) and *how big is the
 change?* (fast / default / slow). Most motion should be `default`.
 
@@ -144,7 +150,7 @@ property.
 
 Read `references/layout.md`.
 
-Implement the five breakpoints (600 / 840 / 1200 / 1600) and, at each one, answer
+Consider the five width classes (four thresholds: 600 / 840 / 1200 / 1600) and, at each relevant one, answer
 the five questions: what is revealed, how is the screen divided, what is
 resized, what is repositioned, what is swapped. Use a canonical layout
 (list-detail, supporting pane, feed) rather than inventing a grid.
@@ -153,9 +159,8 @@ resized, what is repositioned, what is swapped. Use a canonical layout
 
 Read `references/expressive-tactics.md`.
 
-Get the base compliant first — a screen that follows the system already reads as
-Material. Then pick **one or two hero moments** per product and spend the
-emphasis budget there. Expression is not a licence to break the token layer.
+Get the base system consistent first — a screen that follows it already reads as
+Material. Then choose meaningful moments for extra emphasis.
 
 Then run the auditor and fix by severity:
 
@@ -171,20 +176,20 @@ python scripts/audit_md3e.py src --fail-on warn    # stricter gate
 |---|---|---|
 | MD3E001 | error | Hardcoded hex colour |
 | MD3E002 | error | Hardcoded `rgb()` / `hsl()` colour |
-| MD3E003 | error | Corner radius off the shape scale |
-| MD3E004 | error | Duration/easing instead of a motion spring |
+| MD3E003 | info | Corner radius outside the default shape scale; review in context |
+| MD3E004 | info | Hand-written duration/easing; review motion intent |
 | MD3E005 | error | Focus indicator removed or missing |
-| MD3E006 | warn | Interactive target under 48px |
-| MD3E007 | warn | Font size off the type scale |
+| MD3E006 | info | Small declared control dimension; verify actual hit area |
+| MD3E007 | info | Font size outside default type scale |
 | MD3E008 | warn | No `prefers-reduced-motion` path |
 | MD3E009 | warn | Colour roles without a dark scheme |
 | MD3E010 | info | `box-shadow` used to express elevation |
-| MD3E011 | warn | `border-radius: 50%` instead of `corner-full` |
+| MD3E011 | info | `border-radius: 50%`; verify intended circle/ellipse |
 | MD3E012 | info | Uppercase label text (M2 convention) |
 | MD3E013 | warn | `transition: all` |
 | MD3E014 | warn | Icon-only control with no accessible name |
-| MD3E015 | info | Deprecated bottom app bar |
-| MD3E016 | warn | Deprecated small FAB (40dp) |
+| MD3E015 | info | Bottom app bar no longer recommended in Expressive |
+| MD3E016 | info | Small FAB no longer recommended in Expressive |
 
 Token and theme files are auto-detected and exempted from the hardcoded-colour
 checks — that is the one place raw values are supposed to live. Name any new
@@ -227,11 +232,11 @@ python scripts/spring_to_css.py --stiffness 500 --damping 0.7   # custom spring
 
 1. `color: #6750A4` instead of `var(--md-sys-color-primary)`
 2. `on-primary` text on `secondary-container`
-3. `border-radius: 10px` — not a step on the scale
-4. `border-radius: 50%` instead of `corner-full`
-5. `transition: transform 300ms ease-in-out`
+3. A custom radius used accidentally instead of a component's specified shape
+4. A percentage radius that produces unintended geometry
+5. Motion timing chosen without regard to the interaction or reduced motion
 6. A spatial spring on opacity, or an effects spring on position
-7. `font-size: 13px` / `15px` — not on the type scale
+7. Inconsistent text styles or sizes that reduce readability
 8. `outline: none` with no replacement
 9. Enabled and disabled only — no hover, focus or pressed
 10. Every element expressive, so nothing stands out — apply the tactics
