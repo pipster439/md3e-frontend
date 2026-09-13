@@ -62,7 +62,7 @@ is an evolution of M3: new features, updated components, and tactics.
 ## Hero moments
 
 - Brief, delightful, surprising, unexpected.
-- **One or two per product.** More than that is overwhelming and distracting.
+- Use sparingly, in places where the extra emphasis clarifies the experience.
 - Ask two questions before building one:
 
   1. *Is this interaction emotionally impactful?* Does the choice highlight an
@@ -79,13 +79,13 @@ nothing is):
 
 1. Get the base compliant first — roles, type scale, shape scale, springs. A
    screen that follows the system already reads as Material.
-2. Pick **one** hero moment per product. Spend the tension, morphing and
+2. Pick a meaningful hero moment. Spend the tension, morphing and
    emphasis budget there.
 3. Apply one or two secondary tactics elsewhere — usually a surface-tone
    hierarchy for grouping (tactic 4) and emphasized type on the primary action
    (tactic 3).
-4. Re-run the auditor. Expression is not a licence to hardcode colours, use
-   off-scale radii or hand-write durations.
+4. Re-run the auditor and review findings in context. Keep custom colours,
+   radii and timing intentional and accessible.
 
 ## Anti-patterns
 
