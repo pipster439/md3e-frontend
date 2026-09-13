@@ -5,14 +5,16 @@ Source: <https://m3.material.io/styles/color/system/overview>, token values in
 
 ## The model in one paragraph
 
-A product picks **one seed colour**. Material expands it into **six tonal
+A product can generate a scheme from one or more source colours. The bundled
+baseline example uses one seed and **six tonal
 palettes** (primary, secondary, tertiary, neutral, neutral-variant, error),
 each with 13 **tones** from 0 to 100. A tone is a *luminance step*, not a
 lightness percentage — tone 0 is always black and tone 100 is always white,
 regardless of hue. A **colour role** is a pointer such as "primary" that names
 a job, and each role resolves to a different tone in light and dark. That is
-why you never write a hex value in a component: the role is the API, the tone
-is the implementation.
+why roles are useful for themeable components: the role is the API, the tone
+is the implementation. Brand artwork and intentionally fixed colours may need
+literal values outside the dynamic role system.
 
 ## Role → tone mapping (baseline scheme)
 
@@ -43,14 +45,14 @@ neutral, `NV` as neutral-variant.
 Work down this list; the first line that describes the element wins.
 
 1. **Primary action, high emphasis** → `primary` fill with `on-primary` content.
-   Filled buttons, the one thing the screen is for.
+   Filled buttons and other high-emphasis actions.
 2. **Standout fill for a key component** → `primary-container` /
    `on-primary-container`. FABs, selected chips, the active nav indicator.
    This is the most-used pairing in M3E and the one most often skipped.
 3. **Secondary action, selected state** → `secondary-container` /
    `on-secondary-container`. Tonal buttons, the selected row, filled chips.
-4. **Contrasting accent** → `tertiary` / `tertiary-container`. One accent per
-   view, to balance rather than compete. M3E makes tertiary more prominent than
+4. **Contrasting accent** → `tertiary` / `tertiary-container`. Use accents
+   selectively, to balance rather than compete. M3E makes tertiary more prominent than
    M3 did, so it now carries real accents instead of only decorative ones.
 5. **Failure** → `error` / `error-container`.
 6. **A surface** → pick by the elevation it should read as:
@@ -62,13 +64,12 @@ Work down this list; the first line that describes the element wins.
 8. **Content on top of an inverse surface** (snackbar, tooltip) →
    `inverse-surface` + `inverse-on-surface` (+ `inverse-primary` for the action).
 
-### The one rule you cannot break
+### Contrast pairing
 
-Content colour must always be the **on-** counterpart of the container it sits
-on: `primary` → `on-primary`, `surface-container-high` → `on-surface`, and so
-on. This pairing is what guarantees contrast in both themes. Mixing them
-(`on-primary` text on `secondary-container`) is the single most common M3
-mistake and it breaks silently in dark mode.
+Start with the intended **on-** counterpart of a container: `primary` →
+`on-primary`, `surface-container-high` → `on-surface`, and so on. Test actual
+contrast in both themes and interaction states. Custom palettes, imagery and
+opacity can change the rendered result; the role name alone is not a guarantee.
 
 ### Fixed roles
 
@@ -83,8 +84,8 @@ goes wrong: you will paint a light container onto a dark surface.
 - **Wider tonal range.** M3E uses deeper tones and more of the palette, so
   primary/secondary/tertiary separate cleanly instead of blurring together.
   Opt in with `[data-color-variant="vibrant"]` in the token file.
-- **Stronger contrast between roles.** The point is hierarchy: a user should
-  read which action matters from colour alone, before reading a label.
+- **Stronger contrast between roles.** The point is hierarchy, while labels,
+  icons and other cues still carry meaning without relying on colour alone.
 - **Three contrast levels** are standardised: standard, medium, high. They are
   tonal shifts of the same roles, never a separate palette. Implement with
   `@media (prefers-contrast: more)`.
@@ -101,8 +102,8 @@ A state layer is a semi-transparent overlay **in the content's own colour**
 | Pressed | 10% |
 | Dragged | 16% |
 
-Disabled: container 12%, content 38%. The state layer is 40dp; the interactive
-target around it is 48dp.
+Disabled state opacity and state-layer dimensions vary by component; check its
+specification. On touch-first layouts, preserve an adequate effective target.
 
 ```css
 /* correct: the overlay inherits the content colour */
