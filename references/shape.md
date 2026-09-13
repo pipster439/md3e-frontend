@@ -22,9 +22,10 @@ component size, in M3 any component can take any step.
 | `corner-extra-extra-large` | 48px | **Expressive** — hero moments |
 | `corner-full` | fully rounded | Buttons, chips, badges, avatars |
 
-`corner-full` replaces the old "50% of the component size" trick. Use the
-token, not `border-radius: 50%` — `50%` produces an ellipse on a non-square
-box, which is a bug, not a shape.
+`corner-full` is useful for pill-like component corners. `border-radius: 50%`
+is valid CSS for a circle on a square box and can intentionally produce an
+ellipse on a non-square box. Choose by the intended geometry; a percentage
+radius is not automatically a Material violation.
 
 The three "increased" steps are new in M3E and exist purely to give you
 emphasis without jumping straight to a pill.
@@ -101,8 +102,8 @@ directs attention. Use it to:
 - draw attention to one element
 - improve the composition
 
-Break from the surrounding shape language for exactly one element — that is how
-tension reads as intentional rather than inconsistent.
+Break from the surrounding shape language selectively so the contrast reads as
+intentional rather than inconsistent.
 
 ## Optical roundness
 
@@ -119,7 +120,7 @@ outer radius − padding = inner radius
 | Do | Don't |
 |---|---|
 | Pick steps from the ten-step scale | Invent `border-radius: 10px` |
-| Use `corner-full` for pills and circles | `border-radius: 50%` |
+| Use `corner-full` for pills and circles where it fits | Assume every `50%` radius is wrong |
 | Use the "increased" steps for emphasis | Jump straight to a pill when you want a little emphasis |
 | Add tension deliberately, on one element | Mix round and square randomly |
 | Adjust nested radii for optical roundness | Give parent and child the same radius |
