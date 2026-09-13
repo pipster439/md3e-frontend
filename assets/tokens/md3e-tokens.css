@@ -192,8 +192,8 @@
   /* ==========================================================================
    * 4. STATE LAYERS
    * One semi-transparent overlay in the content's "on" colour. Only one state
-   * layer may be active at a time. State layer is 40px; the touch target
-   * around it is still 48px.
+   * layer may be active at a time. Component state-layer and hit-area sizes
+   * should be checked against the relevant component and platform guidance.
    * ======================================================================== */
   --md-sys-state-hover-state-layer-opacity: 0.08;
   --md-sys-state-focus-state-layer-opacity: 0.10;
