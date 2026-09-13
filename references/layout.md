@@ -4,8 +4,9 @@ Source: <https://m3.material.io/foundations/layout/breakpoints>
 
 ## Breakpoints
 
-Five breakpoints (formerly "window size classes"). They apply to Android and
-web. Design for the breakpoint, **never** for a specific device — available
+Five width classes use four thresholds. They are useful starting points on
+Android and the web; adapt thresholds to the available space and content. Design
+for the breakpoint, **not only** for a specific device — available
 space is dynamic (split screen, unfold, resize) and changes during a session.
 
 | Breakpoint | Width | Typical context |
@@ -59,7 +60,7 @@ Ask five questions, in order:
 
 ## Canonical layouts
 
-Three layouts the spec names. Pick one per view instead of inventing a grid:
+Three useful canonical layouts from the spec. Use one when it fits the content:
 
 - **List-detail** — a list pane plus a detail pane. Expanded and above.
 - **Supporting pane** — a primary pane with a secondary supporting pane for
