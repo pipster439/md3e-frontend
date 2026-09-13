@@ -3,9 +3,11 @@
 Source: Official Google Material Web Components repository (<https://github.com/material-components/material-web>)
 Package: `@material/web` (npm) / `https://esm.run/@material/web/` (CDN)
 
-Material Web is Google's official, production-ready Web Components implementation of Material Design 3. It is built on standard Web Components (Custom Elements, Shadow DOM, CSS Custom Properties, and `::part`).
+Material Web is Google's official Web Components implementation of Material Design 3 and is in maintenance mode. It uses Custom Elements, Shadow DOM and CSS Custom Properties.
 
-Because `@material/web` was developed against baseline M3 and placed into maintenance mode prior to the full Material 3 Expressive (May 2025+) release, **this guide and skill bridge the gap**: how to style `@material/web` to adhere to MD3E, and how to supplement it with the missing Expressive components.
+Because `@material/web` was developed against baseline M3, this guide offers
+optional Expressive styling and recipes. Its CSS overrides are approximations,
+not an official Expressive implementation or a guarantee of component parity.
 
 ---
 
@@ -15,15 +17,15 @@ Because `@material/web` was developed against baseline M3 and placed into mainte
 |---|---|---|---|
 | **Buttons** | `<md-filled-button>`<br>`<md-outlined-button>`<br>`<md-elevated-button>`<br>`<md-filled-tonal-button>`<br>`<md-text-button>` | Baseline M3 (40dp height, pill shape) | **Yes**: Needs MD3E 5-size support (32/40/56/96/136dp), square button shape (12/16/28dp), and pressed shape morphing. |
 | **Icon Buttons** | `<md-icon-button>`<br>`<md-filled-icon-button>`<br>`<md-filled-tonal-icon-button>`<br>`<md-outlined-icon-button>` | Baseline M3 | **Yes**: Needs 5-size support and shape morph. |
-| **Floating Action Button** | `<md-fab>`<br>`<md-branded-fab>` | Standard 56dp & small 40dp | **Yes**: Small FAB (40dp) is **deprecated**; use Standard (56dp) or Medium (80dp). Needs corner radius update (16/20/28dp). |
+| **Floating Action Button** | `<md-fab>`<br>`<md-branded-fab>` | Standard 56dp & small 40dp | Small FAB (40dp) remains available but is no longer recommended in Expressive; consider Standard (56dp) or Medium (80dp). Check corner radius against the component spec. |
 | **Split Button** | *None* | **New in MD3E** | **Build from recipe**: Use `references/components/expressive-recipes.md`. |
 | **Button Groups** | *None* | **New in MD3E** | **Build from recipe**: Use `references/components/expressive-recipes.md`. |
 | **FAB Menu** | *None* | **New in MD3E** | **Build from recipe**: Use `references/components/expressive-recipes.md`. |
-| **Toolbars** | *None* | **New in MD3E** | **Build from recipe**: Docked & floating toolbars replace deprecated bottom app bar. |
+| **Toolbars** | *None* | **New in MD3E** | **Build from recipe**: Docked & floating toolbars are Expressive alternatives to the baseline bottom app bar. |
 | **Loading Indicator** | *None* (only linear/circular progress) | **New in MD3E** | **Build from recipe**: Morphing shape loader for waits < 5s. |
 | **Text Fields** | `<md-filled-text-field>`<br>`<md-outlined-text-field>` | Standard M3 | Compatible. Set MD3E typography & corner tokens. |
 | **Select** | `<md-filled-select>`<br>`<md-outlined-select>` | Standard M3 | Compatible. Inherits MD3E tokens. |
-| **Selection Controls** | `<md-checkbox>`<br>`<md-radio>`<br>`<md-switch>`<br>`<md-slider>` | Standard M3 | Fully compliant when styled with MD3E color roles and state layers. |
+| **Selection Controls** | `<md-checkbox>`<br>`<md-radio>`<br>`<md-switch>`<br>`<md-slider>` | Standard M3 | Apply theme roles, then verify states and contrast; the bridge alone does not establish Expressive parity. |
 | **Chips** | `<md-chip-set>`<br>`<md-assist-chip>`<br>`<md-filter-chip>`<br>`<md-input-chip>`<br>`<md-suggestion-chip>` | Standard M3 | Compatible. Add shape morphing on selection. |
 | **Menus & Dialogs** | `<md-menu>`, `<md-menu-item>`<br>`<md-dialog>` | Standard M3 | Compatible. Apply MD3E surface container roles. |
 | **Lists** | `<md-list>`, `<md-list-item>` | Baseline M3 | Add Expressive list styling (rounded container, emphasized label). |
@@ -163,7 +165,7 @@ In MD3E, buttons can be round (pill) or square (12dp/16dp/28dp corner):
 ```
 
 ### 4.3 Medium FAB (80dp)
-Small FAB (40dp) is deprecated in MD3E. Use Standard (56dp) or Medium (80dp):
+Small FAB (40dp) remains available but is no longer recommended in MD3E. Consider Standard (56dp) or Medium (80dp):
 
 ```html
 <!-- Standard FAB (56dp, 16dp corner) -->
@@ -325,7 +327,7 @@ For public landing pages, SSR layouts, and SEO-critical content, use pure semant
 |---|---|---|
 | `style="background: #6750A4"` on `<md-filled-button>` | Shadow DOM encapsulation ignores external background styling on custom element container. | Use component tokens: `style="--md-filled-button-container-color: var(--md-sys-color-primary)"`. |
 | `<md-icon-button>` without `aria-label` | Screen readers cannot deduce icon button intent. | Always add `aria-label="Action description"`. |
-| Sub-48px touch target on small controls | Violates WCAG 2.5.5 and MD3E accessibility rule. | Touch target defaults to 48px; do not set `height: 32px` on `<md-icon-button>` without maintaining the 48px click target. |
-| Using deprecated small FAB (40dp) | Small FAB was removed in MD3E in favor of Standard 56dp and Medium 80dp. | `<md-fab>` (56dp) or `<md-fab class="md3e-fab-medium">` (80dp). |
-| Mixing M2 uppercase text | All labels in `@material/web` must be sentence-case. | Never set `text-transform: uppercase`. |
-| Missing Material Symbols stylesheet | Icons render as literal text strings like "search" or "close". | Always include the Google Fonts Material Symbols link in `<head>`. |
+| Small pointer target on controls | The effective hit area may be difficult to activate. WCAG 2.2 AA uses 24 CSS px with exceptions; Android recommends 48dp. | Inspect the rendered hit area and spacing; enlarge it where needed. |
+| Using a baseline small FAB (40dp) | Still available, but no longer recommended in Expressive. | Consider `<md-fab>` (56dp) or `<md-fab class="md3e-fab-medium">` (80dp). |
+| Uppercase labels used for every action | May obscure the intended type hierarchy or readability. | Prefer sentence case for Material-style labels; respect brand and language conventions. |
+| Missing icon font when using text ligatures | Ligature names may render as literal text. | Include the chosen icon font or use SVG icons. |
