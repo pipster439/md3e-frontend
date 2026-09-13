@@ -269,7 +269,7 @@
     width: 32px;
     height: 32px;
     background: var(--md-sys-color-primary);
-    animation: shape-morph 2.4s var(--md-sys-motion-default-spatial) infinite;
+    animation: shape-morph 2.4s ease-in-out infinite;
   }
   @keyframes shape-morph {
     0% {
@@ -380,7 +380,7 @@
   <!-- Section 1: Button Hierarchy & 5 Sizes -->
   <section class="section-card">
     <h2>1. Button Hierarchy & MD3E 5-Size Scale</h2>
-    <p>Exactly one filled button per view. Five sizes (XS 32dp, S 40dp, M 56dp, L 96dp) and square shapes.</p>
+    <p>Use filled buttons for high-emphasis actions. Five sizes (XS 32dp, S 40dp, M 56dp, L 96dp, XL 136dp) and square shapes.</p>
     
     <div class="demo-row">
       <button class="md3e-btn md3e-btn--filled md3e-btn--s">Filled (Primary)</button>
@@ -492,7 +492,7 @@
 
 </main>
 
-<!-- Floating Toolbar (Replacing deprecated bottom app bar) -->
+<!-- Floating Toolbar (Expressive alternative to the baseline bottom app bar) -->
 <nav class="toolbar-floating" aria-label="Floating toolbar">
   <button class="toolbar-btn" aria-label="Home">
     <span class="material-symbols-outlined">home</span>
