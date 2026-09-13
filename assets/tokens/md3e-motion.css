@@ -10,7 +10,7 @@
  * the bounce that defines Expressive motion survives the trip to the web.
  *
  *   use  : transition: transform var(--md-sys-motion-default-spatial);
- *   never: transition: transform 300ms ease-in-out;
+ *   CSS timing is also valid when a spring is not the right fit.
  *
  * Reference: https://m3.material.io/styles/motion/overview/specs
  * ========================================================================== */
@@ -19,7 +19,7 @@
   /* --- Motion scheme selector -------------------------------------------
    * The scheme is applied at product level, never baked into a token name.
    * Swap the attribute to change how the whole product feels.
-   *   <html data-motion-scheme="expressive">  <- Material's recommendation
+   *   <html data-motion-scheme="expressive">  <- prominent UI and hero motion
    *   <html data-motion-scheme="standard">    <- utilitarian products
    * -------------------------------------------------------------------- */
   --md-sys-motion-scheme: expressive;
