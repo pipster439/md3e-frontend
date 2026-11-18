@@ -574,6 +574,69 @@ class CrossReferenceAndStructuralTests(unittest.TestCase):
             "Starter HTML must wire a Side Sheet toggle with aria-controls",
         )
 
+    def test_starter_m3e_slider_fab_menu_switch_and_checkbox_specs(self) -> None:
+        html = STARTER_HTML.read_text(encoding="utf-8")
+        rules: list[audit_md3e.RuleBlock] = []
+        for blk, start_line in audit_md3e.extract_style_blocks(html):
+            rules.extend(audit_md3e.parse_css_rules(blk, base_line=start_line))
+
+        def decls_for(sel_predicate) -> dict[str, list[str]]:
+            collected: dict[str, list[str]] = {}
+            for rule in rules:
+                branches = audit_md3e.split_top_level_commas(rule.selector)
+                if any(sel_predicate(b.strip()) for b in branches):
+                    for prop, val, _, _ in rule.declarations:
+                        collected.setdefault(prop, []).append(audit_md3e.strip_important(val).lower())
+            return collected
+
+        # 1. Both .wavy-slider and .md3e-range strip OS appearance and render 4x44px vertical handle
+        for cls_name in (".wavy-slider", ".md3e-range"):
+            base_decls = decls_for(lambda b, c=cls_name: b == c)
+            self.assertIn(
+                "none",
+                base_decls.get("appearance", []),
+                f"{cls_name} must declare `appearance: none` to remove OS grey borders",
+            )
+            thumb_decls = decls_for(
+                lambda b, c=cls_name: b in (f"{c}::-webkit-slider-thumb", f"{c}::-moz-range-thumb")
+            )
+            thumb_widths = thumb_decls.get("width", []) + thumb_decls.get("inline-size", [])
+            thumb_heights = thumb_decls.get("height", []) + thumb_decls.get("block-size", [])
+            self.assertIn("4px", thumb_widths, f"{cls_name} thumb must use 4px vertical bar handle width")
+            self.assertIn("44px", thumb_heights, f"{cls_name} thumb must use 44px vertical bar handle height")
+
+        # 2. Fixed .fab-menu-container sets pointer-events: none to prevent hit-traps
+        fab_wrap_fixed = [
+            rule
+            for rule in rules
+            if any(b.strip() == ".fab-menu-container" for b in audit_md3e.split_top_level_commas(rule.selector))
+            and any(p == "position" and audit_md3e.strip_important(v).lower() == "fixed" for p, v, _, _ in rule.declarations)
+        ]
+        self.assertTrue(fab_wrap_fixed, "Expected fixed .fab-menu-container rule in starter HTML")
+        self.assertTrue(
+            all(
+                any(p == "pointer-events" and audit_md3e.strip_important(v).lower() == "none" for p, v, _, _ in r.declarations)
+                for r in fab_wrap_fixed
+            ),
+            ".fab-menu-container with position: fixed must declare pointer-events: none",
+        )
+
+        # 3. Switch :active pressed thumb expands to 28x28px
+        switch_active_decls = decls_for(
+            lambda b: ".md3e-switch" in b and ":active" in b and "::after" in b
+        )
+        sw_widths = switch_active_decls.get("width", []) + switch_active_decls.get("inline-size", [])
+        sw_heights = switch_active_decls.get("height", []) + switch_active_decls.get("block-size", [])
+        self.assertIn("28px", sw_widths, ".md3e-switch :active thumb must expand to 28px width")
+        self.assertIn("28px", sw_heights, ".md3e-switch :active thumb must expand to 28px height")
+
+        # 4. Checkbox aligns to 18x18px container sizing
+        checkbox_decls = decls_for(lambda b: b == ".md3e-checkbox")
+        cb_widths = checkbox_decls.get("width", []) + checkbox_decls.get("inline-size", [])
+        cb_heights = checkbox_decls.get("height", []) + checkbox_decls.get("block-size", [])
+        self.assertIn("18px", cb_widths, ".md3e-checkbox width must be 18px")
+        self.assertIn("18px", cb_heights, ".md3e-checkbox height must be 18px")
+
 
 class AuditorTests(unittest.TestCase):
     def _codes(self, text: str, filename: str = "sample.html", *, is_snippet: bool = False) -> list[str]:
@@ -804,6 +867,97 @@ class AuditorTests(unittest.TestCase):
         }
         """
         self.assertNotIn("MD3E022", self._codes(guarded_css, "guarded.css"))
+
+    def test_md3e027_slider_appearance_and_fixed_menu_hit_trap(self) -> None:
+        # Positive catches: OS accent-color slider without appearance: none
+        for bad_slider_css in (
+            ".wavy-slider { min-height: 48px; accent-color: var(--md-sys-color-primary); }",
+            'input[type="range"] { accent-color: var(--md-sys-color-primary); }',
+            ".md3e-range { min-height: var(--md-sys-touch-target-min); accent-color: var(--md-sys-color-primary); }",
+        ):
+            findings = [f for f in self._findings(bad_slider_css, "md3e-slider.css") if f.code == "MD3E027"]
+            self.assertEqual(len(findings), 1, f"Expected MD3E027 warning for: {bad_slider_css}")
+            self.assertEqual(findings[0].severity, "warning")
+
+        # Positive catches: fixed FAB / floating menu wrapper without pointer-events: none
+        for bad_menu_css in (
+            ".fab-menu-container { position: fixed; bottom: 16px; right: 16px; z-index: 130; }",
+            ".md3e-fab-menu-container { position: fixed; inset-block-end: 16px; inset-inline-end: 16px; }",
+            ".floating-menu-wrap { position: fixed; bottom: 24px; right: 24px; pointer-events: auto; }",
+        ):
+            findings = [f for f in self._findings(bad_menu_css, "fab.css") if f.code == "MD3E027"]
+            self.assertEqual(len(findings), 1, f"Expected MD3E027 warning for: {bad_menu_css}")
+            self.assertEqual(findings[0].severity, "warning")
+
+        # Valid passes: custom slider with appearance: none, fixed wrapper with pointer-events: none,
+        # non-control layout wrappers (.slider-block / .slider-wrap / .slider-row / .slider-label / .track-row),
+        # and pseudo-elements.
+        valid_css = """
+        .md3e-range {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 100%;
+          min-height: var(--md-sys-touch-target-min);
+          accent-color: var(--md-sys-color-primary);
+          background: transparent;
+        }
+        .wavy-slider {
+          -webkit-appearance: none;
+          appearance: none;
+          min-height: var(--md-sys-touch-target-min);
+          background: transparent;
+        }
+        .md3e-range::-webkit-slider-thumb {
+          appearance: none;
+          width: 4px;
+          height: 44px;
+        }
+        .slider-block,
+        .slider-wrap,
+        .slider-row,
+        .slider-label,
+        .track-row {
+          display: flex;
+          flex-direction: column;
+          accent-color: var(--md-sys-color-primary);
+        }
+        .fab-menu-container {
+          position: fixed;
+          inset-block-end: var(--md-sys-spacing-4);
+          inset-inline-end: var(--md-sys-spacing-4);
+          pointer-events: none;
+          z-index: 130;
+        }
+        .fab-menu-container.is-open {
+          z-index: 900;
+        }
+        """
+        self.assertEqual([f for f in self._findings(valid_css, "valid.css") if f.code == "MD3E027"], [])
+
+    def test_auditor_spec_alignment_motion_and_subelements(self) -> None:
+        # MD3E004: official first segment must not mask an ad-hoc second segment
+        mixed_official_then_adhoc = (
+            ".card { transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1), transform 300ms ease-in-out; }"
+        )
+        self.assertIn("MD3E004", self._codes(mixed_official_then_adhoc, "mixed2.css"))
+
+        # MD3E004: short linear crossfade inside prefers-reduced-motion is valid
+        rm_crossfade = """
+        .card { transition: opacity var(--md-sys-motion-fast-effects); }
+        @media (prefers-reduced-motion: reduce) {
+          .card { transition: opacity 120ms linear; }
+        }
+        """
+        self.assertNotIn("MD3E004", self._codes(rm_crossfade, "rm.css"))
+
+        # MD3E006: switch visual subelements (__thumb / __track) must not trigger target-size failures
+        switch_subelements = """
+        .md3e-switch { width: 52px; height: 32px; position: relative; }
+        .md3e-switch::before { content: ""; position: absolute; inset-block: -8px; min-height: 48px; min-width: 48px; }
+        .md3e-switch__track { width: 52px; height: 32px; }
+        .md3e-switch__thumb { width: 16px; height: 16px; }
+        """
+        self.assertNotIn("MD3E006", self._codes(switch_subelements, "switch.css"))
 
 
 def _build_minimal_rgba_png(width: int, height: int, rgba_bytes: bytes) -> bytes:

@@ -110,6 +110,7 @@
     background: var(--md-sys-color-primary-container);
     color: var(--md-sys-color-on-primary-container);
     --md-sys-icon-size: 20px;
+    --md-sys-icon-opsz: 20;
   }
 
   .titlebar__title {
@@ -131,6 +132,8 @@
     padding-inline: var(--md-sys-spacing-3);
     border-radius: var(--md-sys-shape-corner-full);
     background: var(--md-sys-color-surface-container-high);
+    --md-sys-icon-size: 20px;
+    --md-sys-icon-opsz: 20;
     transition: background-color var(--md-bento-motion-fast-effects);
   }
 
@@ -655,30 +658,50 @@
   .bento-switch__track {
     inline-size: 52px;
     block-size: 32px;
-    padding: 2px;
+    padding: 0;
+    border: 2px solid var(--md-sys-color-outline);
     border-radius: var(--md-sys-shape-corner-full);
     background: var(--md-sys-color-surface-container-highest);
     display: flex;
     align-items: center;
-    transition: background-color var(--md-bento-motion-fast-effects);
+    transition: background-color var(--md-bento-motion-fast-effects),
+                border-color var(--md-bento-motion-fast-effects);
   }
 
   .bento-switch__thumb {
-    inline-size: 24px;
-    block-size: 24px;
+    inline-size: 16px;
+    block-size: 16px;
     border-radius: var(--md-sys-shape-corner-full);
     background: var(--md-sys-color-outline);
+    transform: translateX(6px);
     transition: transform var(--md-bento-motion-fast-spatial),
+                inline-size var(--md-bento-motion-fast-spatial),
+                block-size var(--md-bento-motion-fast-spatial),
                 background-color var(--md-bento-motion-fast-effects);
   }
 
   .bento-switch[aria-pressed="true"] .bento-switch__track {
     background: var(--md-sys-color-primary);
+    border-color: var(--md-sys-color-primary);
   }
 
   .bento-switch[aria-pressed="true"] .bento-switch__thumb {
+    inline-size: 24px;
+    block-size: 24px;
     background: var(--md-sys-color-on-primary);
     transform: translateX(22px);
+  }
+
+  .bento-switch:active .bento-switch__thumb {
+    inline-size: 28px;
+    block-size: 28px;
+    transform: translateX(0);
+  }
+
+  .bento-switch[aria-pressed="true"]:active .bento-switch__thumb {
+    inline-size: 28px;
+    block-size: 28px;
+    transform: translateX(20px);
   }
 
   .bento-pill-group {
@@ -707,12 +730,23 @@
                 color var(--md-bento-motion-fast-effects);
   }
 
+  .bento-pill::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-bento-motion-fast-effects);
+  }
+
   .bento-pill:first-child { border-start-start-radius: var(--md-sys-shape-corner-extra-large); border-end-start-radius: var(--md-sys-shape-corner-extra-large); }
   .bento-pill:last-child { border-start-end-radius: var(--md-sys-shape-corner-extra-large); border-end-end-radius: var(--md-sys-shape-corner-extra-large); }
 
-  .bento-pill:hover {
-    background: color-mix(in oklab, var(--md-sys-color-on-surface) 8%, var(--md-sys-color-surface-container-high));
-  }
+  .bento-pill:hover::after { opacity: var(--md-sys-state-hover-state-layer-opacity); }
+  .bento-pill:focus-visible::after { opacity: var(--md-sys-state-focus-state-layer-opacity); }
+  .bento-pill:active::after { opacity: var(--md-sys-state-pressed-state-layer-opacity); }
 
   .bento-pill:is(:active, [aria-pressed="true"]) {
     flex-grow: 1.45;
@@ -748,14 +782,27 @@
     font-family: inherit;
     font-size: var(--md-sys-typescale-label-large-size);
     font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+    --md-sys-icon-size: 20px;
+    --md-sys-icon-opsz: 20;
     cursor: pointer;
     transition: background-color var(--md-bento-motion-fast-effects),
+                color var(--md-bento-motion-fast-effects),
                 border-radius var(--md-bento-motion-fast-spatial),
                 transform var(--md-bento-motion-fast-spatial);
   }
 
   .bento-action-btn:hover {
     background: color-mix(in oklab, var(--md-sys-color-on-primary-container) 8%, var(--md-sys-color-primary-container));
+  }
+
+  .bento-action-btn[aria-pressed="true"] {
+    background: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+    border-radius: var(--md-sys-shape-corner-medium);
+  }
+
+  .bento-action-btn[aria-pressed="true"]:hover {
+    background: color-mix(in oklab, var(--md-sys-color-on-primary) 8%, var(--md-sys-color-primary));
   }
 
   .bento-action-btn:active {
@@ -776,6 +823,7 @@
     font-size: var(--md-sys-typescale-label-medium-size);
   }
 
+  .bento-action-btn--sm-pill[aria-pressed="true"],
   .bento-action-btn--sm-pill:active {
     border-radius: var(--md-sys-shape-corner-small);
   }
@@ -1012,8 +1060,8 @@
     align-items: center;
     justify-content: center;
     gap: var(--md-sys-spacing-2);
-    height: 56px;
-    padding-inline: var(--md-sys-spacing-3);
+    height: 64px;
+    padding-inline: var(--md-sys-spacing-4);
     border-radius: var(--md-sys-shape-corner-extra-large);
     transition: border-radius var(--md-bento-motion-default-spatial),
                 background-color var(--md-bento-motion-fast-effects);
@@ -1041,12 +1089,24 @@
     background: transparent;
     color: var(--md-sys-color-on-surface);
     cursor: pointer;
-    transition: background-color var(--md-bento-motion-fast-effects);
+    transition: background-color var(--md-bento-motion-fast-effects),
+                color var(--md-bento-motion-fast-effects);
   }
 
-  .bento-toolbar-icon:hover {
-    background: color-mix(in oklab, var(--md-sys-color-on-surface) 8%, transparent);
+  .bento-toolbar-icon::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-bento-motion-fast-effects);
   }
+
+  .bento-toolbar-icon:hover::after { opacity: var(--md-sys-state-hover-state-layer-opacity); }
+  .bento-toolbar-icon:focus-visible::after { opacity: var(--md-sys-state-focus-state-layer-opacity); }
+  .bento-toolbar-icon:active::after { opacity: var(--md-sys-state-pressed-state-layer-opacity); }
 
   .bento-toolbar-icon[aria-pressed="true"] {
     background: var(--md-sys-color-primary-container);
@@ -1086,8 +1146,33 @@
     .bento-card,
     .bento-well,
     .bento-vt-modal,
-    .bento-adaptive-toolbar {
+    .bento-adaptive-toolbar,
+    .bento-pill,
+    .bento-action-btn,
+    .titlebar-chip,
+    .bento-switch__track {
       border: 1px solid CanvasText;
+    }
+    .bento-pill[aria-pressed="true"],
+    .bento-action-btn[aria-pressed="true"],
+    .bento-rail__item[aria-current="page"],
+    .bento-toolbar-icon[aria-pressed="true"],
+    .titlebar-chip[aria-pressed="true"] {
+      forced-color-adjust: none;
+      background: Highlight;
+      color: HighlightText;
+    }
+    .bento-switch[aria-pressed="true"] .bento-switch__track {
+      forced-color-adjust: none;
+      background: Highlight;
+      border-color: Highlight;
+    }
+    .bento-switch__thumb {
+      forced-color-adjust: none;
+      background: CanvasText;
+    }
+    .bento-switch[aria-pressed="true"] .bento-switch__thumb {
+      background: HighlightText;
     }
   }
 
@@ -1629,6 +1714,14 @@
       if (!skipped && !rafId) tickWavy();
     });
   });
+  if ('MutationObserver' in window) {
+    new MutationObserver(() => {
+      if (!rafId) drawBentoWavy();
+    }).observe(root, { attributes: true, attributeFilter: ['data-theme', 'data-seed', 'style'] });
+  }
+  window.addEventListener('resize', () => {
+    if (!rafId) drawBentoWavy();
+  });
   tickWavy();
 
   // Switches & Neighbor-Squeezing Pills
@@ -1680,10 +1773,18 @@
   const vtModalTitle = document.getElementById('bento-vt-modal-title');
   const vtExpandBtn = document.getElementById('btn-vt-expand');
   const vtCloseBtn = document.getElementById('btn-vt-close');
+  const bentoTitlebar = document.querySelector('.bento-titlebar');
+  const bentoShell = document.querySelector('.bento-shell');
   let lastTrigger = vtExpandBtn;
+
+  function setModalBackgroundInert(isOpen) {
+    if (bentoTitlebar) bentoTitlebar.inert = isOpen;
+    if (bentoShell) bentoShell.inert = isOpen;
+  }
 
   function openVtModal(triggerEl) {
     lastTrigger = triggerEl || vtExpandBtn;
+    setModalBackgroundInert(true);
     vtSourceCard.classList.add('is-vt-active');
     const apply = () => {
       vtSourceCard.classList.remove('is-vt-active');
@@ -1702,6 +1803,7 @@
 
   function closeVtModal() {
     if (vtBackdrop.hidden) return;
+    setModalBackgroundInert(false);
     const apply = () => {
       vtModal.dataset.open = 'false';
       vtBackdrop.hidden = true;

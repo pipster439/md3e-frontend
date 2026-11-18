@@ -68,7 +68,7 @@ md3e-frontend/
 │       ├── navigation.md                    # Toolbars, App Bars, Rails, Drawers, Tabs, Search
 │       ├── selection.md                     # Checkbox, Switch, Sliders, Chips
 │       ├── text-input.md                    # Text Fields, Selects, Date & Time Pickers
-│       └── expressive-recipes.md            # Production recipes (loader, wavy progress, toolbars)
+│       └── expressive-recipes.md            # Production recipes (sliders, switch/checkbox, loader, wavy progress, toolbars)
 └── scripts/
     ├── audit_md3e.py                        # 4-tier deterministic auditor (ERROR/WARNING/INFO/CUSTOM)
     ├── test_md3e.py                         # Unit & compliance test suite
@@ -156,8 +156,9 @@ Use the copy-ready zero-dependency semantic HTML/CSS/JS recipes in [`references/
 * **Floating & Docked Toolbars**: Pill and docked action bars (replacing deprecated bottom app bar).
 * **Split Button**: Primary action + trailing dropdown menu trigger with continuous/gapped silhouettes.
 * **Connected Button Groups**: Shared inner borders with asymmetric corner radii and click width squeeze.
-* **FAB Menu**: Floating action button expanding into vertical action sheets with focus trapping.
+* **FAB Menu**: Floating action button expanding into vertical action sheets with focus trapping and `pointer-events: none` container isolation.
 * **Expressive Loading Indicator & Wavy Progress**: 7-polygon morphing loader + SVG/Canvas waves that straighten at 100%.
+* **M3 Expressive Slider & Selection Controls**: Split active/inactive tracks (`16dp` XS / `40dp` M) with `6dp` gap, `4dp` stop dot & `4×44dp`/`4×52dp` vertical bar handle (`appearance: none` + Radix/Base UI binding), `28dp` pressed-thumb Switch, and `18×18dp` (`2px` corner) Checkbox.
 
 ---
 
@@ -221,6 +222,7 @@ Add `data-md3e-exempt="data-view"` on specialized workspaces (or rely on automat
 | `MD3E004` | `WARNING` | L2 Motion | Uncalibrated ad-hoc curve (`md3e-spring.js`, sampled `linear()`, and Google `OFFICIAL_WEB_CURVES` + duration are all valid) |
 | `MD3E008` | `WARNING` | WCAG/M3 | Motion declarations missing `@media (prefers-reduced-motion: reduce)` path |
 | `MD3E011`, `013`, `016`, `019`, `023`, `026` | `WARNING` | L2 Web | `border-radius: 50%` on pills, `transition: all`, deprecated 40dp small FAB, `9999px` spring overshoot snap, `box-shadow` on masked shape, or unbound `md3e-*` modifier class |
+| `MD3E027` | `WARNING` | L2 Web / Input | OS-native `accent-color` range slider missing `appearance: none` (grey border/OS thumb bug) or `position: fixed` floating/FAB menu wrapper missing `pointer-events: none` (hit-trap) |
 | `MD3E001`–`003`, `007`, `010`, `012`, `015`, `025` | `INFO` | Project Prefs | Hardcoded hex/rgb/radii/type scale, shadow elevation, uppercase labels, bottom app bar, or multiple primary filled buttons in one view |
 | `MD3E101`–`104` | `CUSTOM` | L3 Opt-In | Desktop Bento (`--mode=desktop-bento` only, excluded from Official Score): borderless tonal panels, `4+` surface tiers, concentric radii, Hero motifs (auto-exempts analytical data views) |
 

@@ -150,7 +150,7 @@ Two structural rules that get missed:
 
 1. **Native Semantic HTML + MD3E Token Classes**: Build buttons, checkboxes, switches (`<input type="checkbox" role="switch">`), text fields, sliders, navigation rails/bars, and native `<dialog>` elements directly on standard HTML tags styled with `--md-sys-*` tokens, `::before` `48×48px` hit targets, `:focus-visible` focus rings, and standard ARIA states (`aria-pressed`, `aria-expanded`, `aria-checked`, `aria-selected`, `aria-current="page"`) — zero Web Component or Shadow DOM encapsulation friction.
 2. **Headless Unstyled Primitives (Radix UI / Base UI / React Aria / Ark UI)**: For complex composite overlays, comboboxes, dropdown menus, roving tabs, and modal focus traps in React/Vue/Svelte apps, bind headless state attributes (`[data-state="open|checked"]`, `[data-highlighted]`) directly to MD3E colour roles, state layers, and `--md-sys-motion-*` springs.
-3. **Pure Expressive Recipes & Tailwind CSS**: Use `references/components/expressive-recipes.md` for copy-ready HTML/CSS/JS Expressive components (docked/floating toolbars, split buttons, connected button groups, FAB menus, 7-polygon loading indicators, wavy progress bars, toggle groups, clock dial & 35-shape containers) and `references/tailwind.md` (`assets/tailwind/`) for Tailwind CSS v3/v4 utilities (`bg-md-primary`, `rounded-md-lg`, `shadow-md-level2`).
+3. **Pure Expressive Recipes & Tailwind CSS**: Use `references/components/expressive-recipes.md` for copy-ready HTML/CSS/JS Expressive components (docked/floating toolbars, split buttons, connected button groups, FAB menus, 7-polygon loading indicators, wavy progress bars, toggle groups, M3E split-track sliders with `appearance: none`, 28dp-pressed-thumb switches, 18×18dp checkboxes, clock dial & 35-shape containers) and `references/tailwind.md` (`assets/tailwind/`) for Tailwind CSS v3/v4 utilities (`bg-md-primary`, `rounded-md-lg`, `shadow-md-level2`).
 
 Complete every state: enabled, hover, focus, pressed, disabled, plus selected
 where it applies. See `references/accessibility.md`.
@@ -219,6 +219,7 @@ python scripts/test_md3e.py -v                           # Full token, generator
 | MD3E021 | `WARNING` | Decorative icon inside labelled control missing `aria-hidden="true"` |
 | MD3E023 | `WARNING` | Rectangular `box-shadow` directly on `.md3e-shape*`/masked shape instead of wrapper `filter: drop-shadow()` |
 | MD3E026 | `WARNING` | Unbound MD3E modifier class missing base class (`.md3e-btn--*` without `.md3e-btn`, `.md3e-shape-*` without `.md3e-shape`) or deprecated `md3e-size-*` / `md3e-fab-medium` bridge class |
+| MD3E027 | `WARNING` | OS-native `accent-color` range slider missing `appearance: none` (grey border/OS thumb bug) or `position: fixed` floating/FAB menu wrapper missing `pointer-events: none` (pointer hit-trap) |
 | MD3E001 | `INFO` | Hardcoded hex colour *(Project Default)* |
 | MD3E002 | `INFO` | Hardcoded `rgb()` / `hsl()` / `oklch()` functional colour *(Project Default)* |
 | MD3E003 | `INFO` | Custom/brand corner radius outside default 10-step scale *(Project Default)* |
@@ -253,7 +254,7 @@ python scripts/spring_to_css.py --stiffness 500 --damping 0.7   # custom spring
 | File | Contents |
 |---|---|
 | `references/icons.md` | Material Symbols `<head>` setup, offline SVG fallback, hallucination-prevention name table, variable axes, a11y rules |
-| `references/components/expressive-recipes.md` | Production HTML/CSS/JS recipes for Expressive components & Headless UI bindings (Toolbars, Split button, Button groups, FAB menu, 7-polygon Loader, real-time `md3e-morph.js` button, Wavy SVG+Canvas progress bar, Toggle & variable-width icon buttons, Flexible Top App Bar, Carousel, Nav rail, Clock dial & `md3e-blur.css` chrome) |
+| `references/components/expressive-recipes.md` | Production HTML/CSS/JS recipes for Expressive components & Headless UI bindings (Toolbars, Split button, Button groups, FAB menu, 7-polygon Loader, real-time `md3e-morph.js` button, Wavy SVG+Canvas progress bar, Toggle & variable-width icon buttons, Flexible Top App Bar, Carousel, Nav rail, Clock dial, `md3e-blur.css` chrome, M3E Split-Track Sliders & Radix/Base UI Slider, Switch `28dp` pressed handle & Checkbox `18×18dp`/`2dp`) |
 | `references/desktop-bento.md` | Opt-in Desktop High-Expressiveness Bento override layer (frameless shell, `32–36px` dense tables vs `44–64px` chunky controls, borderless 4+ tonal nesting, `28px/16px` concentric radii, Hero wave/sparkline/morph anchors, `150–250ms` desktop springs) |
 | `references/tailwind.md` | Tailwind CSS v3 & v4 integration guide, theme extension mapping, `@theme` block |
 | `references/color.md` | tonal palettes, 47 colour roles (including 12 Fixed roles), role→tone mapping, state layers, fixed roles, contrast levels |

@@ -379,12 +379,12 @@ A two-button control separated by an explicit **2dp gap**: leading action button
   opacity: var(--md-sys-state-pressed-state-layer-opacity);
 }
 
-.md3e-split-btn__action:is(:hover, :active) {
+.md3e-split-btn__action:is(:hover, :focus-visible, :active) {
   border-start-end-radius: var(--md-sys-shape-corner-small); /* 8px */
   border-end-end-radius: var(--md-sys-shape-corner-small);
 }
 
-.md3e-split-btn__arrow:is(:hover, :active) {
+.md3e-split-btn__arrow:not([aria-expanded="true"]):is(:hover, :focus-visible, :active) {
   border-start-start-radius: var(--md-sys-shape-corner-small); /* 8px */
   border-end-start-radius: var(--md-sys-shape-corner-small);
 }
@@ -413,6 +413,14 @@ A two-button control separated by an explicit **2dp gap**: leading action button
   opacity: var(--md-sys-state-disabled-content-opacity);
   cursor: default;
   pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-split-btn__action,
+  .md3e-split-btn__arrow,
+  .md3e-split-btn__chevron {
+    transition: none;
+  }
 }
 ```
 
@@ -528,6 +536,18 @@ Connected button groups place individual buttons side by side with a **2dp gap**
   outline-offset: var(--md-sys-focus-ring-gap);
   z-index: 1;
 }
+
+.md3e-group-btn:disabled {
+  opacity: var(--md-sys-state-disabled-content-opacity);
+  cursor: default;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-group-btn {
+    transition: none;
+  }
+}
 ```
 
 ### 3.2 Standard Button Group
@@ -623,7 +643,7 @@ In AndroidX Compose M3E (`ButtonGroupDefaults.animateWidth`), pressing or toggli
 
 ## 4. FAB Menu (Morphing Action Sheet)
 
-A Floating Action Button (`56dp`) that expands into up to 6 Medium-sized (`56dp` high) action pills and morphs into a `56dp` close button. Closed menus **must** carry `inert` so keyboard focus cannot enter invisible buttons, and **must** support `Escape` + scrim dismissal + focus return.
+A Floating Action Button (`56dp`) that expands into up to 6 Medium-sized (`56dp` high) action pills and morphs into a `56dp` close button. Closed menus **must** carry `inert` so keyboard focus cannot enter invisible buttons, and **must** support `Escape` + scrim dismissal + focus return. Always set `pointer-events: none;` on the fixed `.md3e-fab-menu-container` wrapper (and `pointer-events: auto;` on `.md3e-fab` and the open `.md3e-fab-menu`) so collapsed menus never trap pointer drags over underlying sliders or inputs, and keep `.md3e-fab-menu-container` below open modal sheets/drawers at rest (elevating or marking `inert` only when needed).
 
 ```html
 <div class="md3e-fab-menu-container">
@@ -681,6 +701,7 @@ A Floating Action Button (`56dp`) that expands into up to 6 Medium-sized (`56dp`
   flex-direction: column-reverse; /* Trigger stays first in DOM/Tab order while rendering at bottom */
   align-items: flex-end;
   gap: var(--md-sys-spacing-1); /* 4dp gap between FAB and menu */
+  pointer-events: none; /* Prevent collapsed wrapper from trapping pointer drags on underlying controls */
   z-index: 900;
 }
 
@@ -694,6 +715,7 @@ A Floating Action Button (`56dp`) that expands into up to 6 Medium-sized (`56dp`
   color: var(--md-sys-color-on-primary-container);
   border: none;
   cursor: pointer;
+  pointer-events: auto; /* Re-enable clicks inside pointer-events: none container */
   display: grid;
   place-items: center;
   box-shadow: var(--md-sys-elevation-level3);
@@ -746,7 +768,7 @@ A Floating Action Button (`56dp`) that expands into up to 6 Medium-sized (`56dp`
   transform: translateY(0) scale(1);
 }
 
-/* Official M3E FAB menu item: 56dp height, 24dp padding, 8dp gap, Title Medium */
+/* Official M3E FAB menu item: 56dp height, 24dp padding, 8dp gap, 24dp icon, Title Medium */
 .md3e-fab-menu-item {
   position: relative;
   display: inline-flex;
@@ -762,6 +784,8 @@ A Floating Action Button (`56dp`) that expands into up to 6 Medium-sized (`56dp`
   font-size: var(--md-sys-typescale-title-medium-size);
   line-height: var(--md-sys-typescale-title-medium-line-height);
   font-weight: var(--md-sys-typescale-title-medium-weight);
+  --md-sys-icon-size: 24px;
+  --md-sys-icon-opsz: 24;
   box-shadow: var(--md-sys-elevation-level2);
   cursor: pointer;
   transition: transform var(--md-sys-motion-fast-spatial),
@@ -781,6 +805,24 @@ A Floating Action Button (`56dp`) that expands into up to 6 Medium-sized (`56dp`
 
 .md3e-fab-menu-item:hover::after {
   opacity: var(--md-sys-state-hover-state-layer-opacity);
+}
+
+.md3e-fab-menu-item:focus-visible::after {
+  opacity: var(--md-sys-state-focus-state-layer-opacity);
+}
+
+.md3e-fab-menu-item:active::after {
+  opacity: var(--md-sys-state-pressed-state-layer-opacity);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-fab-scrim,
+  .md3e-fab,
+  .md3e-fab-icon,
+  .md3e-fab-menu,
+  .md3e-fab-menu-item {
+    transition: none;
+  }
 }
 ```
 
@@ -1069,6 +1111,12 @@ Toggle buttons morph resting shapes: **Round when unselected, Square when select
   cursor: default;
   pointer-events: none;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-toggle-btn {
+    transition: none;
+  }
+}
 ```
 
 ---
@@ -1099,7 +1147,7 @@ Toggle buttons morph resting shapes: **Round when unselected, Square when select
   color: var(--md-sys-color-on-surface);
   border-radius: var(--md-sys-shape-corner-full);
   width: 100%;
-  max-width: 480px;
+  max-width: 720px; /* M3E search bar max width 720dp (360dp min) */
   cursor: text;
   transition: background-color var(--md-sys-motion-fast-effects);
 }
@@ -1147,6 +1195,13 @@ Toggle buttons morph resting shapes: **Round when unselected, Square when select
 .md3e-icon-btn:focus-visible {
   outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
   outline-offset: var(--md-sys-focus-ring-gap);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-search-bar,
+  .md3e-icon-btn {
+    transition: none;
+  }
 }
 ```
 
@@ -1245,7 +1300,7 @@ Toggle buttons morph resting shapes: **Round when unselected, Square when select
 ```css
 .md3e-carousel {
   display: flex;
-  gap: var(--md-sys-spacing-3);
+  gap: var(--md-sys-spacing-2); /* 8dp between carousel items per M3E spec */
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   padding-block: var(--md-sys-spacing-2);
@@ -1263,7 +1318,7 @@ Toggle buttons morph resting shapes: **Round when unselected, Square when select
   width: 220px;
   height: 160px;
   padding: var(--md-sys-spacing-4);
-  border-radius: var(--md-sys-shape-corner-large);
+  border-radius: var(--md-sys-shape-corner-extra-large); /* 28dp carousel item corner per M3E spec */
   background-color: var(--md-sys-color-surface-container-high);
   color: var(--md-sys-color-on-surface);
   border: 1px solid var(--md-sys-color-outline-variant);
@@ -1277,6 +1332,12 @@ Toggle buttons morph resting shapes: **Round when unselected, Square when select
 .md3e-carousel__item:focus-visible {
   outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
   outline-offset: var(--md-sys-focus-ring-gap);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-carousel__item {
+    transition: none;
+  }
 }
 ```
 
@@ -1304,7 +1365,7 @@ Toggle buttons morph resting shapes: **Round when unselected, Square when select
   border-inline-end: 1px solid var(--md-sys-color-outline-variant);
 }
 
-/* Expanded / Mobile Modal Rail Sheet (GPU-composited slide, zero reflow) */
+/* Expanded / Mobile Modal Rail Sheet (GPU-composited slide, zero reflow; pair with `inert` when closed) */
 .md3e-nav-sheet {
   position: fixed;
   inset-block: 0;
@@ -1317,12 +1378,17 @@ Toggle buttons morph resting shapes: **Round when unselected, Square when select
   border-end-end-radius: var(--md-sys-shape-corner-large);
   box-shadow: var(--md-sys-elevation-level3);
   transform: translateX(-100%);
-  transition: transform var(--md-sys-motion-default-spatial);
+  pointer-events: none;
+  visibility: hidden;
+  transition: transform var(--md-sys-motion-default-spatial),
+              visibility var(--md-sys-motion-default-effects);
   z-index: 150;
 }
 
 .md3e-nav-sheet.is-open {
   transform: translateX(0);
+  pointer-events: auto;
+  visibility: visible;
 }
 
 .md3e-nav-scrim {
@@ -1338,6 +1404,13 @@ Toggle buttons morph resting shapes: **Round when unselected, Square when select
 .md3e-nav-scrim.is-active {
   opacity: 0.32;
   pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-nav-sheet,
+  .md3e-nav-scrim {
+    transition: none;
+  }
 }
 ```
 
@@ -1385,11 +1458,11 @@ function calculateHourFromPointer(dialElement, clientX, clientY) {
 Use `.md3e-shape` paired with any of the 35 official `.md3e-shape-<name>` classes. Wrap in `.md3e-shape-shadow-wrap` to apply a soft contour shadow (`filter: drop-shadow(...)`):
 
 ```html
-<span class="md3e-shape-shadow-wrap">
+<div class="md3e-shape-shadow-wrap">
   <div class="md3e-shape md3e-shape-cookie-9-sided md3e-hero-avatar">
     <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
   </div>
-</span>
+</div>
 ```
 
 ```css
@@ -1735,3 +1808,615 @@ Standard `40dp` Small Icon Buttons support three native width profiles (`narrow`
 - **Flexible Top App Bar (`MediumFlexible` / `LargeFlexible`)**: Expand bar height (`64px` collapsed ↔ `112px` medium / `152px` large) paired with variable-font `'GRAD'` / `'ROND'` / `'wght'` interpolation on the title rather than animating `font-size` across layout frames.
 - **Multi-Browse Hero Carousel**: Pair `scroll-snap-type: x mandatory` (`md3e-carousel`) with focusable `flex-basis` shifts on hovered/focused hero items so focused cards widen with `--md-sys-motion-default-spatial` while preserving keyboard arrow/Tab scroll into view.
 
+
+---
+
+## 15. M3 Expressive Slider (XS 16dp / M 40dp Split Track + 4dp Vertical Bar Handle)
+
+Per `references/components/selection.md`, M3 Expressive replaces thin circular-knob sliders with a chunky **split track** separated by an explicit **6dp handle gap**, a **`4dp` vertical bar handle** (`4×44dp` at XS / `4×52dp` at M) that compresses horizontally on `:active`, outer track corners (`8dp` XS / `12dp` M), and a **`4dp` end stop indicator dot** at the trailing track end.
+
+> [!CAUTION]
+> **Eliminating the OS Grey-Border / Native Thumb Bug (`MD3E027`)**:
+> Never style an M3E slider solely with `accent-color: var(--md-sys-color-primary)` while leaving native browser appearance intact. Chromium/Windows/macOS render an unstyled grey track border and circular OS knob around `accent-color` range inputs (`MD3E027` warning). Always reset `-webkit-appearance: none; appearance: none;`, style `::-webkit-slider-*` and `::-moz-range-*` in **separate selector rules**, and use `outline: 2px solid transparent;` paired with `:focus-visible` `3px` secondary focus ring.
+
+### 15.1 Native `<input type="range">` Recipe (XS 16dp & Medium 40dp)
+
+```html
+<!-- XS (default: 16dp track, 8dp outer radius, 4x44dp handle) -->
+<label class="md3e-slider-field" for="slider-xs">
+  <span class="md3e-slider-field__label">Output level</span>
+  <input
+    type="range"
+    id="slider-xs"
+    class="md3e-slider"
+    min="0"
+    max="100"
+    value="68"
+    aria-label="Output level"
+  >
+</label>
+
+<!-- Medium (40dp track, 12dp outer radius, 4x52dp handle) -->
+<label class="md3e-slider-field" for="slider-m">
+  <span class="md3e-slider-field__label">Display brightness</span>
+  <input
+    type="range"
+    id="slider-m"
+    class="md3e-slider md3e-slider--m"
+    min="0"
+    max="100"
+    value="50"
+    aria-label="Display brightness"
+  >
+</label>
+```
+
+```css
+.md3e-slider-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--md-sys-spacing-2);
+  width: 100%;
+}
+
+.md3e-slider-field__label {
+  font-family: var(--md-sys-typescale-plain-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  color: var(--md-sys-color-on-surface);
+}
+
+/* Base XS M3E Slider: 48px touch target, 16dp split track, 4x44dp vertical bar handle */
+.md3e-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  min-height: var(--md-sys-touch-target-min); /* 48px accessible hit area */
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  outline: 2px solid transparent; /* Keep focus box intact for Windows High Contrast */
+  cursor: pointer;
+  touch-action: pan-y;
+  --md3e-slider-pct: 50%;
+  --md3e-slider-track-h: 16px;
+  --md3e-slider-track-r: var(--md-sys-shape-corner-small); /* 8dp at XS */
+  --md3e-slider-handle-h: 44px;
+  --md3e-slider-thumb-offset: -14px; /* (16px - 44px) / 2 */
+  --md3e-slider-cut: 8px; /* 2px half-handle + 6dp clear gap each side */
+}
+
+/* Medium M3E Slider: 40dp track, 12dp outer radius, 4x52dp bar handle */
+.md3e-slider--m {
+  min-height: 52px;
+  --md3e-slider-track-h: 40px;
+  --md3e-slider-track-r: var(--md-sys-shape-corner-medium); /* 12dp at M */
+  --md3e-slider-handle-h: 52px;
+  --md3e-slider-thumb-offset: -6px; /* (40px - 52px) / 2 */
+}
+
+.md3e-slider:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+  border-radius: var(--md-sys-shape-corner-small);
+}
+
+/* Keep vendor pseudo-element rules separate so neither engine discards the rule */
+.md3e-slider::-webkit-slider-runnable-track {
+  height: var(--md3e-slider-track-h);
+  border: none;
+  box-shadow: none;
+  border-radius: var(--md3e-slider-track-r);
+  background:
+    radial-gradient(
+      circle at calc(100% - 6px) 50%,
+      var(--md-sys-color-primary) 0 2px,
+      transparent 2.6px
+    ),
+    linear-gradient(
+      to right,
+      var(--md-sys-color-primary) 0 max(0px, calc(var(--md3e-slider-pct, 50%) - var(--md3e-slider-cut))),
+      transparent max(0px, calc(var(--md3e-slider-pct, 50%) - var(--md3e-slider-cut))) min(100%, calc(var(--md3e-slider-pct, 50%) + var(--md3e-slider-cut))),
+      var(--md-sys-color-secondary-container) min(100%, calc(var(--md3e-slider-pct, 50%) + var(--md3e-slider-cut))) 100%
+    );
+}
+
+.md3e-slider::-moz-range-track {
+  height: var(--md3e-slider-track-h);
+  border: none;
+  box-shadow: none;
+  border-radius: var(--md3e-slider-track-r);
+  background:
+    radial-gradient(
+      circle at calc(100% - 6px) 50%,
+      var(--md-sys-color-primary) 0 2px,
+      transparent 2.6px
+    ),
+    linear-gradient(
+      to right,
+      var(--md-sys-color-primary) 0 max(0px, calc(var(--md3e-slider-pct, 50%) - var(--md3e-slider-cut))),
+      transparent max(0px, calc(var(--md3e-slider-pct, 50%) - var(--md3e-slider-cut))) min(100%, calc(var(--md3e-slider-pct, 50%) + var(--md3e-slider-cut))),
+      var(--md-sys-color-secondary-container) min(100%, calc(var(--md3e-slider-pct, 50%) + var(--md3e-slider-cut))) 100%
+    );
+}
+
+.md3e-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 4px;
+  height: var(--md3e-slider-handle-h);
+  margin-top: var(--md3e-slider-thumb-offset);
+  border: none;
+  box-shadow: none;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-primary);
+  transition: transform var(--md-sys-motion-fast-spatial),
+              background-color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-slider::-moz-range-thumb {
+  width: 4px;
+  height: var(--md3e-slider-handle-h);
+  border: none;
+  box-shadow: none;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-primary);
+  transition: transform var(--md-sys-motion-fast-spatial),
+              background-color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-slider:active:not(:disabled)::-webkit-slider-thumb {
+  transform: scaleX(0.6);
+}
+
+.md3e-slider:active:not(:disabled)::-moz-range-thumb {
+  transform: scaleX(0.6);
+}
+
+.md3e-slider:disabled {
+  opacity: var(--md-sys-state-disabled-content-opacity);
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-slider::-webkit-slider-thumb {
+    transition: none;
+  }
+  .md3e-slider::-moz-range-thumb {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .md3e-slider::-webkit-slider-runnable-track {
+    border: 1px solid CanvasText;
+    background:
+      radial-gradient(circle at calc(100% - 6px) 50%, Highlight 0 2px, transparent 2.6px),
+      linear-gradient(
+        to right,
+        Highlight 0 max(0px, calc(var(--md3e-slider-pct, 50%) - var(--md3e-slider-cut))),
+        transparent max(0px, calc(var(--md3e-slider-pct, 50%) - var(--md3e-slider-cut))) min(100%, calc(var(--md3e-slider-pct, 50%) + var(--md3e-slider-cut))),
+        Canvas min(100%, calc(var(--md3e-slider-pct, 50%) + var(--md3e-slider-cut))) 100%
+      );
+  }
+  .md3e-slider::-moz-range-track {
+    border: 1px solid CanvasText;
+    background:
+      radial-gradient(circle at calc(100% - 6px) 50%, Highlight 0 2px, transparent 2.6px),
+      linear-gradient(
+        to right,
+        Highlight 0 max(0px, calc(var(--md3e-slider-pct, 50%) - var(--md3e-slider-cut))),
+        transparent max(0px, calc(var(--md3e-slider-pct, 50%) - var(--md3e-slider-cut))) min(100%, calc(var(--md3e-slider-pct, 50%) + var(--md3e-slider-cut))),
+        Canvas min(100%, calc(var(--md3e-slider-pct, 50%) + var(--md3e-slider-cut))) 100%
+      );
+  }
+  .md3e-slider::-webkit-slider-thumb {
+    background: Highlight;
+    border: 1px solid ButtonText;
+  }
+  .md3e-slider::-moz-range-thumb {
+    background: Highlight;
+    border: 1px solid ButtonText;
+  }
+}
+```
+
+```javascript
+export function syncExpressiveSlider(inputEl, valueOutputEl) {
+  const min = Number(inputEl.min || 0);
+  const max = Number(inputEl.max || 100);
+  const val = Number(inputEl.value || 0);
+  const span = max - min || 1;
+  const pct = Math.max(0, Math.min(100, ((val - min) / span) * 100));
+  inputEl.style.setProperty('--md3e-slider-pct', `${pct.toFixed(2)}%`);
+  if (valueOutputEl) valueOutputEl.textContent = String(val);
+}
+
+export function bindExpressiveSlider(inputEl, valueOutputEl) {
+  const update = () => syncExpressiveSlider(inputEl, valueOutputEl);
+  inputEl.addEventListener('input', update);
+  inputEl.addEventListener('change', update);
+  update();
+  return { sync: update };
+}
+```
+
+### 15.2 Headless UI Alternative (`Radix Slider` / `Base UI Slider`)
+
+For React/Vue/Svelte apps that require **Range (two-thumb)** sliders, **Discrete stops**, **24dp–32dp Inset Icons** (`M` / `L` / `XL`), or floating **`48×44dp` Value Indicator** bubbles (`inverse-surface` / `inverse-on-surface`), bind MD3E tokens onto unstyled **Radix Slider** or **Base UI Slider** primitives (`[data-orientation="horizontal"]`, `[role="slider"]`) instead of a single `<input>` pseudo-track:
+
+```html
+<!-- Radix Slider / Base UI Slider DOM anatomy with split tracks, 6dp gap, and 48x44dp value indicator -->
+<div class="md3e-headless-slider" data-orientation="horizontal" style="--md3e-slider-pct: 68%;">
+  <div class="md3e-headless-slider__track">
+    <div class="md3e-headless-slider__active"></div>
+    <div class="md3e-headless-slider__inactive">
+      <span class="md3e-headless-slider__stop-dot" aria-hidden="true"></span>
+    </div>
+  </div>
+  <span
+    class="md3e-headless-slider__thumb"
+    role="slider"
+    tabindex="0"
+    aria-label="Playback speed"
+    aria-valuemin="0"
+    aria-valuemax="100"
+    aria-valuenow="68"
+  >
+    <span class="md3e-headless-slider__indicator" aria-hidden="true">68</span>
+  </span>
+</div>
+```
+
+```css
+.md3e-headless-slider {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--md-sys-touch-target-min);
+}
+
+.md3e-headless-slider__track {
+  position: relative;
+  width: 100%;
+  height: 16px; /* 40px for M variant */
+  display: flex;
+  align-items: center;
+}
+
+.md3e-headless-slider__active {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: max(0px, calc(var(--md3e-slider-pct, 50%) - 8px)); /* 6dp clear gap from 4dp handle */
+  background: var(--md-sys-color-primary);
+  border-start-start-radius: var(--md-sys-shape-corner-small); /* 8dp outer (12dp for M) */
+  border-end-start-radius: var(--md-sys-shape-corner-small);
+  border-start-end-radius: 2px;
+  border-end-end-radius: 2px;
+}
+
+.md3e-headless-slider__inactive {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: min(100%, calc(var(--md3e-slider-pct, 50%) + 8px));
+  inset-inline-end: 0;
+  background: var(--md-sys-color-secondary-container);
+  border-start-start-radius: 2px;
+  border-end-start-radius: 2px;
+  border-start-end-radius: var(--md-sys-shape-corner-small);
+  border-end-end-radius: var(--md-sys-shape-corner-small);
+}
+
+.md3e-headless-slider__stop-dot {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: 6px;
+  width: 4px;
+  height: 4px;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-primary);
+  transform: translateY(-50%);
+}
+
+.md3e-headless-slider__thumb {
+  position: absolute;
+  inset-inline-start: var(--md3e-slider-pct, 50%);
+  width: 4px;
+  height: 44px; /* 52px for M variant */
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-primary);
+  transform: translateX(-50%);
+  outline: 2px solid transparent;
+  cursor: pointer;
+  transition: transform var(--md-sys-motion-fast-spatial);
+}
+
+.md3e-headless-slider__thumb::before {
+  content: "";
+  position: absolute;
+  inset-block: -2px;
+  inset-inline: -22px;
+  min-width: var(--md-sys-touch-target-min);
+  min-height: var(--md-sys-touch-target-min);
+}
+
+.md3e-headless-slider__thumb:active {
+  transform: translateX(-50%) scaleX(0.6);
+}
+
+.md3e-headless-slider__thumb:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+}
+
+.md3e-headless-slider__indicator {
+  position: absolute;
+  inset-block-end: calc(100% + var(--md-sys-spacing-2));
+  inset-inline-start: 50%;
+  min-width: 48px;
+  height: 44px;
+  padding-inline: var(--md-sys-spacing-3);
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  font-family: var(--md-sys-typescale-plain-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  display: grid;
+  place-items: center;
+  transform: translateX(-50%) scale(0.85);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-fast-effects),
+              transform var(--md-sys-motion-fast-spatial);
+}
+
+.md3e-headless-slider__thumb:is(:hover, :focus-visible, :active) .md3e-headless-slider__indicator {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-headless-slider__thumb,
+  .md3e-headless-slider__indicator {
+    transition: none;
+  }
+}
+```
+
+---
+
+## 16. M3 Expressive Selection Controls (Switch `28dp` Pressed Handle & `18×18dp` `2px` Checkbox)
+
+Per `references/components/selection.md`:
+- **Switch**: `52×32dp` track (`2dp` outline when unselected), **`16dp` unselected handle**, **`24dp` selected handle**, and **`28×28dp` `:active` pressed handle** centered inside the track without clipping.
+- **Checkbox**: **`18×18dp`** container with **`2dp` corner radius**, `18dp` icon, `40dp` hover state layer, and **`48×48dp`** invisible `::before` hit area. Adjacent text labels remain `--md-sys-color-on-surface` across all states.
+
+```html
+<div class="md3e-selection-row">
+  <label class="md3e-control-label">
+    <input type="checkbox" role="switch" class="md3e-switch" checked aria-checked="true">
+    <span>Spatial motion</span>
+  </label>
+
+  <label class="md3e-control-label">
+    <input type="checkbox" class="md3e-checkbox" checked>
+    <span>Dynamic color</span>
+  </label>
+</div>
+```
+
+```css
+.md3e-selection-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--md-sys-spacing-6);
+}
+
+.md3e-control-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-3);
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-sys-typescale-plain-font);
+  font-size: var(--md-sys-typescale-body-large-size);
+  line-height: var(--md-sys-typescale-body-large-line-height);
+  cursor: pointer;
+}
+
+/* --- Switch (52x32dp track; 16dp -> 24dp -> 28dp pressed handle) --- */
+.md3e-switch {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  width: 52px;
+  height: 32px;
+  margin: 0;
+  border: 2px solid var(--md-sys-color-outline);
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-surface-container-highest);
+  cursor: pointer;
+  transition: background-color var(--md-sys-motion-fast-effects),
+              border-color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-switch::before {
+  content: "";
+  position: absolute;
+  inset-block: -10px;
+  inset-inline: -2px;
+  min-width: var(--md-sys-touch-target-min);
+  min-height: var(--md-sys-touch-target-min);
+}
+
+.md3e-switch::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 6px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-outline);
+  transform: translate(0, -50%);
+  transition: width var(--md-sys-motion-fast-spatial),
+              height var(--md-sys-motion-fast-spatial),
+              transform var(--md-sys-motion-fast-spatial),
+              background-color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-switch:checked {
+  background: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-primary);
+}
+
+.md3e-switch:checked::after {
+  width: 24px;
+  height: 24px;
+  background: var(--md-sys-color-on-primary);
+  transform: translate(16px, -50%);
+}
+
+/* Official M3E 28dp pressed handle expansion centered cleanly inside 52x32dp track */
+.md3e-switch:not(:checked):active:not(:disabled)::after {
+  width: 28px;
+  height: 28px;
+  transform: translate(-6px, -50%);
+}
+
+.md3e-switch:checked:active:not(:disabled)::after {
+  width: 28px;
+  height: 28px;
+  transform: translate(14px, -50%);
+}
+
+.md3e-switch:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+}
+
+.md3e-switch:disabled {
+  opacity: var(--md-sys-state-disabled-content-opacity);
+  cursor: default;
+}
+
+/* --- Checkbox (18x18dp box, 2dp corner, 48x48dp invisible hit target) --- */
+.md3e-checkbox {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  box-sizing: border-box;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border-radius: 2px; /* Official M3E Checkbox 2dp corner shape */
+  border: 2px solid var(--md-sys-color-on-surface-variant);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color var(--md-sys-motion-fast-effects),
+              border-color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-checkbox::before {
+  content: "";
+  position: absolute;
+  inset: -15px;
+  min-width: var(--md-sys-touch-target-min);
+  min-height: var(--md-sys-touch-target-min);
+  border-radius: var(--md-sys-shape-corner-full);
+  transition: background-color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-checkbox:hover:not(:disabled)::before {
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--md-sys-color-on-surface) calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), transparent) 0 20px,
+    transparent 20.5px
+  );
+}
+
+.md3e-checkbox:checked:hover:not(:disabled)::before {
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--md-sys-color-primary) calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), transparent) 0 20px,
+    transparent 20.5px
+  );
+}
+
+.md3e-checkbox:checked,
+.md3e-checkbox:indeterminate {
+  background: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-primary);
+}
+
+.md3e-checkbox:checked::after {
+  content: "";
+  width: 5px;
+  height: 10px;
+  border-inline-end: 2px solid var(--md-sys-color-on-primary);
+  border-block-end: 2px solid var(--md-sys-color-on-primary);
+  transform: translateY(-1px) rotate(45deg);
+}
+
+.md3e-checkbox:indeterminate::after {
+  content: "";
+  width: 10px;
+  height: 2px;
+  background: var(--md-sys-color-on-primary);
+}
+
+.md3e-checkbox:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+}
+
+.md3e-checkbox:disabled {
+  opacity: var(--md-sys-state-disabled-content-opacity);
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-switch,
+  .md3e-switch::after,
+  .md3e-checkbox,
+  .md3e-checkbox::before {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .md3e-switch:checked {
+    background: Highlight;
+    border-color: Highlight;
+  }
+  .md3e-switch::after {
+    background: CanvasText;
+  }
+  .md3e-switch:checked::after {
+    background: HighlightText;
+  }
+  .md3e-checkbox:checked,
+  .md3e-checkbox:indeterminate {
+    background: Highlight;
+    border-color: Highlight;
+  }
+}
+```
+
+```javascript
+document.querySelectorAll('input[type="checkbox"][role="switch"].md3e-switch').forEach((sw) => {
+  const sync = () => sw.setAttribute('aria-checked', String(sw.checked));
+  sw.addEventListener('change', sync);
+  sync();
+});
+```

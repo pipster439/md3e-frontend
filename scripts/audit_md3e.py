@@ -6,8 +6,8 @@ break when implementing MD3E: hardcoded colours, off-scale corner radii,
 duration/easing motion instead of springs, unfocusable controls, sub-48px
 targets, off-scale type sizes, icon ligature/font mistakes, unitless
 color-mix(), composite animation delay bugs, 9999px morph snaps, legacy
-custom-element dependencies, invalid native/headless ARIA contracts, and
-unbound MD3E modifier classes.
+custom-element dependencies, invalid native/headless ARIA contracts,
+unbound MD3E modifier classes, and native slider border / fixed menu hit-traps.
 
 Usage
 -----
@@ -59,6 +59,7 @@ Finding codes
     MD3E024  WCAG <4.5:1 contrast or container/on-* mismatch (error)
     MD3E025  multiple enabled filled primary buttons in view (info)
     MD3E026  unbound md3e-* modifier or legacy MWC bridge class (warning)
+    MD3E027  slider accent-color without appearance:none or fixed menu hit-trap (warning)
     MD3E101  [desktop-bento] 1px border or rectangular box-shadow (custom)
     MD3E102  [desktop-bento] <4 surface-container nesting tiers   (custom)
     MD3E103  [desktop-bento] missing concentric 28px/16px radii   (custom)
@@ -150,6 +151,7 @@ OFFICIAL_WEB_CURVES = {
     "cubic-bezier(0.34,0.80,0.34,1.00)",
     "cubic-bezier(0.34,0.8,0.34,1)",
     "cubic-bezier(0.34,0.88,0.34,1.00)",
+    "cubic-bezier(0.34,0.88,0.34,1)",
     # Google official standard & emphasized Web easing tokens (--md-sys-motion-easing-*)
     "cubic-bezier(0.2,0,0,1)",
     "cubic-bezier(0.2,0.0,0.0,1.0)",
@@ -161,27 +163,52 @@ OFFICIAL_WEB_CURVES = {
     "cubic-bezier(0.3,0,1,1)",
     "cubic-bezier(0.3,0,1.0,1.0)",
     "cubic-bezier(0.4,0,0.2,1)",
+    "cubic-bezier(0.4,0.0,0.2,1.0)",
+}
+
+OFFICIAL_WEB_CURVE_TUPLES = {
+    (0.42, 1.67, 0.21, 0.9),
+    (0.38, 1.21, 0.22, 1.0),
+    (0.39, 1.29, 0.35, 0.98),
+    (0.27, 1.06, 0.18, 1.0),
+    (0.31, 0.94, 0.34, 1.0),
+    (0.34, 0.8, 0.34, 1.0),
+    (0.34, 0.88, 0.34, 1.0),
+    (0.2, 0.0, 0.0, 1.0),
+    (0.05, 0.7, 0.1, 1.0),
+    (0.3, 0.0, 0.8, 0.15),
+    (0.0, 0.0, 0.0, 1.0),
+    (0.3, 0.0, 1.0, 1.0),
+    (0.4, 0.0, 0.2, 1.0),
 }
 
 # Curated aliases hallucinated from Lucide / FontAwesome / Heroicons.
 BAD_ICON_ALIASES = {
     "plus": "add",
+    "plus_circle": "add_circle",
     "trash": "delete",
+    "trash_2": "delete",
     "cog": "settings",
     "gear": "settings",
     "bell": "notifications",
+    "bell_ring": "notifications_active",
     "heart": "favorite",
+    "heart_filled": "favorite",
     "moon": "dark_mode",
     "sun": "light_mode",
     "x": "close",
     "times": "close",
+    "close_icon": "close",
     "pencil": "edit",
     "pen": "edit",
     "user": "person",
     "bars": "menu",
     "hamburger": "menu",
+    "nav_menu": "menu",
     "sliders": "tune",
     "eye": "visibility",
+    "eye_off": "visibility_off",
+    "eye_slash": "visibility_off",
     "copy": "content_copy",
     "clipboard": "content_paste",
     "calendar": "calendar_today",
@@ -192,8 +219,16 @@ BAD_ICON_ALIASES = {
     "back": "arrow_back",
     "success": "check_circle",
     "house": "home",
+    "home_icon": "home",
     "adjustments": "tune",
     "account": "person",
+    "exclamation_triangle": "warning",
+    "alert_triangle": "warning",
+    "info_circle": "info",
+    "download_cloud": "cloud_download",
+    "upload_cloud": "cloud_upload",
+    "log_out": "logout",
+    "sign_out": "logout",
 }
 
 CANONICAL_MS_AXES = {"fill": "FILL", "grad": "GRAD", "opsz": "opsz", "wght": "wght"}
@@ -240,8 +275,22 @@ INTERACTIVE_SELECTOR_RE = re.compile(
     re.IGNORECASE,
 )
 DECORATIVE_SUBELEMENT_RE = re.compile(
-    r"(?:__|-) (?:icon|chevron|label|divider|pill|scrim|dot|morph|box)\b"
-    .replace(" ", ""),
+    r"(?:__|-)(?:icon|chevron|label|divider|pill|scrim|dot|morph|box)\b"
+    r"|(?:__|-)(?:track|thumb|handle|indicator|checkmark|stop)\b"
+    r"|__(?:ring|circle|avatar|badge)\b",
+    re.IGNORECASE,
+)
+RANGE_INPUT_ATTR_RE = re.compile(
+    r"\[[^\]]*\btype\s*=\s*(?:[\"']range[\"']|range\b)",
+    re.IGNORECASE,
+)
+SLIDER_NON_CONTROL_WRAPPER_RE = re.compile(
+    r"(?:^|[-_])(?:range|slider)s?(?:__|[-_]+(?:block|wrap(?:per)?|container|box|group|row|col|column|label|title|header|footer|value|readout|ticks?|stops?|track|thumb|handle|fill|field|panel|card|section|bar|area|meta|info|hint|text|icon))(?![a-z0-9])"
+    r"|(?:__|[-_])(?:block|wrap(?:per)?|container|box|group|row|col|column|label|title|header|footer|value|readout|track|thumb|handle|fill|panel|card|section)$",
+    re.IGNORECASE,
+)
+FIXED_MENU_WRAPPER_RE = re.compile(
+    r"(?:fab[-_]?menu[-_]?(?:container|wrap(?:per)?)|floating[-_]?menu[-_]?(?:container|wrap(?:per)?))",
     re.IGNORECASE,
 )
 INTERACTIVE_ELEMENT_RE = re.compile(
@@ -847,6 +896,23 @@ def check_font_size(cx, prop, value, lineno, line) -> None:
                "Consider var(--md-sys-typescale-<role>-size).", cx.path, lineno, line)
 
 
+def _is_official_bezier(expr: str) -> bool:
+    compact = re.sub(r"\s+", "", expr)
+    if compact in OFFICIAL_WEB_CURVES:
+        return True
+    m = re.fullmatch(r"cubic-bezier\(([^)]+)\)", compact)
+    if not m:
+        return False
+    parts = m.group(1).split(",")
+    if len(parts) != 4:
+        return False
+    try:
+        nums = tuple(round(float(p), 4) for p in parts)
+    except ValueError:
+        return False
+    return nums in OFFICIAL_WEB_CURVE_TUPLES
+
+
 def check_motion(cx, prop, value, lineno, line, in_reduced_motion: bool = False) -> None:
     if prop not in MOTION_PROPS:
         return
@@ -866,15 +932,21 @@ def check_motion(cx, prop, value, lineno, line, in_reduced_motion: bool = False)
             continue
 
         stripped = seg.strip()
-        if in_reduced_motion and (stripped in ("none", "0s", "0ms") or re.fullmatch(r"0m?s\s+linear", stripped)):
+        if in_reduced_motion and (
+            stripped in ("none", "0s", "0ms")
+            or re.fullmatch(
+                r"(?:[a-z-]+\s+)?(?:0|\d+(?:\.\d+)?)\s*m?s\s+(?:linear|cubic-bezier\(\s*0\s*,\s*0\s*,\s*1\s*,\s*1\s*\))",
+                stripped,
+            )
+        ):
             continue
         if stripped in ("none", "inherit", "unset"):
             continue
 
         # Official M3E Web cubic-bezier curves are first-class valid implementations
-        beziers = [re.sub(r"\s+", "", b.group(0)) for b in CUBIC_BEZIER_CALL_RE.finditer(seg)]
-        if beziers and all(b in OFFICIAL_WEB_CURVES for b in beziers) and not EASING_KEYWORD_RE.search(seg):
-            return
+        beziers = [b.group(0) for b in CUBIC_BEZIER_CALL_RE.finditer(seg)]
+        if beziers and all(_is_official_bezier(b) for b in beziers) and not EASING_KEYWORD_RE.search(seg):
+            continue
 
         has_time = bool(TIME_RE.search(seg))
         has_easing = bool(EASING_KEYWORD_RE.search(seg) or CURVE_FUNC_RE.search(seg))
@@ -948,6 +1020,66 @@ def check_misc(cx, prop, value, lineno, line) -> None:
 # Checker engine
 # ===========================================================================
 
+def _rightmost_compound_selector(sel: str) -> str:
+    paren_depth = 0
+    bracket_depth = 0
+    in_quote: str | None = None
+    escape = False
+    last_start = 0
+    for idx, ch in enumerate(sel):
+        if escape:
+            escape = False
+            continue
+        if ch == "\\":
+            escape = True
+            continue
+        if in_quote:
+            if ch == in_quote:
+                in_quote = None
+            continue
+        if ch in ('"', "'"):
+            in_quote = ch
+        elif ch == "(" and bracket_depth == 0:
+            paren_depth += 1
+        elif ch == ")" and bracket_depth == 0:
+            paren_depth = max(0, paren_depth - 1)
+        elif ch == "[":
+            bracket_depth += 1
+        elif ch == "]":
+            bracket_depth = max(0, bracket_depth - 1)
+        elif paren_depth == 0 and bracket_depth == 0 and ch in (" ", "\t", "\n", "\r", ">", "+", "~"):
+            last_start = idx + 1
+    return sel[last_start:].strip()
+
+
+def _selector_targets_range_slider(sel: str) -> bool:
+    s = sel.strip()
+    if not s or "::" in s:
+        return False
+    subject = _rightmost_compound_selector(s)
+    if not subject or "::" in subject:
+        return False
+    if RANGE_INPUT_ATTR_RE.search(subject):
+        return True
+    cleaned = re.sub(r"\[[^\]]*\]", " ", subject)
+    cleaned = re.sub(r":(?!is\(|where\(|has\()[a-zA-Z_-]+(?:\([^)]*\))?", " ", cleaned)
+    for tok in re.findall(r"[A-Za-z_][A-Za-z0-9_-]*", cleaned):
+        if re.search(r"(?:^|[^a-zA-Z0-9])(?:range|slider)(?![a-zA-Z0-9])", tok, re.I):
+            if not SLIDER_NON_CONTROL_WRAPPER_RE.search(tok):
+                return True
+    return False
+
+
+def _selector_is_fixed_menu_wrapper(sel: str) -> bool:
+    s = sel.strip()
+    if not s or "::" in s:
+        return False
+    subject = _rightmost_compound_selector(s)
+    if not subject or "::" in subject:
+        return False
+    return bool(FIXED_MENU_WRAPPER_RE.search(subject))
+
+
 class Checker:
     def __init__(self, path: pathlib.Path, *, is_snippet: bool = False, mode: str = "strict") -> None:
         self.path_obj = path
@@ -999,11 +1131,90 @@ class Checker:
                     p in ("inset", "inset-block") and ("-" in decl_map[p] or "var(--md-sys-touch-target-min)" in decl_map[p])
                     for p in decl_map
                 )
-                if (has_48_dim and has_48_width) or (has_48_dim and has_inset_expand) or "inset" in decl_map and "-" in decl_map.get("inset", ""):
+                has_axis_inset_pair = (
+                    "inset-block" in decl_map and "-" in decl_map["inset-block"]
+                    and "inset-inline" in decl_map and "-" in decl_map["inset-inline"]
+                )
+                if (
+                    (has_48_dim and has_48_width)
+                    or (has_48_dim and has_inset_expand)
+                    or ("inset" in decl_map and "-" in decl_map.get("inset", ""))
+                    or has_axis_inset_pair
+                ):
                     covered.add(normalize_selector_base(s))
         return covered
 
-    def _audit_rule_block(self, rule: RuleBlock, hit_covered: set[str], morphing_bases: set[str]) -> bool:
+    def _check_rule_slider_and_menu_traps(
+        self,
+        rule: RuleBlock,
+        appearance_none_selectors: set[str],
+        pointer_events_none_selectors: set[str],
+    ) -> None:
+        sel_branches = split_top_level_commas(rule.selector)
+
+        # MD3E027 (a): Slider setting accent-color without appearance: none / -webkit-appearance: none
+        slider_branches = [s for s in sel_branches if _selector_targets_range_slider(s)]
+        if slider_branches:
+            accent_decl = next(
+                (
+                    (lineno, raw)
+                    for prop, value, lineno, raw in rule.declarations
+                    if prop == "accent-color"
+                    and strip_important(value).lower() not in ("auto", "inherit", "initial", "unset", "")
+                ),
+                None,
+            )
+            if accent_decl is not None:
+                has_appearance_none = any(
+                    prop in ("appearance", "-webkit-appearance") and strip_important(value).lower() == "none"
+                    for prop, value, _, _ in rule.declarations
+                ) or all(s.strip() in appearance_none_selectors for s in slider_branches)
+                if not has_appearance_none:
+                    self.add(
+                        "MD3E027",
+                        "warning",
+                        "Range slider sets `accent-color` without `appearance: none` (renders OS-native border/thumb instead of M3E track & 4x44dp handle).",
+                        "Add `-webkit-appearance: none; appearance: none;` (with `background: transparent; border: none; outline: 2px solid transparent;`) and style `::-webkit-slider-runnable-track` / `::-webkit-slider-thumb` and `::-moz-range-*`.",
+                        self.path,
+                        accent_decl[0],
+                        accent_decl[1],
+                    )
+
+        # MD3E027 (b): position: fixed floating/FAB menu wrapper missing pointer-events: none
+        wrapper_branches = [s for s in sel_branches if _selector_is_fixed_menu_wrapper(s)]
+        if wrapper_branches:
+            fixed_decl = next(
+                (
+                    (lineno, raw)
+                    for prop, value, lineno, raw in rule.declarations
+                    if prop == "position" and strip_important(value).lower() == "fixed"
+                ),
+                None,
+            )
+            if fixed_decl is not None:
+                has_pointer_none = any(
+                    prop == "pointer-events" and strip_important(value).lower() == "none"
+                    for prop, value, _, _ in rule.declarations
+                ) or all(s.strip() in pointer_events_none_selectors for s in wrapper_branches)
+                if not has_pointer_none:
+                    self.add(
+                        "MD3E027",
+                        "warning",
+                        f"Fixed floating/FAB menu container `{rule.selector}` omits `pointer-events: none`, creating an invisible pointer hit-trap over nearby inputs/sliders.",
+                        "Set `pointer-events: none;` on the fixed menu wrapper and re-enable `pointer-events: auto;` on the trigger button and open menu items.",
+                        self.path,
+                        fixed_decl[0],
+                        fixed_decl[1],
+                    )
+
+    def _audit_rule_block(
+        self,
+        rule: RuleBlock,
+        hit_covered: set[str],
+        morphing_bases: set[str],
+        appearance_none_selectors: set[str] | None = None,
+        pointer_events_none_selectors: set[str] | None = None,
+    ) -> bool:
         has_motion = False
         is_data_view_rule = any(DATA_VIEW_SELECTOR_RE.search(s) for s in rule.selector.split(","))
         is_shape_rule = bool(SHAPE_SELECTOR_RE.search(rule.selector)) or any(
@@ -1079,6 +1290,14 @@ class Checker:
         # Touch target & visual height inflation checks (MD3E006)
         if not self.token_file and not is_data_view_rule:
             self._check_rule_touch_target(rule, hit_covered)
+
+        # Native slider border & fixed FAB/floating menu pointer hit-trap checks (MD3E027)
+        if not is_data_view_rule:
+            self._check_rule_slider_and_menu_traps(
+                rule,
+                appearance_none_selectors or set(),
+                pointer_events_none_selectors or set(),
+            )
 
         return has_motion
 
@@ -1192,15 +1411,26 @@ class Checker:
         rules = parse_css_rules(css_text, base_line=base_line)
         hit_covered = self._collect_hit_area_selectors(rules)
 
-        # Collect selectors that transition border-radius
+        # Collect selectors that transition border-radius, or declare appearance:none / pointer-events:none
         morphing_bases: set[str] = set()
+        appearance_none_selectors: set[str] = set()
+        pointer_events_none_selectors: set[str] = set()
         for rule in rules:
+            rule_sels = split_top_level_commas(rule.selector)
             for prop, value, _, _ in rule.declarations:
                 if prop in ("transition", "transition-property") and any(
                     k in value for k in ("border-radius", "border-start", "border-end", "border-top", "border-bottom")
                 ):
-                    for s in rule.selector.split(","):
+                    for s in rule_sels:
                         morphing_bases.add(re.split(r"[:\[]", s.strip())[0].strip())
+                elif prop in ("appearance", "-webkit-appearance") and strip_important(value).lower() == "none":
+                    for s in rule_sels:
+                        if "::" not in s:
+                            appearance_none_selectors.add(s.strip())
+                elif prop == "pointer-events" and strip_important(value).lower() == "none":
+                    for s in rule_sels:
+                        if "::" not in s:
+                            pointer_events_none_selectors.add(s.strip())
 
         has_motion = False
         has_keyframes = bool(re.search(r"@keyframes\b", cleaned_css))
@@ -1209,7 +1439,13 @@ class Checker:
         )
         blur_hit: tuple[int, str] | None = None
         for rule in rules:
-            if self._audit_rule_block(rule, hit_covered, morphing_bases):
+            if self._audit_rule_block(
+                rule,
+                hit_covered,
+                morphing_bases,
+                appearance_none_selectors,
+                pointer_events_none_selectors,
+            ):
                 has_motion = True
             if blur_hit is None:
                 for prop, value, lineno, raw in rule.declarations:
