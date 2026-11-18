@@ -58,11 +58,13 @@
     scroll-behavior: smooth;
     scroll-padding-top: var(--md-sys-spacing-16);
     scroll-padding-bottom: 96px;
+    overflow-x: clip;
   }
 
   body {
     margin: 0;
     min-height: 100dvh;
+    overflow-x: clip;
     background: var(--md-sys-color-surface);
     color: var(--md-sys-color-on-surface);
     font-family: "Google Sans Flex", "Roboto Flex", var(--md-sys-typescale-plain-font);
@@ -387,14 +389,15 @@
     z-index: 1;
     display: flex;
     align-items: flex-start;
-    min-height: calc(100dvh - var(--md-bento-titlebar-height));
+    overflow-x: clip;
+    min-height: calc(100dvh - var(--md-bento-titlebar-bottom, var(--md-bento-titlebar-height)));
   }
 
   .bento-rail {
     position: sticky;
-    top: var(--md-bento-titlebar-height);
+    top: var(--md-bento-titlebar-bottom, var(--md-bento-titlebar-height));
     width: var(--md-bento-rail-width);
-    height: calc(100dvh - var(--md-bento-titlebar-height));
+    height: calc(100dvh - var(--md-bento-titlebar-bottom, var(--md-bento-titlebar-height)));
     flex-shrink: 0;
     display: none;
     flex-direction: column;
@@ -522,7 +525,8 @@
   .bento-workspace {
     flex: 1 1 auto;
     min-width: 0;
-    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-4) 96px;
+    overflow-x: clip;
+    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-4) var(--md-sys-spacing-6);
   }
 
   .bento-workspace__intro {
@@ -3449,11 +3453,12 @@
     if (!vtSourceRect || !vtTargetRect) return;
     const clamp01 = (v) => Math.max(0, Math.min(1, v));
     const lerp = (a, b, t) => a + (b - a) * t;
-    const w = Math.max(48, lerp(vtSourceRect.width, vtTargetRect.width, p));
-    const h = Math.max(48, lerp(vtSourceRect.height, vtTargetRect.height, p));
-    const left = lerp(vtSourceRect.left, vtTargetRect.left, p);
-    const top = lerp(vtSourceRect.top, vtTargetRect.top, p);
-    const radius = Math.max(0, lerp(vtSourceRadius, 28, p));
+    const posP = Math.max(0, p);
+    const w = Math.max(48, lerp(vtSourceRect.width, vtTargetRect.width, posP));
+    const h = Math.max(48, lerp(vtSourceRect.height, vtTargetRect.height, posP));
+    const left = lerp(vtSourceRect.left, vtTargetRect.left, posP);
+    const top = lerp(vtSourceRect.top, vtTargetRect.top, posP);
+    const radius = Math.max(0, lerp(vtSourceRadius, 28, posP));
     vtModal.style.left = `${left.toFixed(2)}px`;
     vtModal.style.top = `${top.toFixed(2)}px`;
     vtModal.style.width = `${w.toFixed(2)}px`;
@@ -3466,7 +3471,7 @@
         vtModal.style.visibility = '';
         if (vtModalContent) {
           const contentOpacity = clamp01((p - 0.14) / 0.44);
-          const contentShiftY = (1 - Math.min(1.04, Math.max(0, p))) * 10;
+          const contentShiftY = (1 - Math.min(1.04, posP)) * 10;
           vtModalContent.style.opacity = contentOpacity.toFixed(4);
           vtModalContent.style.transform = `translate3d(0, ${contentShiftY.toFixed(2)}px, 0)`;
         }
@@ -3480,7 +3485,7 @@
         vtModal.style.visibility = (vtTarget === 0 && p <= 0.06) ? 'hidden' : '';
         if (vtModalContent) {
           const contentOpacity = clamp01((p - 0.14) / 0.44);
-          const contentShiftY = (1 - Math.min(1.04, Math.max(0, p))) * 10;
+          const contentShiftY = (1 - Math.min(1.04, posP)) * 10;
           vtModalContent.style.opacity = contentOpacity.toFixed(4);
           vtModalContent.style.transform = `translate3d(0, ${contentShiftY.toFixed(2)}px, 0)`;
         }
@@ -3488,18 +3493,16 @@
         vtSourceCard.dataset.vtLanding = 'true';
         const cardAlpha = clamp01((0.44 - p) / 0.34);
         vtSourceCard.style.opacity = cardAlpha.toFixed(4);
-        const dx = (left + w / 2) - (vtSourceRect.left + vtSourceRect.width / 2);
-        const dy = (top + h / 2) - (vtSourceRect.top + vtSourceRect.height / 2);
-        const sx = w / Math.max(1, vtSourceRect.width);
-        const sy = h / Math.max(1, vtSourceRect.height);
         if (p >= 0) {
+          const dx = (left + w / 2) - (vtSourceRect.left + vtSourceRect.width / 2);
+          const dy = (top + h / 2) - (vtSourceRect.top + vtSourceRect.height / 2);
+          const sx = w / Math.max(1, vtSourceRect.width);
+          const sy = h / Math.max(1, vtSourceRect.height);
           vtSourceCard.style.transform = `translate3d(${dx.toFixed(2)}px, ${dy.toFixed(2)}px, 0) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
         } else {
-          const cushion = Math.max(0.935, 1 + p * 0.56);
-          const landY = dy + p * -42;
-          const landSx = Math.min(1, sx) * cushion;
-          const landSy = Math.min(1, sy) * cushion;
-          vtSourceCard.style.transform = `translate3d(${dx.toFixed(2)}px, ${landY.toFixed(2)}px, 0) scale(${landSx.toFixed(4)}, ${landSy.toFixed(4)})`;
+          const cushion = Math.max(0.945, 1 + p * 0.56);
+          const settleY = Math.min(4, Math.max(-4, -p * 28));
+          vtSourceCard.style.transform = `translate3d(0px, ${settleY.toFixed(2)}px, 0) scale(${cushion.toFixed(4)}, ${cushion.toFixed(4)})`;
         }
       }
     } else {
@@ -3508,7 +3511,7 @@
       vtModal.style.visibility = (vtTarget === 0 && p <= 0.015) ? 'hidden' : '';
       if (vtModalContent) {
         const contentOpacity = clamp01((p - 0.08) / 0.44);
-        const contentShiftY = (1 - Math.min(1.04, Math.max(0, p))) * 10;
+        const contentShiftY = (1 - Math.min(1.04, posP)) * 10;
         vtModalContent.style.opacity = contentOpacity.toFixed(4);
         vtModalContent.style.transform = `translate3d(0, ${contentShiftY.toFixed(2)}px, 0)`;
       }

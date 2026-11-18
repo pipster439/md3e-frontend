@@ -2626,12 +2626,16 @@ class SwarmBugHuntRegressionTests(unittest.TestCase):
         self.assertIn("animationcancel", bento_html)
         self.assertIn("cmdDialog?.open", bento_html)
         self.assertIn("md3e-shared-variant", bento_html)
+        self.assertIn("overflow-x: clip;", bento_html)
 
         # Index showcase regression markers
         self.assertIn(".app-frame:has(#inspector-sheet.is-open) .shell", index_html)
         self.assertIn("max(0px, calc((100% - var(--md3e-dp-cap-size)) / 2))", index_html)
         self.assertIn("addMonthsClamped", index_html)
         self.assertIn("minSelectableDate", index_html)
+        self.assertIn('id="prim-text-field" value="antigravity-project" placeholder=" "', index_html)
+        self.assertIn("#main-content:focus,", index_html)
+        self.assertIn(".md3e-text-field:has(.md3e-text-field__input:focus-visible)", index_html)
 
     def test_runtime_spring_morph_and_studio_regressions(self) -> None:
         node_bin = shutil.which("node")

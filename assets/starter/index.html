@@ -668,6 +668,16 @@
     align-content: start;
   }
 
+  #main-content:focus,
+  #main-content:focus-visible {
+    outline: 2px solid transparent;
+  }
+
+  .md3e-loading-indicator,
+  .morph-lab {
+    overflow-anchor: none;
+  }
+
   @media (min-width: 600px) {
     .nav-rail {
       display: flex;
@@ -858,8 +868,7 @@
     background: var(--md-sys-color-surface-container-low);
     border-radius: var(--md-sys-shape-corner-large);
     border: none;
-    transition: background-color var(--md-sys-motion-fast-effects),
-                padding var(--md-sys-motion-fast-spatial);
+    transition: background-color var(--md-sys-motion-fast-effects);
   }
 
   .section-card[hidden] {
@@ -3009,37 +3018,67 @@
   .md3e-text-field {
     position: relative;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    align-items: center;
     min-height: 56px;
-    padding: var(--md-sys-spacing-1) var(--md-sys-spacing-4);
+    padding: 0 var(--md-sys-spacing-4);
     border: 1px solid var(--md-sys-color-outline);
     border-radius: var(--md-sys-shape-corner-extra-small);
     background: var(--md-sys-color-surface);
+    transition: border-color var(--md-sys-motion-fast-effects);
+  }
+  .md3e-text-field:hover {
+    border-color: var(--md-sys-color-on-surface);
   }
   .md3e-text-field:focus-within {
     border-color: var(--md-sys-color-primary);
-    box-shadow: inset 0 0 0 1px var(--md-sys-color-primary);
+    outline: 2px solid var(--md-sys-color-primary);
+    outline-offset: -2px;
+  }
+  .md3e-text-field:has(.md3e-text-field__input:focus-visible) {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
   }
   .md3e-text-field__label {
-    font-size: var(--md-sys-typescale-body-small-size);
-    line-height: var(--md-sys-typescale-body-small-line-height);
+    position: absolute;
+    inset-inline-start: var(--md-sys-spacing-4);
+    top: 50%;
+    transform: translateY(-50%) scale(1);
+    transform-origin: left top;
+    font-size: var(--md-sys-typescale-body-large-size);
+    line-height: var(--md-sys-typescale-body-large-line-height);
     color: var(--md-sys-color-on-surface-variant);
+    pointer-events: none;
+    transition: top var(--md-sys-motion-fast-spatial),
+                transform var(--md-sys-motion-fast-spatial),
+                color var(--md-sys-motion-fast-effects);
+  }
+  .md3e-text-field:focus-within .md3e-text-field__label,
+  .md3e-text-field:has(.md3e-text-field__input:not(:placeholder-shown)) .md3e-text-field__label {
+    top: 7px;
+    transform: translateY(0) scale(0.75);
+  }
+  .md3e-text-field:focus-within .md3e-text-field__label {
+    color: var(--md-sys-color-primary);
   }
   .md3e-text-field__input {
     width: 100%;
-    min-height: var(--md-sys-touch-target-min);
+    height: 56px;
+    min-height: 56px;
     border: none;
     background: transparent;
     color: var(--md-sys-color-on-surface);
-    font: inherit;
-    padding: 0;
+    font-family: var(--md-sys-typescale-plain-font);
+    font-size: var(--md-sys-typescale-body-large-size);
+    line-height: var(--md-sys-typescale-body-large-line-height);
+    padding: 20px 0 4px;
     outline: 2px solid transparent;
+    caret-color: var(--md-sys-color-primary);
+  }
+  .md3e-text-field__input::placeholder {
+    color: transparent;
   }
   .md3e-text-field__input:focus-visible {
-    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
-    outline-offset: var(--md-sys-focus-ring-gap);
-    border-radius: var(--md-sys-shape-corner-extra-small);
+    outline: 2px solid transparent;
   }
 
   .wavy-slider,
@@ -5063,7 +5102,7 @@
       <div class="demo-row">
         <div class="md3e-text-field text-field-grow">
           <label class="md3e-text-field__label" for="prim-text-field">Workspace Name</label>
-          <input type="text" class="md3e-text-field__input" id="prim-text-field" value="antigravity-project">
+          <input type="text" class="md3e-text-field__input" id="prim-text-field" value="antigravity-project" placeholder=" ">
         </div>
 
         <div class="slider-block">
