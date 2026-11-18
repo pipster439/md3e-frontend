@@ -58,6 +58,18 @@ export const STUDIO_PARAM_SCHEMA = Object.freeze({
     cssVar: '--md-studio-specular-alpha',
     unit: '%',
   }),
+  hdrBoost: Object.freeze({
+    key: 'hdrBoost',
+    group: 'glass',
+    label: 'HDR Headroom',
+    min: 0,
+    max: 100,
+    step: 1,
+    decimals: 0,
+    default: 35,
+    cssVar: '--md-studio-hdr-boost',
+    unit: '%',
+  }),
   springStiffness: Object.freeze({
     key: 'springStiffness',
     group: 'physics',
@@ -259,7 +271,8 @@ export function inferHumanIntent(state) {
       Math.max(0, -nd('glassAlpha')) * 1.4
       + Math.max(0, nd('blurPx')) * 1.2
       + Math.max(0, nd('glassSaturate')) * 0.85
-      + Math.max(0, nd('specularAlpha')) * 0.9,
+      + Math.max(0, nd('specularAlpha')) * 0.9
+      + Math.max(0, nd('hdrBoost')) * 0.45,
     'silk-cinematic':
       Math.max(0, -nd('springStiffness')) * 1.45
       + Math.max(0, -nd('springDamping')) * 1.15
@@ -313,7 +326,7 @@ export function computeHarmonizedParams(state) {
       humanModifiedKeys: [],
       aiHarmonizedKeys: [],
       intent,
-      rationale: ['All 10 studio tokens are at calibrated Personal Studio defaults.'],
+      rationale: ['All 11 studio tokens are at calibrated Personal Studio defaults.'],
     };
   }
 
@@ -335,6 +348,7 @@ export function computeHarmonizedParams(state) {
   const dAlpha = hd('glassAlpha');
   const dSat = hd('glassSaturate');
   const dSpec = hd('specularAlpha');
+  const dHdr = hd('hdrBoost');
   const dStiffness = hd('springStiffness');
   const dDamping = hd('springDamping');
   const dStagger = hd('staggerMs');
@@ -345,15 +359,16 @@ export function computeHarmonizedParams(state) {
   const proposals = {};
   const rationale = [];
 
-  const glassHumanTouched = dBlur !== 0 || dAlpha !== 0 || dSat !== 0 || dSpec !== 0;
+  const glassHumanTouched = dBlur !== 0 || dAlpha !== 0 || dSat !== 0 || dSpec !== 0 || dHdr !== 0;
   if (glassHumanTouched) {
     proposals.blurPx = STUDIO_PARAM_SCHEMA.blurPx.default - dAlpha * 0.45 + dSpec * 0.35;
     proposals.glassAlpha = STUDIO_PARAM_SCHEMA.glassAlpha.default - dBlur * 0.45 + dSat * 0.08;
-    proposals.glassSaturate = STUDIO_PARAM_SCHEMA.glassSaturate.default - dAlpha * 1.15 + dBlur * 0.9;
-    proposals.specularAlpha = STUDIO_PARAM_SCHEMA.specularAlpha.default - dAlpha * 0.35 + dBlur * 0.22 + dSat * 0.06;
-    proposals.spotlightAlpha = STUDIO_PARAM_SCHEMA.spotlightAlpha.default - dAlpha * 0.16 + dBlur * 0.10;
+    proposals.glassSaturate = STUDIO_PARAM_SCHEMA.glassSaturate.default - dAlpha * 1.15 + dBlur * 0.9 + dHdr * 0.25;
+    proposals.specularAlpha = STUDIO_PARAM_SCHEMA.specularAlpha.default - dAlpha * 0.35 + dBlur * 0.22 + dSat * 0.06 + dHdr * 0.08;
+    proposals.hdrBoost = STUDIO_PARAM_SCHEMA.hdrBoost.default - dAlpha * 0.55 + dSpec * 0.65 + dBlur * 0.25;
+    proposals.spotlightAlpha = STUDIO_PARAM_SCHEMA.spotlightAlpha.default - dAlpha * 0.16 + dBlur * 0.10 + dHdr * 0.05;
     proposals.spotlightPx = STUDIO_PARAM_SCHEMA.spotlightPx.default + dBlur * 1.6 - dAlpha * 0.8;
-    rationale.push('Coupled optical saturation, specular rim, and spotlight glow to balance glass translucency.');
+    rationale.push('Coupled optical saturation, HDR specular headroom, rim, and spotlight glow to balance glass translucency.');
   }
 
   const physicsHumanTouched = dStiffness !== 0 || dDamping !== 0 || dStagger !== 0;
@@ -376,7 +391,10 @@ export function computeHarmonizedParams(state) {
     if (dSpec === 0 && inputSources.specularAlpha !== 'human') {
       proposals.specularAlpha = (proposals.specularAlpha ?? STUDIO_PARAM_SCHEMA.specularAlpha.default) + dSpotAlpha * 0.25;
     }
-    rationale.push('Balanced pointer spotlight envelope with panel proportions and specular highlight.');
+    if (dHdr === 0 && inputSources.hdrBoost !== 'human') {
+      proposals.hdrBoost = (proposals.hdrBoost ?? STUDIO_PARAM_SCHEMA.hdrBoost.default) + dSpotAlpha * 1.1;
+    }
+    rationale.push('Balanced pointer spotlight envelope with panel proportions, HDR boost, and specular highlight.');
   }
 
   const aiHarmonizedKeys = [];
@@ -403,16 +421,97 @@ export function computeHarmonizedParams(state) {
 }
 
 /**
+ * Detect hardware & CSS HDR / wide-gamut Display-P3 capabilities safely.
+ * Guards all browser globals so Node unit tests can invoke this directly.
+ *
+ * @returns {{
+ *   dynamicRangeHigh: boolean,
+ *   colorGamutP3: boolean,
+ *   cssDisplayP3: boolean,
+ *   cssDynamicRangeLimit: boolean,
+ *   effectiveHdr: boolean,
+ * }}
+ */
+export function detectHdrCapabilities() {
+  const win = typeof window !== 'undefined' ? window : null;
+  const mm = typeof win?.matchMedia === 'function'
+    ? win.matchMedia.bind(win)
+    : (typeof matchMedia === 'function' ? matchMedia : null);
+  const cssObj = typeof CSS !== 'undefined' ? CSS : win?.CSS;
+
+  const safeMatchMedia = (query) => {
+    if (!mm) return false;
+    try {
+      return Boolean(mm(query)?.matches);
+    } catch {
+      return false;
+    }
+  };
+
+  const safeCssSupports = (prop, val) => {
+    if (!cssObj || typeof cssObj.supports !== 'function') return false;
+    try {
+      return Boolean(cssObj.supports(prop, val));
+    } catch {
+      return false;
+    }
+  };
+
+  const dynamicRangeHigh = safeMatchMedia('(dynamic-range: high)');
+  const colorGamutP3 = safeMatchMedia('(color-gamut: p3)');
+  const cssDisplayP3 = safeCssSupports('color', 'color(display-p3 1 1 1)');
+  const cssDynamicRangeLimit = safeCssSupports('dynamic-range-limit', 'constrained-high');
+  const effectiveHdr = Boolean(dynamicRangeHigh && (cssDisplayP3 || cssDynamicRangeLimit));
+
+  return {
+    dynamicRangeHigh,
+    colorGamutP3,
+    cssDisplayP3,
+    cssDynamicRangeLimit,
+    effectiveHdr,
+  };
+}
+
+function getHdrCapableTier(caps) {
+  if (caps.effectiveHdr) return 'hdr';
+  if (caps.colorGamutP3 && caps.cssDisplayP3) return 'p3';
+  return 'sdr';
+}
+
+function getHdrA11yBlockReason(rootEl) {
+  if (rootEl?.dataset?.reducedTransparency === 'true') return 'reduced-transparency';
+  if (rootEl?.dataset?.contrast === 'high') return 'high-contrast';
+  const win = typeof window !== 'undefined' ? window : null;
+  const mm = typeof win?.matchMedia === 'function'
+    ? win.matchMedia.bind(win)
+    : (typeof matchMedia === 'function' ? matchMedia : null);
+  if (mm) {
+    try {
+      if (mm('(prefers-reduced-transparency: reduce)')?.matches) return 'reduced-transparency';
+      if (mm('(prefers-contrast: more)')?.matches) return 'high-contrast';
+      if (mm('(forced-colors: active)')?.matches) return 'forced-colors';
+    } catch {
+      // Ignore matchMedia evaluation errors in headless mocks.
+    }
+  }
+  return null;
+}
+
+/**
  * Format live Layer 4 CSS variables + synthesized M3E `linear()` spatial motion token
  * as a copyable stylesheet patch.
  *
  * @param {object} valuesOrState
+ * @param {{ hdrEnabled?: boolean }} [opts]
  * @returns {string}
  */
-export function formatStudioCssPatch(valuesOrState) {
+export function formatStudioCssPatch(valuesOrState, { hdrEnabled } = {}) {
   const { values } = normalizeState(valuesOrState);
   const { brightness, contrast } = computeOpticalLayerVars(values);
   const spring = synthesizeSpringLinearCss(values.springStiffness, values.springDamping, 36);
+  const resolvedHdrEnabled = typeof hdrEnabled === 'boolean'
+    ? hdrEnabled
+    : (typeof valuesOrState?.hdr?.enabled === 'boolean' ? valuesOrState.hdr.enabled : true);
 
   const lines = [
     ':root[data-studio-profile="personal-studio"] {',
@@ -426,6 +525,9 @@ export function formatStudioCssPatch(valuesOrState) {
   lines.push(`  --md-bento-motion-default-spatial-easing: ${spring.linearEasing};`);
   lines.push(`  --md-bento-motion-default-spatial: ${spring.cssShorthand};`);
   lines.push('}');
+  lines.push(`:root[data-studio-profile="personal-studio"][data-studio-hdr="${resolvedHdrEnabled ? 'on' : 'off'}"] {`);
+  lines.push(`  --md-studio-hdr-boost: ${resolvedHdrEnabled ? formatParamValue('hdrBoost', values.hdrBoost) : '0%'};`);
+  lines.push('}');
   return lines.join('\n');
 }
 
@@ -436,15 +538,16 @@ export function formatStudioCssPatch(valuesOrState) {
 export function createStatusCapsule(pillEl, { debounceMs = 140, holdMs = 2600, defaultText = 'Personal Studio' } = {}) {
   let debounceTimer = null;
   let idleTimer = null;
+  let destroyed = false;
 
   function applyNow(text, tone = 'active') {
-    if (!pillEl) return;
+    if (destroyed || !pillEl) return;
     pillEl.textContent = text;
     pillEl.dataset.tone = tone;
     clearTimeout(idleTimer);
     if (tone === 'active' && holdMs > 0) {
       idleTimer = setTimeout(() => {
-        if (pillEl) {
+        if (!destroyed && pillEl) {
           pillEl.dataset.tone = 'idle';
         }
       }, holdMs);
@@ -453,7 +556,7 @@ export function createStatusCapsule(pillEl, { debounceMs = 140, holdMs = 2600, d
 
   return {
     notify(text, { tone = 'active', immediate = false } = {}) {
-      if (!pillEl) return;
+      if (destroyed || !pillEl) return;
       clearTimeout(debounceTimer);
       if (immediate || debounceMs <= 0) {
         applyNow(text, tone);
@@ -464,19 +567,25 @@ export function createStatusCapsule(pillEl, { debounceMs = 140, holdMs = 2600, d
     clear() {
       clearTimeout(debounceTimer);
       clearTimeout(idleTimer);
+      if (destroyed) return;
       if (pillEl) {
         pillEl.textContent = defaultText;
         pillEl.dataset.tone = 'idle';
       }
     },
     destroy() {
+      destroyed = true;
       clearTimeout(debounceTimer);
       clearTimeout(idleTimer);
+      debounceTimer = null;
+      idleTimer = null;
     },
   };
 }
 
 const counterAnimators = new WeakMap();
+const activeStudioByRoot = new WeakMap();
+let activeDetachedStudio = null;
 
 /**
  * Animate numeric readouts smoothly using `md3e-spring.js` with `.tabular-nums` alignment
@@ -508,47 +617,65 @@ export function animateTabularCounter(
     const parsedInitial = Number.parseFloat(el.dataset?.studioCounterValue ?? el.textContent ?? '0');
     const initial = Number.isFinite(parsedInitial) ? parsedInitial : target;
     const precision = decimals > 0 ? Math.min(0.05, 10 ** -(decimals + 1)) : 0.25;
-    const animator = createSpringAnimator({
+    entry = { animator: null, target, fmt };
+    entry.animator = createSpringAnimator({
       initialValue: initial,
       stiffness,
       damping,
       precision,
       onUpdate(val, vel) {
-        const displayVal = vel === 0 ? target : val;
+        const displayVal = vel === 0 ? entry.target : val;
         if (el.dataset) el.dataset.studioCounterValue = String(displayVal);
-        el.textContent = fmt(displayVal);
+        el.textContent = entry.fmt(displayVal);
       },
     });
-    entry = { animator };
     counterAnimators.set(el, entry);
   } else {
-    entry.animator.configure({ stiffness, damping });
+    const precision = decimals > 0 ? Math.min(0.05, 10 ** -(decimals + 1)) : 0.25;
+    entry.target = target;
+    entry.fmt = fmt;
+    entry.animator.configure({ stiffness, damping, precision });
   }
 
+  entry.target = target;
+  entry.fmt = fmt;
   entry.animator.setTarget(target, undefined, { immediate });
   return entry.animator;
 }
 
 /**
- * Initialize Hidden Layer 4 Personal Studio bindings and expose `window.__MD3E_STUDIO__`.
+ * Initialize Hidden Layer 4 Personal Studio bindings and expose
+ * `window.__MD3E_TUNER__` (and identical alias `window.__MD3E_STUDIO__`).
  */
 export function initPersonalStudio({
-  rootEl = typeof document !== 'undefined' ? document.documentElement : null,
-  telemetryEl = typeof document !== 'undefined' ? document.getElementById('md3e-studio-telemetry') : null,
-  cssOutputEl = typeof document !== 'undefined' ? document.getElementById('studio-css-output') : null,
-  intentBadgeEl = typeof document !== 'undefined' ? document.getElementById('studio-intent-badge') : null,
-  statusPillEl = typeof document !== 'undefined' ? document.getElementById('titlebar-status-pill') : null,
-  harmonizeBtnEl = typeof document !== 'undefined' ? document.getElementById('btn-studio-harmonize') : null,
-  resetBtnEl = typeof document !== 'undefined' ? document.getElementById('btn-studio-reset') : null,
+  rootEl = typeof document !== 'undefined' ? (document.documentElement ?? null) : null,
+  telemetryEl = typeof document !== 'undefined' ? (document.getElementById?.('md3e-studio-telemetry') ?? null) : null,
+  cssOutputEl = typeof document !== 'undefined' ? (document.getElementById?.('studio-css-output') ?? null) : null,
+  intentBadgeEl = typeof document !== 'undefined' ? (document.getElementById?.('studio-intent-badge') ?? null) : null,
+  statusPillEl = typeof document !== 'undefined' ? (document.getElementById?.('titlebar-status-pill') ?? null) : null,
+  harmonizeBtnEl = typeof document !== 'undefined' ? (document.getElementById?.('btn-studio-harmonize') ?? null) : null,
+  resetBtnEl = typeof document !== 'undefined' ? (document.getElementById?.('btn-studio-reset') ?? null) : null,
+  hdrBadgeEl = typeof document !== 'undefined' ? (document.getElementById?.('studio-hdr-badge') ?? null) : null,
+  hdrToggleBtnEl = typeof document !== 'undefined' ? (document.getElementById?.('btn-studio-hdr') ?? null) : null,
   scrubberSelector = '.studio-scrubber[data-scrubber-key]',
   spotlightSelector = '[data-studio-spotlight]',
   scrollFadeSelector = '.studio-scroll-fade, [data-studio-scroll-fade]',
   persistStorage = true,
   onChange = null,
 } = {}) {
+  const prevInstance = rootEl && typeof rootEl === 'object'
+    ? activeStudioByRoot.get(rootEl)
+    : activeDetachedStudio;
+  if (prevInstance) {
+    prevInstance.destroy();
+  }
+
   let values = defaultValues();
   let sources = defaultSources();
-  let lastRationale = ['All 10 studio tokens are at calibrated Personal Studio defaults.'];
+  let hdrRequested = true;
+  let lastRationale = ['All 11 studio tokens are at calibrated Personal Studio defaults.'];
+  let destroyed = false;
+  let wasPersonalProfile = !rootEl || rootEl.dataset?.studioProfile === 'personal-studio';
   const cleanups = [];
   const statusCapsule = createStatusCapsule(statusPillEl);
 
@@ -556,7 +683,30 @@ export function initPersonalStudio({
     return synthesizeSpringLinearCss(values.springStiffness, values.springDamping, 36);
   }
 
-  function buildTelemetrySnapshot() {
+  function resolveHdrState() {
+    const caps = detectHdrCapabilities();
+    const capable = getHdrCapableTier(caps);
+    const blockReason = getHdrA11yBlockReason(rootEl);
+    const isPersonal = !rootEl || rootEl.dataset?.studioProfile === 'personal-studio';
+    const enabled = Boolean(isPersonal && hdrRequested && !blockReason);
+    const effective = Boolean(enabled && caps.effectiveHdr);
+    return {
+      caps,
+      capable,
+      blockReason,
+      enabled,
+      effective,
+      telemetryHdr: {
+        ...caps,
+        capable,
+        enabled,
+        effective,
+        boostPct: values.hdrBoost,
+      },
+    };
+  }
+
+  function buildTelemetrySnapshot(hdrState = resolveHdrState()) {
     const humanModifiedKeys = PARAM_KEYS.filter((k) => sources[k] === 'human');
     const aiHarmonizedKeys = PARAM_KEYS.filter((k) => sources[k] === 'ai');
     const humanDeltas = computeHumanDeltas(values, sources);
@@ -571,6 +721,7 @@ export function initPersonalStudio({
       humanDeltas,
       aiHarmonizedKeys,
       inferredIntent,
+      hdr: hdrState.telemetryHdr,
       rationale: [...lastRationale],
       synthesizedSpring: {
         stiffness: values.springStiffness,
@@ -583,10 +734,15 @@ export function initPersonalStudio({
     };
   }
 
-  function syncCssVariables(spring) {
+  function syncCssVariables(spring, hdrState = resolveHdrState()) {
+    if (rootEl?.dataset) {
+      rootEl.dataset.studioHdr = hdrState.enabled ? 'on' : 'off';
+      rootEl.dataset.studioHdrCapable = hdrState.capable;
+    }
     if (!rootEl?.style) return;
     const isPersonal = rootEl.dataset?.studioProfile === 'personal-studio';
     if (!isPersonal) {
+      const hadSplitRatio = Boolean(rootEl.style.getPropertyValue?.('--md-studio-split-ratio'));
       for (const key of PARAM_KEYS) {
         rootEl.style.removeProperty(STUDIO_PARAM_SCHEMA[key].cssVar);
       }
@@ -595,11 +751,27 @@ export function initPersonalStudio({
       rootEl.style.removeProperty('--md-bento-motion-default-spatial-duration');
       rootEl.style.removeProperty('--md-bento-motion-default-spatial-easing');
       rootEl.style.removeProperty('--md-bento-motion-default-spatial');
+      if ((hadSplitRatio || wasPersonalProfile)
+        && typeof CustomEvent === 'function'
+        && typeof rootEl.dispatchEvent === 'function') {
+        rootEl.dispatchEvent(new CustomEvent('md3e:studio-split-reset', {
+          bubbles: true,
+          detail: {
+            splitRatio: STUDIO_PARAM_SCHEMA.splitRatio.default,
+            profile: rootEl.dataset?.studioProfile || 'dormant',
+          },
+        }));
+      }
+      wasPersonalProfile = false;
       return;
     }
 
+    wasPersonalProfile = true;
     for (const key of PARAM_KEYS) {
-      rootEl.style.setProperty(STUDIO_PARAM_SCHEMA[key].cssVar, formatParamValue(key, values[key]));
+      const val = key === 'hdrBoost' && !hdrState.enabled
+        ? '0%'
+        : formatParamValue(key, values[key]);
+      rootEl.style.setProperty(STUDIO_PARAM_SCHEMA[key].cssVar, val);
     }
     const { brightness, contrast } = computeOpticalLayerVars(values);
     rootEl.style.setProperty('--md-studio-glass-brightness', String(brightness));
@@ -610,9 +782,38 @@ export function initPersonalStudio({
     rootEl.style.setProperty('--md-bento-motion-default-spatial', spring.cssShorthand);
   }
 
+  function syncHdrDom(hdrState = resolveHdrState()) {
+    const badgeEl = hdrBadgeEl || (typeof document !== 'undefined' ? (document.getElementById?.('studio-hdr-badge') ?? null) : null);
+    const toggleBtnEl = hdrToggleBtnEl || (typeof document !== 'undefined' ? (document.getElementById?.('btn-studio-hdr') ?? null) : null);
+
+    if (badgeEl) {
+      let badgeText = 'SDR Fallback';
+      if (hdrState.blockReason === 'reduced-transparency') {
+        badgeText = 'RT Fallback';
+      } else if (hdrState.blockReason) {
+        badgeText = 'HC Fallback';
+      } else if (!hdrState.enabled) {
+        badgeText = 'HDR Off';
+      } else if (hdrState.effective) {
+        badgeText = 'HDR Ready';
+      } else if (hdrState.capable === 'p3') {
+        badgeText = 'Display-P3';
+      }
+      badgeEl.textContent = badgeText;
+      if (badgeEl.dataset) {
+        badgeEl.dataset.hdrCapable = hdrState.capable;
+        badgeEl.dataset.hdrActive = String(hdrState.enabled);
+      }
+    }
+
+    if (toggleBtnEl) {
+      toggleBtnEl.setAttribute('aria-checked', String(hdrState.enabled));
+    }
+  }
+
   function syncScrubbersDom() {
     if (typeof document === 'undefined') return;
-    const scrubbers = document.querySelectorAll(scrubberSelector);
+    const scrubbers = document.querySelectorAll?.(scrubberSelector) || [];
     for (const el of scrubbers) {
       const key = el.dataset?.scrubberKey;
       const spec = STUDIO_PARAM_SCHEMA[key];
@@ -633,31 +834,46 @@ export function initPersonalStudio({
     }
   }
 
+  function syncSplitHandlesDom(isPersonal) {
+    if (typeof document === 'undefined') return;
+    const handles = document.querySelectorAll?.('.studio-split-handle') || [];
+    const activeRatio = isPersonal ? values.splitRatio : STUDIO_PARAM_SCHEMA.splitRatio.default;
+    const formatted = formatParamValue('splitRatio', activeRatio);
+    for (const handle of handles) {
+      handle.setAttribute?.('aria-valuenow', String(activeRatio));
+      handle.setAttribute?.('aria-valuetext', formatted);
+    }
+  }
+
   function persistState() {
     if (!persistStorage || typeof localStorage === 'undefined') return;
     try {
-      const humanCount = PARAM_KEYS.some((k) => sources[k] !== 'default');
-      if (!humanCount) {
+      const hasCustom = PARAM_KEYS.some((k) => sources[k] !== 'default') || !hdrRequested;
+      if (!hasCustom) {
         localStorage.removeItem(STORAGE_KEY);
       } else {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ values, sources }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ values, sources, hdrEnabled: hdrRequested }));
       }
     } catch {
       // Ignore storage quota or private-browsing errors cleanly.
     }
   }
 
-  function syncAll() {
-    const snapshot = buildTelemetrySnapshot();
+  function syncAll({ persist = true } = {}) {
+    const hdrState = resolveHdrState();
+    const snapshot = buildTelemetrySnapshot(hdrState);
     const spring = synthesizeSpringLinearCss(values.springStiffness, values.springDamping, 36);
-    syncCssVariables(spring);
+    const isPersonal = !rootEl || rootEl.dataset?.studioProfile === 'personal-studio';
+    syncCssVariables(spring, hdrState);
+    syncHdrDom(hdrState);
     syncScrubbersDom();
+    syncSplitHandlesDom(isPersonal);
 
     if (telemetryEl) {
       telemetryEl.textContent = JSON.stringify(snapshot, null, 2);
     }
     if (cssOutputEl) {
-      cssOutputEl.textContent = formatStudioCssPatch(values);
+      cssOutputEl.textContent = formatStudioCssPatch(snapshot, { hdrEnabled: hdrState.enabled });
     }
     if (intentBadgeEl) {
       intentBadgeEl.textContent = snapshot.inferredIntent;
@@ -665,9 +881,25 @@ export function initPersonalStudio({
         intentBadgeEl.dataset.intent = snapshot.inferredIntent;
       }
     }
-    persistState();
+    if (persist) {
+      persistState();
+    }
     onChange?.(snapshot);
+    syncSplitHandlesDom(isPersonal);
     return snapshot;
+  }
+
+  function setHdrEnabled(enabled, { announce = true } = {}) {
+    hdrRequested = Boolean(enabled);
+    const snap = syncAll();
+    const isPersonal = !rootEl || rootEl.dataset?.studioProfile === 'personal-studio';
+    if (announce && statusPillEl && isPersonal) {
+      const label = snap.hdr.enabled
+        ? `HDR Optics: ON (${snap.hdr.boostPct}%)`
+        : (getHdrA11yBlockReason(rootEl) ? 'HDR Optics: Fallback active' : 'HDR Optics: OFF (SDR)');
+      statusCapsule.notify(label, { immediate: true });
+    }
+    return snap;
   }
 
   function setParam(key, rawValue, { source = 'human', announce = true } = {}) {
@@ -707,7 +939,8 @@ export function initPersonalStudio({
   function reset({ announce = true } = {}) {
     values = defaultValues();
     sources = defaultSources();
-    lastRationale = ['All 10 studio tokens restored to Personal Studio defaults.'];
+    hdrRequested = true;
+    lastRationale = ['All 11 studio tokens restored to Personal Studio defaults.'];
     const snap = syncAll();
     if (announce && statusPillEl) {
       statusCapsule.notify('Studio reset to 500ms expressive baseline', { immediate: true });
@@ -716,11 +949,30 @@ export function initPersonalStudio({
   }
 
   function exportCss() {
-    return formatStudioCssPatch(values);
+    const hdrState = resolveHdrState();
+    return formatStudioCssPatch(values, { hdrEnabled: hdrState.enabled });
   }
 
   function applyUrlOrStorage() {
-    let applied = false;
+    if (persistStorage && typeof localStorage !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const norm = normalizeState(parsed);
+          values = norm.values;
+          sources = norm.sources;
+          hdrRequested = typeof parsed?.hdrEnabled === 'boolean' ? parsed.hdrEnabled : true;
+        } else {
+          values = defaultValues();
+          sources = defaultSources();
+          hdrRequested = true;
+        }
+      } catch {
+        // Ignore malformed storage JSON cleanly.
+      }
+    }
+
     if (typeof window !== 'undefined') {
       try {
         const searchParams = new URLSearchParams(window.location?.search || '');
@@ -729,37 +981,62 @@ export function initPersonalStudio({
         const encoded = searchParams.get('studio') || hashParams?.get('studio');
         if (encoded) {
           const parsed = JSON.parse(decodeURIComponent(encoded));
-          const norm = normalizeState(parsed);
-          values = norm.values;
-          sources = norm.sources;
-          applied = true;
+          if (parsed && typeof parsed === 'object') {
+            const hasExplicitValues = parsed.values && typeof parsed.values === 'object';
+            const hasExplicitSources = parsed.sources && typeof parsed.sources === 'object';
+            for (const key of PARAM_KEYS) {
+              const spec = STUDIO_PARAM_SCHEMA[key];
+              let hasKey = false;
+              let rawVal;
+              let rawSrc;
+              if (hasExplicitValues && Object.prototype.hasOwnProperty.call(parsed.values, key)) {
+                hasKey = true;
+                rawVal = parsed.values[key];
+                rawSrc = hasExplicitSources && typeof parsed.sources[key] === 'string'
+                  ? parsed.sources[key]
+                  : (quantizeParam(key, rawVal) !== spec.default ? 'human' : 'default');
+              } else if (parsed[key] && typeof parsed[key] === 'object' && 'value' in parsed[key]) {
+                hasKey = true;
+                rawVal = parsed[key].value;
+                rawSrc = typeof parsed[key].source === 'string'
+                  ? parsed[key].source
+                  : (quantizeParam(key, rawVal) !== spec.default ? 'human' : 'default');
+              } else if (typeof parsed[key] === 'number') {
+                hasKey = true;
+                rawVal = parsed[key];
+                rawSrc = hasExplicitSources && typeof parsed.sources[key] === 'string'
+                  ? parsed.sources[key]
+                  : (quantizeParam(key, rawVal) !== spec.default ? 'human' : 'default');
+              }
+              if (hasKey) {
+                values[key] = quantizeParam(key, rawVal);
+                sources[key] = rawSrc === 'human' || rawSrc === 'ai' ? rawSrc : 'default';
+              }
+            }
+            if (typeof parsed.hdrEnabled === 'boolean') {
+              hdrRequested = parsed.hdrEnabled;
+            }
+          }
         } else {
           for (const key of PARAM_KEYS) {
             const p = searchParams.get(key) ?? hashParams?.get(key);
             if (p !== null && p !== '') {
-              values[key] = quantizeParam(key, Number(p));
-              sources[key] = values[key] !== STUDIO_PARAM_SCHEMA[key].default ? 'human' : 'default';
-              applied = true;
+              const parsedNum = Number(p);
+              if (Number.isFinite(parsedNum)) {
+                values[key] = quantizeParam(key, parsedNum);
+                sources[key] = values[key] !== STUDIO_PARAM_SCHEMA[key].default ? 'human' : 'default';
+              }
             }
+          }
+          const hdrParam = searchParams.get('studioHdr') ?? searchParams.get('hdr') ?? hashParams?.get('studioHdr');
+          if (hdrParam === 'off' || hdrParam === 'false' || hdrParam === '0') {
+            hdrRequested = false;
+          } else if (hdrParam === 'on' || hdrParam === 'true' || hdrParam === '1') {
+            hdrRequested = true;
           }
         }
       } catch {
         // Ignore malformed URL parameters cleanly.
-      }
-    }
-
-    if (!applied && persistStorage && typeof localStorage !== 'undefined') {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          const norm = normalizeState(parsed);
-          values = norm.values;
-          sources = norm.sources;
-          applied = true;
-        }
-      } catch {
-        // Ignore malformed storage JSON cleanly.
       }
     }
 
@@ -768,7 +1045,7 @@ export function initPersonalStudio({
 
   function bindScrubbers() {
     if (typeof document === 'undefined') return;
-    const scrubbers = document.querySelectorAll(scrubberSelector);
+    const scrubbers = document.querySelectorAll?.(scrubberSelector) || [];
     for (const el of scrubbers) {
       if (el.dataset.studioScrubberBound === 'true') continue;
       el.dataset.studioScrubberBound = 'true';
@@ -897,62 +1174,70 @@ export function initPersonalStudio({
       const card = e.target?.closest?.(spotlightSelector);
       if (!card) return;
       if (!e.relatedTarget || !card.contains?.(e.relatedTarget)) {
+        if (pendingTarget === card) {
+          pendingTarget = null;
+          if (rafId && typeof cancelAnimationFrame === 'function') {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+          }
+        }
         delete card.dataset.spotlightActive;
       }
     };
 
-    document.addEventListener('pointermove', onPointerMove, { passive: true });
-    document.addEventListener('pointerout', onPointerOut, { passive: true });
+    document.addEventListener?.('pointermove', onPointerMove, { passive: true });
+    document.addEventListener?.('pointerout', onPointerOut, { passive: true });
     cleanups.push(() => {
       if (rafId && typeof cancelAnimationFrame === 'function') {
         cancelAnimationFrame(rafId);
       }
-      document.removeEventListener('pointermove', onPointerMove);
-      document.removeEventListener('pointerout', onPointerOut);
+      document.removeEventListener?.('pointermove', onPointerMove);
+      document.removeEventListener?.('pointerout', onPointerOut);
     });
+  }
+
+  const updateScrollEdge = (el) => {
+    const topHidden = el.scrollTop > 4;
+    const bottomHidden = el.scrollTop + el.clientHeight < el.scrollHeight - 4;
+    el.dataset.scrollEdges = topHidden && bottomHidden
+      ? 'both'
+      : topHidden
+        ? 'top'
+        : bottomHidden
+          ? 'bottom'
+          : 'none';
+  };
+
+  const scrollFadeObserver = typeof ResizeObserver === 'function'
+    ? new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        updateScrollEdge(entry.target);
+      }
+    })
+    : null;
+  if (scrollFadeObserver) {
+    cleanups.push(() => scrollFadeObserver.disconnect());
   }
 
   function bindScrollFades() {
     if (typeof document === 'undefined') return;
-    const updateEdge = (el) => {
-      const topHidden = el.scrollTop > 4;
-      const bottomHidden = el.scrollTop + el.clientHeight < el.scrollHeight - 4;
-      el.dataset.scrollEdges = topHidden && bottomHidden
-        ? 'both'
-        : topHidden
-          ? 'top'
-          : bottomHidden
-            ? 'bottom'
-            : 'none';
-    };
-
-    const els = document.querySelectorAll(scrollFadeSelector);
-    const ro = typeof ResizeObserver === 'function'
-      ? new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          updateEdge(entry.target);
-        }
-      })
-      : null;
+    const els = document.querySelectorAll?.(scrollFadeSelector) || [];
 
     for (const el of els) {
       if (el.dataset.studioScrollBound === 'true') {
-        updateEdge(el);
+        updateScrollEdge(el);
         continue;
       }
       el.dataset.studioScrollBound = 'true';
-      const onScroll = () => updateEdge(el);
+      const onScroll = () => updateScrollEdge(el);
       el.addEventListener('scroll', onScroll, { passive: true });
-      ro?.observe(el);
-      updateEdge(el);
+      scrollFadeObserver?.observe(el);
+      updateScrollEdge(el);
       cleanups.push(() => {
         el.removeEventListener('scroll', onScroll);
-        ro?.unobserve(el);
+        scrollFadeObserver?.unobserve(el);
         delete el.dataset.studioScrollBound;
       });
-    }
-    if (ro) {
-      cleanups.push(() => ro.disconnect());
     }
   }
 
@@ -975,18 +1260,107 @@ export function initPersonalStudio({
         delete resetBtnEl.dataset.studioBound;
       });
     }
+    const toggleBtn = hdrToggleBtnEl || (typeof document !== 'undefined' ? (document.getElementById?.('btn-studio-hdr') ?? null) : null);
+    if (toggleBtn && toggleBtn.dataset?.studioBound !== 'true' && toggleBtn.dataset?.studioHdrBound !== 'true') {
+      if (toggleBtn.dataset) {
+        toggleBtn.dataset.studioBound = 'true';
+        toggleBtn.dataset.studioHdrBound = 'true';
+      }
+      const onToggleHdr = () => {
+        const blockReason = getHdrA11yBlockReason(rootEl);
+        if (blockReason) {
+          if (statusPillEl) {
+            statusCapsule.notify(`HDR disabled (${blockReason})`, { immediate: true });
+          }
+          syncAll();
+          return;
+        }
+        setHdrEnabled(!hdrRequested);
+      };
+      toggleBtn.addEventListener('click', onToggleHdr);
+      cleanups.push(() => {
+        toggleBtn.removeEventListener('click', onToggleHdr);
+        if (toggleBtn.dataset) {
+          delete toggleBtn.dataset.studioBound;
+          delete toggleBtn.dataset.studioHdrBound;
+        }
+      });
+    }
+  }
+
+  function bindMediaWatchers() {
+    const win = typeof window !== 'undefined' ? window : null;
+    const mm = typeof win?.matchMedia === 'function' ? win.matchMedia.bind(win) : null;
+    if (!mm) return;
+    const queries = [
+      '(dynamic-range: high)',
+      '(color-gamut: p3)',
+      '(prefers-reduced-transparency: reduce)',
+      '(prefers-contrast: more)',
+      '(forced-colors: active)',
+    ];
+    for (const q of queries) {
+      try {
+        const mql = mm(q);
+        if (!mql) continue;
+        const onMediaChange = () => syncAll();
+        if (typeof mql.addEventListener === 'function') {
+          mql.addEventListener('change', onMediaChange);
+          cleanups.push(() => mql.removeEventListener('change', onMediaChange));
+        } else if (typeof mql.addListener === 'function') {
+          mql.addListener(onMediaChange);
+          cleanups.push(() => mql.removeListener(onMediaChange));
+        }
+      } catch {
+        // Ignore unsupported media queries cleanly.
+      }
+    }
+  }
+
+  function bindStorageWatcher() {
+    const win = typeof window !== 'undefined' ? window : null;
+    if (!persistStorage || !win || typeof win.addEventListener !== 'function') return;
+    const onStorage = (e) => {
+      if (e && e.key !== null && e.key !== undefined && e.key !== STORAGE_KEY) return;
+      try {
+        const raw = e && 'newValue' in e
+          ? e.newValue
+          : (typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const norm = normalizeState(parsed);
+          values = norm.values;
+          sources = norm.sources;
+          hdrRequested = typeof parsed?.hdrEnabled === 'boolean' ? parsed.hdrEnabled : true;
+        } else {
+          values = defaultValues();
+          sources = defaultSources();
+          hdrRequested = true;
+        }
+        syncAll({ persist: false });
+      } catch {
+        // Ignore malformed storage payload cleanly.
+      }
+    };
+    win.addEventListener('storage', onStorage);
+    cleanups.push(() => win.removeEventListener?.('storage', onStorage));
   }
 
   bindScrubbers();
   bindSpotlights();
   bindScrollFades();
   bindButtons();
+  bindMediaWatchers();
+  bindStorageWatcher();
 
   if (rootEl && typeof MutationObserver === 'function') {
     const profileObserver = new MutationObserver(() => {
       syncAll();
     });
-    profileObserver.observe(rootEl, { attributes: true, attributeFilter: ['data-studio-profile'] });
+    profileObserver.observe(rootEl, {
+      attributes: true,
+      attributeFilter: ['data-studio-profile', 'data-reduced-transparency', 'data-contrast'],
+    });
     cleanups.push(() => profileObserver.disconnect());
   }
 
@@ -999,23 +1373,51 @@ export function initPersonalStudio({
     reset,
     exportCss,
     applyUrlOrStorage,
+    getHdrCapabilities: () => detectHdrCapabilities(),
+    isHdrEnabled: () => resolveHdrState().enabled,
+    setHdrEnabled,
     statusCapsule,
     animateTabularCounter,
     refreshBindings() {
       bindScrubbers();
       bindScrollFades();
+      bindButtons();
       return syncAll();
     },
     destroy() {
+      if (destroyed) return;
+      destroyed = true;
       statusCapsule.destroy();
       while (cleanups.length) {
         cleanups.pop()();
       }
+      if (rootEl && typeof rootEl === 'object') {
+        if (activeStudioByRoot.get(rootEl) === api) {
+          activeStudioByRoot.delete(rootEl);
+        }
+      } else if (activeDetachedStudio === api) {
+        activeDetachedStudio = null;
+      }
+      if (typeof window !== 'undefined') {
+        if (window.__MD3E_STUDIO__ === api) {
+          delete window.__MD3E_STUDIO__;
+        }
+        if (window.__MD3E_TUNER__ === api) {
+          delete window.__MD3E_TUNER__;
+        }
+      }
     },
   };
 
+  if (rootEl && typeof rootEl === 'object') {
+    activeStudioByRoot.set(rootEl, api);
+  } else {
+    activeDetachedStudio = api;
+  }
+
   if (typeof window !== 'undefined') {
-    window.__MD3E_STUDIO__ = api;
+    window.__MD3E_TUNER__ = api;
+    window.__MD3E_STUDIO__ = window.__MD3E_TUNER__;
   }
   return api;
 }

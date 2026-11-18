@@ -227,6 +227,355 @@ Source: https://m3.material.io/components/radio-button/specs
 
 ---
 
+## Select
+
+Source: Composed from official Material 3 **Text fields** (`56dp` Exposed Dropdown Menu trigger) + **Menus** (`Vertical menus` `16dp` / `Baseline menu` `4dp`, `48dp` option rows; `m3.material.io` does not publish a separate standalone Select spec page).
+
+### 1. Geometry, Tonal & Motion Tokens
+
+| Part | Geometry / Measurement | Tonal & Motion Tokens |
+|---|---|---|
+| **Trigger (Outlined / Filled)** | Height `56dp` (`calc(56px + var(--md-sys-density-offset, 0px))`, `min-block-size: 48px`); `4dp` (`corner-extra-small`) Outlined / `4px 4px 0 0` Filled; `16dp` pad (`12dp` with leading icon) | Outlined: `outline` (`1px`) -> `primary` (`2px` open/focus); Filled: `surface-container-highest` + `on-surface-variant` -> `primary` active indicator; Value `on-surface`; Caret icon rotates `180deg` on `--md-sys-motion-fast-spatial` |
+| **Listbox Popup** | `min-inline-size` matched to trigger (`112–280dp+`); `2dp` vertical pad & `2dp` item gap; corner `16dp` (`corner-large`) Expressive or `4dp` (`corner-extra-small`) baseline | `surface-container-low`, `box-shadow: var(--md-sys-elevation-level2)`, `overscroll-behavior: contain` (`opacity` `--md-sys-motion-fast-effects` + `transform` `--md-sys-motion-fast-spatial`) |
+| **Option Item (`role="option"`)** | Height `48dp` (`--md-sys-touch-target-min`), padding `12dp`–`16dp`, inner pill radius `12dp` (`corner-medium`) | Unselected: `on-surface`; Highlighted (`[data-highlighted]`): `8%` `on-surface` `in oklab`; Selected (`[data-selected]`): `secondary-container` / `on-secondary-container` (or Expressive `tertiary-container` / `on-tertiary-container`) + emphasized weight + trailing `check` icon (**never color-only**); Disabled (`[data-disabled]`): `38%` content opacity |
+
+### 2. Visual Skin Contract + Headless Primitive Bridge
+
+Complex composite Select dropdowns require demanding ARIA (`role="combobox"`, `role="listbox"`, `aria-activedescendant` or roving focus, portal stacking, typeahead, `Escape` & outside-dismiss). **This design system defines a single shared MD3E Visual Skin Contract driven purely by standard semantic `data-*` attributes**, so React/Vue/Svelte apps can drop in **Radix Select**, **Base UI Select**, or **Ark UI Select** — and vanilla HTML apps can use `[popover="auto"]` — with zero style conflict:
+
+| Unified State Attribute | Semantics & Cross-Library Mapping |
+|---|---|
+| `[data-state="open\|closed"]` | Trigger & listbox visibility (`Radix` & `Ark` native; `Base UI` emits `[data-open]` / `[data-closed]`; vanilla toggles `data-state="open"` on `:popover-open`) |
+| `[data-highlighted]` | Active keyboard or pointer hover option (`Radix`, `Base UI`, `Ark UI`, and vanilla all use `[data-highlighted]`) |
+| `[data-selected]` | Committed selected option (`Base UI`, `Ark UI`, vanilla `[data-selected="true"]`; `Radix` emits `[data-state="checked"]`) |
+| `[data-disabled]` | Non-selectable option or trigger (`Radix`, `Base UI`, `Ark UI`, and vanilla) |
+
+```css
+/* Shared MD3E Select Visual Skin Contract (Vanilla Popover + Radix / Base UI / Ark UI) */
+.md3e-select-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--md-sys-spacing-2);
+  min-inline-size: 200px;
+  min-block-size: var(--md-sys-touch-target-min);
+  block-size: calc(56px + var(--md-sys-density-offset, 0px));
+  padding-inline: var(--md-sys-spacing-4);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-sys-typescale-plain-font);
+  font-size: var(--md-sys-typescale-body-large-size);
+  line-height: var(--md-sys-typescale-body-large-line-height);
+  cursor: pointer;
+  transition: border-color var(--md-sys-motion-fast-effects),
+              background-color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-select-trigger:is([data-state="open"], [data-popup-open], [aria-expanded="true"]) {
+  border-color: var(--md-sys-color-primary);
+  border-width: 2px;
+}
+
+.md3e-select-trigger__chevron {
+  color: var(--md-sys-color-on-surface-variant);
+  transition: transform var(--md-sys-motion-fast-spatial);
+}
+
+.md3e-select-trigger:is([data-state="open"], [data-popup-open], [aria-expanded="true"]) .md3e-select-trigger__chevron {
+  transform: rotate(180deg);
+}
+
+.md3e-select-trigger:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+}
+
+.md3e-select-content {
+  margin: 0;
+  padding: 2px 0;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-large); /* 16dp Expressive vertical menu */
+  background: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface);
+  box-shadow: var(--md-sys-elevation-level2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-block-size: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transform-origin: top center;
+}
+
+.md3e-select-content[popover] {
+  display: none;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.97);
+}
+
+.md3e-select-content[popover]:popover-open {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .md3e-select-content[popover] {
+    transition:
+      opacity var(--md-sys-motion-fast-effects),
+      transform var(--md-sys-motion-fast-spatial),
+      display var(--md-sys-motion-fast-effects-duration),
+      overlay var(--md-sys-motion-fast-effects-duration);
+    transition-behavior: allow-discrete;
+  }
+
+  @starting-style {
+    .md3e-select-content[popover]:popover-open {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.97);
+    }
+  }
+}
+
+.md3e-select-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--md-sys-spacing-3);
+  inline-size: 100%;
+  min-block-size: var(--md-sys-touch-target-min); /* 48dp option height */
+  padding-inline: var(--md-sys-spacing-4);
+  border: none;
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-sys-typescale-plain-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  text-align: start;
+  cursor: pointer;
+  outline: 2px solid transparent;
+  transition: background-color var(--md-sys-motion-fast-effects),
+              color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-select-item:is([data-highlighted], :hover) {
+  background: color-mix(in oklab, var(--md-sys-color-on-surface) 8%, transparent);
+}
+
+.md3e-select-item:is([data-selected="true"], [data-selected], [data-state="checked"]) {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+}
+
+.md3e-select-item__check {
+  opacity: 0;
+  color: inherit;
+}
+
+.md3e-select-item:is([data-selected="true"], [data-selected], [data-state="checked"]) .md3e-select-item__check {
+  opacity: 1;
+}
+
+.md3e-select-item:is([data-disabled="true"], [data-disabled]) {
+  opacity: var(--md-sys-state-disabled-content-opacity);
+  pointer-events: none;
+  cursor: default;
+}
+
+.md3e-select-item:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-select-trigger,
+  .md3e-select-trigger__chevron,
+  .md3e-select-content[popover],
+  .md3e-select-item {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .md3e-select-trigger,
+  .md3e-select-content {
+    border: 1px solid CanvasText;
+  }
+  .md3e-select-item:is([data-selected="true"], [data-selected], [data-state="checked"]) {
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+```
+
+### 3. Concrete Zero-Conflict Headless Primitive Recipes
+
+1. **Radix Select (`@radix-ui/react-select`)**:
+   - Use `position="popper"` and `sideOffset={4}` on `Select.Content`, sizing width with `min-width: var(--radix-select-trigger-width);`.
+   - Radix natively emits `[data-state="open|closed"]`, `[data-highlighted]`, `[data-state="checked"]`, and `[data-disabled]`.
+2. **Base UI Select (`@base-ui-components/react/select`)**:
+   - Size `Select.Popup` with `min-width: var(--anchor-width);`.
+   - Base UI natively emits `[data-open]` / `[data-closed]` / `[data-popup-open]`, `[data-highlighted]`, `[data-selected]`, and `[data-disabled]`.
+3. **Ark UI Select (`@ark-ui/react/select`)**:
+   - Size `Select.Content` with `min-width: var(--reference-width);`.
+   - Ark UI natively emits `[data-state="open|closed"]`, `[data-highlighted]`, `[data-selected]`, and `[data-disabled]`.
+
+```tsx
+// 1. Radix Select bound directly to the MD3E Visual Skin Contract
+<Select.Root defaultValue="expressive">
+  <Select.Trigger className="md3e-select-trigger" aria-label="Motion scheme">
+    <Select.Value />
+    <Select.Icon className="material-symbols-outlined md3e-select-trigger__chevron" aria-hidden="true">
+      arrow_drop_down
+    </Select.Icon>
+  </Select.Trigger>
+  <Select.Portal>
+    <Select.Content className="md3e-select-content" position="popper" sideOffset={4} style={{ minWidth: 'var(--radix-select-trigger-width)' }}>
+      <Select.Viewport>
+        <Select.Item className="md3e-select-item" value="expressive">
+          <Select.ItemText>Expressive</Select.ItemText>
+          <Select.ItemIndicator className="material-symbols-outlined md3e-select-item__check" aria-hidden="true">check</Select.ItemIndicator>
+        </Select.Item>
+        <Select.Item className="md3e-select-item" value="standard">
+          <Select.ItemText>Standard</Select.ItemText>
+          <Select.ItemIndicator className="material-symbols-outlined md3e-select-item__check" aria-hidden="true">check</Select.ItemIndicator>
+        </Select.Item>
+      </Select.Viewport>
+    </Select.Content>
+  </Select.Portal>
+</Select.Root>
+```
+
+```tsx
+// 2. Base UI Select & 3. Ark UI Select (identical .md3e-select-* skin classes)
+// Base UI: <Select.Popup className="md3e-select-content" style={{ minWidth: 'var(--anchor-width)' }}>
+//          <Select.Item className="md3e-select-item" value="expressive"> ... </Select.Item>
+// Ark UI:  <Select.Content className="md3e-select-content" style={{ minWidth: 'var(--reference-width)' }}>
+//          <Select.Item className="md3e-select-item" item={item}> ... </Select.Item>
+```
+
+#### Vanilla Top-Layer Keyboard Contract (`role="combobox"` + `role="listbox"` `[popover="auto"]`)
+
+- `Enter` / `Space` / `ArrowDown` / `ArrowUp` on the trigger opens the `[popover="auto"]` listbox and focuses/highlights the active or first enabled option.
+- `ArrowDown` / `ArrowUp` / `Home` / `End` moves `[data-highlighted="true"]` while skipping `[data-disabled="true"]`.
+- `Enter` / `Space` commits `[data-selected="true"]` + `aria-selected="true"`, updates trigger text, closes the popover, and restores focus to the trigger.
+- `Escape` or outside click dismisses cleanly (`[popover="auto"]` light dismiss) and restores focus; printable keystrokes trigger **first-letter typeahead** jump.
+
+### 4. Progressive Enhancement: CSS Customizable Select (`appearance: base-select`)
+
+Where browsers support CSS Customizable `<select>` (`@supports (appearance: base-select)`), you can progressively style native `<select>` + `<option>` directly with MD3E tokens without JavaScript:
+
+- Opt both `<select>` and `::picker(select)` into `appearance: base-select;`, and explicitly set `display: flex; align-items: center; justify-content: space-between; padding-block: 0;` on `select.md3e-native-select` (and `display: flex; align-items: center;` on `option`) so Chromium's UA stylesheet (`align-items: normal; padding-block: 3.5px;`) does not pin label text near the top edge.
+- Enable smooth auto-height sizing on `::picker(select)` with `interpolate-size: allow-keywords;` and separate `transition-behavior: allow-discrete;` **after** `transition:` (including `display` and `overlay`) paired with `@starting-style`.
+- **CRITICAL**: **NEVER set `overflow: hidden;` on `::picker(select)`** — it clips inner `:focus-visible` outlines and breaks internal scrolling on long option lists (`overflow: auto; overscroll-behavior: contain;` stays safe).
+- Style `::picker-icon` (`transform: rotate(180deg)` on `select:open::picker-icon` via `--md-sys-motion-fast-spatial`) and `option::checkmark` (`margin-inline-start: auto; color: var(--md-sys-color-on-secondary-container);`).
+
+```css
+@supports (appearance: base-select) {
+  select.md3e-native-select,
+  select.md3e-native-select::picker(select) {
+    appearance: base-select;
+  }
+
+  select.md3e-native-select {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-block-size: calc(56px + var(--md-sys-density-offset, 0px));
+    padding-block: 0;
+    padding-inline: var(--md-sys-spacing-4) var(--md-sys-spacing-3);
+    border: 1px solid var(--md-sys-color-outline);
+    border-radius: var(--md-sys-shape-corner-extra-small);
+    background: transparent;
+    color: var(--md-sys-color-on-surface);
+    cursor: pointer;
+  }
+
+  select.md3e-native-select::picker-icon {
+    color: var(--md-sys-color-on-surface-variant);
+    transition: transform var(--md-sys-motion-fast-spatial);
+  }
+
+  select.md3e-native-select:open::picker-icon {
+    transform: rotate(180deg);
+  }
+
+  select.md3e-native-select::picker(select) {
+    interpolate-size: allow-keywords;
+    margin-block-start: var(--md-sys-spacing-1);
+    padding: 2px 0;
+    border: none;
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-surface-container-low);
+    color: var(--md-sys-color-on-surface);
+    box-shadow: var(--md-sys-elevation-level2);
+    overflow: auto; /* NEVER overflow: hidden on ::picker(select) */
+    overscroll-behavior: contain;
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+
+  select.md3e-native-select:open::picker(select) {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    select.md3e-native-select::picker(select) {
+      transition:
+        opacity var(--md-sys-motion-fast-effects),
+        transform var(--md-sys-motion-fast-spatial),
+        display var(--md-sys-motion-fast-effects-duration),
+        overlay var(--md-sys-motion-fast-effects-duration);
+      transition-behavior: allow-discrete;
+    }
+
+    @starting-style {
+      select.md3e-native-select:open::picker(select) {
+        opacity: 0;
+        transform: translateY(-4px) scale(0.98);
+      }
+    }
+  }
+
+  select.md3e-native-select option {
+    display: flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+    min-block-size: var(--md-sys-touch-target-min);
+    padding-inline: var(--md-sys-spacing-4);
+    border-radius: var(--md-sys-shape-corner-medium);
+  }
+
+  select.md3e-native-select option:checked {
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+  }
+
+  select.md3e-native-select option::checkmark {
+    order: 1;
+    margin-inline-start: auto;
+    color: var(--md-sys-color-on-secondary-container);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    select.md3e-native-select::picker-icon,
+    select.md3e-native-select::picker(select) {
+      transition: none;
+    }
+  }
+}
+```
+
+---
+
 ## Switch
 
 Source: https://m3.material.io/components/switch/specs

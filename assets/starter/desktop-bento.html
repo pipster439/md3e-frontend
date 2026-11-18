@@ -101,12 +101,13 @@
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: var(--md-sys-spacing-2);
+    column-gap: var(--md-sys-spacing-2);
+    row-gap: 10px;
     background: var(--md-sys-color-surface);
     color: var(--md-sys-color-on-surface);
   }
 
-  :root[data-studio-profile="personal-studio"]:not([data-reduced-transparency="true"]):not([data-contrast="high"]) .bento-titlebar {
+  :root[data-studio-profile="personal-studio"]:where(:not([data-reduced-transparency="true"]):not([data-contrast="high"])) .bento-titlebar {
     background: color-mix(in oklab, var(--md-sys-color-surface) 78%, transparent);
     -webkit-backdrop-filter: blur(var(--md-studio-blur-px, 28px)) saturate(var(--md-studio-glass-saturate, 190%));
     backdrop-filter: blur(var(--md-studio-blur-px, 28px)) saturate(var(--md-studio-glass-saturate, 190%));
@@ -125,11 +126,14 @@
     align-items: center;
     gap: var(--md-sys-spacing-2);
     min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .titlebar__badge {
     width: 28px;
     height: 28px;
+    flex-shrink: 0;
     display: grid;
     place-items: center;
     background: var(--md-sys-color-primary-container);
@@ -163,12 +167,6 @@
     transition: background-color var(--md-bento-motion-fast-effects);
   }
 
-  @media (min-width: 1340px) {
-    .titlebar__search {
-      display: flex;
-    }
-  }
-
   .titlebar__search:hover {
     background: var(--md-sys-color-surface-container-highest);
   }
@@ -193,16 +191,24 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--md-sys-spacing-1);
+    column-gap: var(--md-sys-spacing-2);
+    row-gap: 10px;
     flex: 0 1 auto;
     min-width: 0;
     max-width: 100%;
   }
 
+  #titlebar-status-pill {
+    display: none;
+  }
+
   :root[data-studio-profile="personal-studio"] #titlebar-status-pill {
     display: inline-block;
     vertical-align: middle;
-    max-inline-size: 240px;
+    max-inline-size: clamp(110px, 13vw, 210px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     flex-shrink: 1;
   }
 
@@ -211,15 +217,55 @@
   }
 
   #studio-intent-badge {
+    min-inline-size: 124px;
+    justify-content: center;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
     white-space: nowrap;
     flex-shrink: 0;
+  }
+
+  @media (min-width: 1340px) {
+    .bento-titlebar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 180px 636px;
+      align-items: center;
+      row-gap: 0;
+    }
+    .titlebar__brand {
+      justify-self: start;
+    }
+    .titlebar__search {
+      display: flex;
+      justify-self: center;
+      width: 100%;
+      flex: none;
+    }
+    .titlebar__actions {
+      justify-self: end;
+      flex-wrap: nowrap;
+      gap: var(--md-sys-spacing-1);
+    }
+  }
+
+  @media (min-width: 1340px) and (max-width: 1479px) {
+    .titlebar-chip__optional {
+      display: none;
+    }
+  }
+
+  @media (min-width: 1480px) {
+    .bento-titlebar {
+      grid-template-columns: minmax(0, 1fr) 180px 728px;
+    }
   }
 
   @media (max-width: 719px) {
     .titlebar-chip__optional {
       display: none;
     }
-    #titlebar-status-pill {
+    #titlebar-status-pill,
+    :root[data-studio-profile="personal-studio"] #titlebar-status-pill {
       display: none;
     }
   }
@@ -238,11 +284,18 @@
     font-family: inherit;
     font-size: var(--md-sys-typescale-label-medium-size);
     font-weight: var(--md-sys-typescale-label-medium-weight);
+    white-space: nowrap;
     text-decoration: none;
     cursor: pointer;
     --md-sys-icon-size: 20px;
     transition: background-color var(--md-bento-motion-fast-effects),
                 transform var(--md-bento-motion-fast-spatial);
+  }
+
+  @media (min-width: 1340px) and (max-width: 1479px) {
+    .titlebar-chip {
+      padding-inline: 10px;
+    }
   }
 
   .titlebar-chip::before {
@@ -352,8 +405,10 @@
     background: var(--md-sys-color-surface);
     overflow-x: hidden;
     overflow-y: auto;
-    transition: width var(--md-bento-motion-default-spatial),
-                padding var(--md-bento-motion-default-spatial);
+    --rail-progress: 0;
+    --rail-label-opacity: 0;
+    --rail-label-x: -8px;
+    will-change: width;
   }
 
   @media (min-width: 840px) {
@@ -401,8 +456,7 @@
     opacity: 0;
     pointer-events: none;
     z-index: 0;
-    transition: width var(--md-bento-motion-default-spatial),
-                opacity var(--md-bento-motion-fast-effects);
+    transition: opacity var(--md-bento-motion-fast-effects);
   }
 
   .bento-rail__pill {
@@ -420,23 +474,17 @@
     z-index: 1;
     white-space: nowrap;
     overflow: hidden;
-    opacity: 0;
-    transform: translateX(-6px);
+    opacity: var(--rail-label-opacity, 0);
+    transform: translateX(var(--rail-label-x, -8px));
     pointer-events: none;
-    transition: opacity 90ms var(--md-sys-motion-easing-emphasized-accelerate),
-                transform 90ms var(--md-sys-motion-easing-emphasized-accelerate);
   }
 
   .bento-rail[data-rail-expanded="true"] .bento-rail__label {
-    opacity: 1;
-    transform: translateX(0);
     pointer-events: auto;
-    transition: opacity var(--md-bento-motion-fast-effects) 65ms,
-                transform var(--md-bento-motion-fast-spatial) 65ms;
   }
 
-  .bento-rail[data-rail-expanded="true"] .bento-rail__item[aria-current="page"] .bento-rail__indicator {
-    width: calc(100% - 8px);
+  .bento-rail__item[aria-current="page"] .bento-rail__indicator {
+    width: calc(56px + (100% - 64px) * var(--rail-progress, 0));
   }
 
   .bento-rail__item:hover {
@@ -497,7 +545,9 @@
   .bento-workspace__view-badge {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: var(--md-sys-spacing-1);
+    min-inline-size: 184px;
     height: 28px;
     padding-inline: var(--md-sys-spacing-3);
     border-radius: var(--md-sys-shape-corner-full);
@@ -506,6 +556,7 @@
     font-size: var(--md-sys-typescale-label-medium-size);
     line-height: var(--md-sys-typescale-label-medium-line-height);
     font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
+    font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
 
@@ -515,15 +566,12 @@
     gap: var(--md-sys-spacing-4);
     align-items: stretch;
     transform-origin: center top;
-    transition: opacity var(--md-bento-motion-fast-effects),
-                transform var(--md-bento-motion-fast-spatial);
+    will-change: opacity, transform;
   }
 
   .bento-grid.is-view-exiting {
     opacity: 0;
     transform: scale(0.985);
-    transition: opacity 130ms var(--md-sys-motion-easing-emphasized-accelerate),
-                transform 130ms var(--md-sys-motion-easing-emphasized-accelerate);
   }
 
   @keyframes bento-card-stagger-in {
@@ -547,7 +595,7 @@
     animation-duration: var(--md-bento-motion-default-spatial-duration, 480ms);
     animation-timing-function: var(--md-bento-motion-default-spatial-easing);
     animation-delay: calc(var(--bento-stagger-idx, 0) * var(--md-studio-stagger-ms, var(--md-bento-stagger-step, 30ms)));
-    animation-fill-mode: both;
+    animation-fill-mode: backwards;
   }
 
   .bento-split-row {
@@ -612,8 +660,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--md-sys-spacing-3);
-    transition: background-color var(--md-bento-motion-fast-effects),
-                transform var(--md-bento-motion-fast-spatial);
+    transition: background-color var(--md-bento-motion-fast-effects);
   }
 
   .bento-card:hover {
@@ -894,12 +941,12 @@
                 background-color var(--md-bento-motion-fast-effects);
   }
 
-  .bento-switch[aria-pressed="true"] .bento-switch__track {
+  .bento-switch:is([aria-pressed="true"], [aria-checked="true"]) .bento-switch__track {
     background: var(--md-sys-color-primary);
     border-color: var(--md-sys-color-primary);
   }
 
-  .bento-switch[aria-pressed="true"] .bento-switch__thumb {
+  .bento-switch:is([aria-pressed="true"], [aria-checked="true"]) .bento-switch__thumb {
     inline-size: 24px;
     block-size: 24px;
     background: var(--md-sys-color-on-primary);
@@ -912,7 +959,7 @@
     transform: translateX(0);
   }
 
-  .bento-switch[aria-pressed="true"]:active .bento-switch__thumb {
+  .bento-switch:is([aria-pressed="true"], [aria-checked="true"]):active .bento-switch__thumb {
     inline-size: 28px;
     block-size: 28px;
     transform: translateX(20px);
@@ -995,7 +1042,7 @@
 
   .bento-pill:focus-visible {
     outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
-    outline-offset: var(--md-sys-focus-ring-gap);
+    outline-offset: -3px;
     z-index: 1;
   }
 
@@ -1087,10 +1134,16 @@
 
   .bento-table {
     width: 100%;
+    min-width: 460px;
     border-collapse: separate;
     border-spacing: 0 2px;
     table-layout: fixed;
   }
+
+  .bento-table col:nth-child(1) { width: 28%; }
+  .bento-table col:nth-child(2) { width: 24%; }
+  .bento-table col:nth-child(3) { width: 26%; }
+  .bento-table col:nth-child(4) { width: 22%; }
 
   .bento-table thead {
     position: sticky;
@@ -1137,13 +1190,19 @@
     align-items: center;
     gap: var(--md-sys-spacing-1);
     height: 32px;
-    padding: 0;
+    padding: 0 4px;
     border: none;
+    border-radius: var(--md-sys-shape-corner-small);
     background: transparent;
     color: inherit;
     font: inherit;
+    white-space: nowrap;
     cursor: pointer;
     --md-sys-icon-size: 20px;
+  }
+
+  .bento-sort-trigger[data-sort-active="true"] {
+    color: var(--md-sys-color-primary);
   }
 
   .bento-sort-trigger::before {
@@ -1156,12 +1215,13 @@
 
   .bento-sort-trigger:focus-visible {
     outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
-    outline-offset: var(--md-sys-focus-ring-gap);
+    outline-offset: -2px;
   }
 
   .status-pill {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     height: 22px;
     padding-inline: var(--md-sys-spacing-2);
     border-radius: var(--md-sys-shape-corner-full);
@@ -1170,8 +1230,17 @@
     font-size: var(--md-sys-typescale-label-small-size);
     line-height: 22px;
     font-weight: var(--md-sys-typescale-label-small-emphasized-weight);
+    font-variant-numeric: tabular-nums;
     white-space: nowrap;
     flex-shrink: 0;
+  }
+
+  #hero-morph-state {
+    min-inline-size: 102px;
+  }
+
+  #bento-wavy-badge {
+    min-inline-size: 106px;
   }
 
   .status-pill--tertiary {
@@ -1218,55 +1287,84 @@
     flex-shrink: 0;
   }
 
-  /* View Transitions Expanded Detail Overlay */
+  /* Live DOM FLIP Expanded Detail Overlay (100% Interruptible Dual-Spring) */
   .bento-vt-source[data-vt-expanded="true"] {
-    visibility: hidden;
+    opacity: 0 !important;
+    pointer-events: none;
   }
 
-  .bento-vt-source.is-vt-active,
-  .bento-vt-modal[data-open="true"] {
-    view-transition-name: bento-vt-panel;
-  }
-
-  .bento-vt-source.is-vt-active .bento-vt-heading,
-  .bento-vt-modal[data-open="true"] .bento-vt-heading {
-    view-transition-name: bento-vt-heading;
-    width: fit-content;
-  }
-
-  html[data-vt-kind="modal"] #bento-vt-backdrop {
-    view-transition-name: bento-vt-scrim;
-  }
-
-  html[data-vt-kind="modal"]::view-transition-old(root) {
-    animation: none;
-    display: none;
-  }
-
-  html[data-vt-kind="modal"]::view-transition-new(root) {
-    animation: none;
+  .bento-vt-source[data-vt-landing="true"] {
+    animation: none !important;
+    transition: background-color var(--md-bento-motion-fast-effects) !important;
+    transform-origin: center center;
+    will-change: transform, opacity;
   }
 
   .bento-vt-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 300;
-    display: grid;
-    place-items: center;
-    padding: var(--md-sys-spacing-6);
+    z-index: 900;
+    --scrim-progress: 0;
+    opacity: var(--scrim-progress);
+    background-color: color-mix(in oklab, var(--md-sys-color-scrim) 48%, transparent);
+    -webkit-backdrop-filter: blur(calc(var(--scrim-progress) * 14px)) saturate(calc(100% + var(--scrim-progress) * 20%));
+    backdrop-filter: blur(calc(var(--scrim-progress) * 14px)) saturate(calc(100% + var(--scrim-progress) * 20%));
+    will-change: opacity, backdrop-filter;
+  }
+
+  .bento-vt-backdrop[data-closing="true"] {
+    pointer-events: none;
   }
 
   .bento-vt-backdrop[hidden] {
     display: none;
   }
 
+  :root[data-reduced-transparency="true"] .bento-vt-backdrop,
+  :root[data-contrast="high"] .bento-vt-backdrop {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: color-mix(in oklab, var(--md-sys-color-scrim) 54%, transparent);
+  }
+
+  @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+    .bento-vt-backdrop {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      background-color: color-mix(in oklab, var(--md-sys-color-scrim) 54%, transparent);
+    }
+  }
+
   .bento-vt-modal {
-    width: min(100%, 640px);
+    position: fixed;
+    margin: 0;
+    z-index: 910;
     padding: var(--md-sys-spacing-6);
     border-radius: var(--md-sys-shape-corner-extra-large);
     color: var(--md-sys-color-on-surface);
     display: grid;
     gap: var(--md-sys-spacing-4);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .bento-vt-modal[hidden] {
+    display: none;
+  }
+
+  .bento-vt-modal[data-open="false"] {
+    pointer-events: none;
+  }
+
+  .bento-vt-modal[data-animating="true"] {
+    overflow: hidden;
+  }
+
+  .bento-vt-modal__content {
+    display: grid;
+    gap: var(--md-sys-spacing-4);
+    min-width: 0;
+    align-content: start;
   }
 
   .bento-vt-modal:not(.md3e-blur-surface-high) {
@@ -1286,37 +1384,12 @@
     max-block-size: 184px;
     overflow-y: auto;
     overscroll-behavior: contain;
+    border-radius: var(--md-sys-shape-corner-medium);
   }
 
-  ::view-transition-group(bento-vt-scrim) {
-    z-index: 10;
-    animation-duration: var(--md-bento-motion-default-effects-duration, 220ms);
-    animation-timing-function: var(--md-sys-motion-fast-effects-bezier-easing);
-  }
-
-  ::view-transition-old(bento-vt-scrim),
-  ::view-transition-new(bento-vt-scrim) {
-    animation-duration: var(--md-bento-motion-default-effects-duration, 220ms);
-    animation-timing-function: var(--md-sys-motion-fast-effects-bezier-easing);
-  }
-
-  ::view-transition-group(bento-vt-panel),
-  ::view-transition-group(bento-vt-heading) {
-    z-index: 20;
-    animation-duration: var(--md-bento-motion-modal-duration, 500ms);
-    animation-timing-function: var(--md-bento-motion-modal-easing, var(--md-bento-motion-default-spatial-easing));
-  }
-
-  ::view-transition-group(bento-vt-panel) {
-    overflow: clip;
-    border-radius: var(--md-sys-shape-corner-extra-large);
-  }
-
-  ::view-transition-old(bento-vt-panel),
-  ::view-transition-new(bento-vt-panel) {
-    height: 100%;
-    border-radius: var(--md-sys-shape-corner-extra-large);
-    animation-duration: var(--md-bento-motion-default-effects-duration, 260ms);
+  .bento-vt-modal .bento-log-list:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: -2px;
   }
 
   /* -------------------------------------------------------------------------
@@ -1364,6 +1437,16 @@
 
   .bento-adaptive-toolbar.is-toolbar-morphing {
     view-transition-name: bento-adaptive-toolbar;
+  }
+
+  ::view-transition-group(bento-adaptive-toolbar) {
+    animation-duration: var(--md-bento-motion-default-spatial-duration, 480ms);
+    animation-timing-function: var(--md-bento-motion-default-spatial-easing);
+  }
+
+  ::view-transition-old(bento-adaptive-toolbar),
+  ::view-transition-new(bento-adaptive-toolbar) {
+    animation-duration: var(--md-bento-motion-default-effects-duration, 260ms);
   }
 
   .bento-well--blur-stage {
@@ -1432,7 +1515,6 @@
     inset-inline-start: 0;
     z-index: 450;
     pointer-events: none;
-    filter: drop-shadow(0 12px 28px color-mix(in oklab, var(--md-sys-color-scrim) 36%, transparent));
   }
 
   .bento-context-menu-wrap[hidden] {
@@ -1547,8 +1629,105 @@
     transform: translate(-50%, 0);
   }
 
+  /* Interruptible Drawer / Command Palette / Context Menu Transitions + HDR Badge */
+  :root[data-studio-profile="personal-studio"] #studio-tuner-panel,
+  #studio-tuner-panel[data-tuner-state] {
+    position: fixed;
+    inset-block-start: var(--md-bento-titlebar-bottom, 52px);
+    inset-inline-end: var(--md-sys-spacing-4);
+    z-index: 260;
+    inline-size: min(416px, calc(100vw - 32px));
+    max-block-size: calc(100dvh - var(--md-bento-titlebar-bottom, 52px) - 24px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-sys-spacing-4);
+    padding: var(--md-sys-spacing-5);
+    border-radius: var(--md-sys-shape-corner-extra-large);
+    overflow: hidden;
+    overscroll-behavior: contain;
+    transition: none;
+    will-change: transform, opacity;
+  }
+
+  #studio-tuner-panel[hidden],
+  :root[data-studio-profile="personal-studio"] #studio-tuner-panel[hidden] {
+    display: none;
+  }
+
+  :root[data-studio-profile="personal-studio"] #studio-tuner-panel[data-tuner-state="closing"],
+  #studio-tuner-panel[data-tuner-state="closing"] {
+    pointer-events: none;
+  }
+
+  .studio-tuner__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-sys-spacing-4);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    min-height: 0;
+    flex: 1 1 auto;
+    padding: 4px;
+  }
+
+  .studio-tuner__badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+  }
+
+  #studio-hdr-badge {
+    min-inline-size: 96px;
+    justify-content: center;
+    text-align: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .studio-scrubber__val {
+    min-inline-size: 4.5ch;
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+  }
+
+  dialog.studio-cmd-dialog {
+    --cmd-backdrop-progress: 1;
+    will-change: transform, opacity;
+  }
+
+  dialog.studio-cmd-dialog[data-closing="true"] {
+    pointer-events: none;
+  }
+
+  dialog.studio-cmd-dialog:modal {
+    overscroll-behavior: contain;
+  }
+
+  dialog.studio-cmd-dialog::backdrop {
+    opacity: var(--cmd-backdrop-progress, 1);
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+
+  .bento-context-menu[data-closing="true"] {
+    pointer-events: none;
+  }
+
   /* Accessibility: Forced Colors + Reduced Motion */
   @media (forced-colors: active) {
+    .bento-titlebar,
+    :root[data-studio-profile="personal-studio"] .bento-titlebar {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      background: Canvas;
+      color: CanvasText;
+    }
+    .bento-vt-backdrop {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      background-color: color-mix(in oklab, CanvasText 35%, transparent);
+    }
     .bento-card,
     .bento-well,
     .bento-vt-modal,
@@ -1557,7 +1736,13 @@
     .bento-action-btn,
     .titlebar-chip,
     .bento-switch__track,
-    .bento-context-menu {
+    .bento-context-menu,
+    .bento-titlebar,
+    .bento-toast,
+    #titlebar-status-pill,
+    #studio-tuner-panel,
+    .studio-cmd-dialog,
+    .bento-rail {
       border: 1px solid CanvasText;
     }
     .bento-pill-indicator,
@@ -1573,7 +1758,7 @@
       background: Highlight;
       color: HighlightText;
     }
-    .bento-switch[aria-pressed="true"] .bento-switch__track {
+    .bento-switch:is([aria-pressed="true"], [aria-checked="true"]) .bento-switch__track {
       forced-color-adjust: none;
       background: Highlight;
       border-color: Highlight;
@@ -1582,15 +1767,31 @@
       forced-color-adjust: none;
       background: CanvasText;
     }
-    .bento-switch[aria-pressed="true"] .bento-switch__thumb {
+    .bento-switch:is([aria-pressed="true"], [aria-checked="true"]) .bento-switch__thumb {
       background: HighlightText;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      transition-duration: 0ms;
-      animation-duration: 0ms;
+    :root[data-layout-profile="desktop-bento"] {
+      --md-bento-motion-fast-effects: 0ms linear;
+      --md-bento-motion-default-effects-duration: 0ms;
+      --md-bento-motion-default-effects: 0ms linear;
+      --md-bento-motion-fast-spatial-duration: 0ms;
+      --md-bento-motion-fast-spatial-easing: linear;
+      --md-bento-motion-fast-spatial: 0ms linear;
+      --md-bento-motion-default-spatial-duration: 0ms;
+      --md-bento-motion-default-spatial-easing: linear;
+      --md-bento-motion-default-spatial: 0ms linear;
+      --md-bento-motion-modal-duration: 0ms;
+      --md-bento-motion-modal-easing: linear;
+      --md-bento-motion-modal: 0ms linear;
+    }
+    *:not(.md3e-loading-indicator__svg),
+    *::before,
+    *::after {
+      transition-duration: 0ms !important;
+      animation-duration: 0ms !important;
     }
     ::view-transition-group(*),
     ::view-transition-old(*),
@@ -1601,7 +1802,6 @@
 </style>
 </head>
 <body>
-<div class="studio-caustic-field" aria-hidden="true"></div>
 <a class="skip-link md3e-visually-hidden" href="#bento-main">Skip to dashboard</a>
 
 <!-- Frameless Integrated Titlebar -->
@@ -1814,11 +2014,17 @@
 
           <div class="bento-table-scroll studio-scroll-fade" role="region" aria-label="Cluster node telemetry table" tabindex="0">
             <table class="bento-table" id="telemetry-table">
+              <colgroup>
+                <col>
+                <col>
+                <col>
+                <col>
+              </colgroup>
               <thead>
                 <tr>
                   <th>Node</th>
-                  <th><button type="button" class="bento-sort-trigger" data-sort-col="region">Region <span class="material-symbols-outlined" aria-hidden="true">unfold_more</span></button></th>
-                  <th><button type="button" class="bento-sort-trigger" data-sort-col="latency">p95 Latency <span class="material-symbols-outlined" aria-hidden="true">unfold_more</span></button></th>
+                  <th aria-sort="none"><button type="button" class="bento-sort-trigger" data-sort-col="region" data-sort-active="false">Region <span class="material-symbols-outlined" aria-hidden="true">unfold_more</span></button></th>
+                  <th aria-sort="none"><button type="button" class="bento-sort-trigger" data-sort-col="latency" data-sort-active="false">p95 Latency <span class="material-symbols-outlined" aria-hidden="true">unfold_more</span></button></th>
                   <th>State</th>
                 </tr>
               </thead>
@@ -1826,14 +2032,14 @@
                 <tr data-context-menu="telemetry-row" data-node="edge-iad-01" data-region="us-east" data-latency="11.4">
                   <th>edge-iad-01</th><td>us-east-1</td><td class="tabular-nums">11.4 ms</td><td><span class="status-pill">Healthy</span></td>
                 </tr>
-                <tr data-context-menu="telemetry-row" data-node="edge-fra-04" data-region="eu-central" data-latency="14.8">
-                  <th>edge-fra-04</th><td>eu-central-1</td><td class="tabular-nums">14.8 ms</td><td><span class="status-pill">Healthy</span></td>
+                <tr data-context-menu="telemetry-row" data-node="edge-fra-04" data-region="eu-central" data-latency="19.4">
+                  <th>edge-fra-04</th><td>eu-central-1</td><td class="tabular-nums">19.4 ms</td><td><span class="status-pill">Healthy</span></td>
                 </tr>
-                <tr data-context-menu="telemetry-row" data-node="edge-hnd-02" data-region="ap-northeast" data-latency="18.2">
-                  <th>edge-hnd-02</th><td>ap-northeast-1</td><td class="tabular-nums">18.2 ms</td><td><span class="status-pill status-pill--tertiary">Canary</span></td>
+                <tr data-context-menu="telemetry-row" data-node="edge-hnd-02" data-region="ap-northeast" data-latency="15.2">
+                  <th>edge-hnd-02</th><td>ap-northeast-1</td><td class="tabular-nums">15.2 ms</td><td><span class="status-pill status-pill--tertiary">Canary</span></td>
                 </tr>
-                <tr data-context-menu="telemetry-row" data-node="edge-sin-07" data-region="ap-southeast" data-latency="16.1">
-                  <th>edge-sin-07</th><td>ap-southeast-1</td><td class="tabular-nums">16.1 ms</td><td><span class="status-pill">Healthy</span></td>
+                <tr data-context-menu="telemetry-row" data-node="edge-sin-07" data-region="ap-southeast" data-latency="13.6">
+                  <th>edge-sin-07</th><td>ap-southeast-1</td><td class="tabular-nums">13.6 ms</td><td><span class="status-pill">Healthy</span></td>
                 </tr>
                 <tr data-context-menu="telemetry-row" data-node="edge-sfo-09" data-region="us-west" data-latency="9.7">
                   <th>edge-sfo-09</th><td>us-west-2</td><td class="tabular-nums">9.7 ms</td><td><span class="status-pill">Healthy</span></td>
@@ -1936,44 +2142,59 @@
   </main>
 </div>
 
-<!-- View Transitions Expanded Diagnostics Dialog -->
-<div class="bento-vt-backdrop md3e-blur-scrim" id="bento-vt-backdrop" hidden>
-  <section class="bento-vt-modal md3e-blur-surface-high md3e-blur--lg" id="bento-vt-modal" role="dialog" aria-modal="true" aria-labelledby="bento-vt-modal-title" data-open="false">
+<!-- Live DOM FLIP Expanded Diagnostics Scrim & Modal -->
+<div class="bento-vt-backdrop md3e-blur-scrim" id="bento-vt-backdrop" hidden></div>
+<section class="bento-vt-modal md3e-blur-surface-high md3e-blur--lg" id="bento-vt-modal" role="dialog" aria-modal="true" aria-labelledby="bento-vt-modal-title" data-open="false" hidden>
+  <div class="bento-vt-modal__content">
     <div class="bento-card__header">
       <h2 class="bento-card__title bento-vt-heading" id="bento-vt-modal-title" tabindex="-1">Runtime Event Stream — Diagnostics</h2>
       <button type="button" class="bento-action-btn bento-action-btn--sm-pill" id="btn-vt-close" aria-label="Close diagnostics view">Close</button>
     </div>
     <div class="bento-well bento-well--lowest">
-      <p id="bento-vt-modal-summary">View Transitions API morphed <code id="bento-vt-source-label">#event-stream-card</code> boundaries, <code>28px</code> corner radius, and optical surface into this modal dialog using M3E plush spatial timing (<code id="bento-vt-timing-readout">~500ms</code>, <code>k=340, ζ=0.76</code>), preserving accessible focus and Escape dismissal.</p>
+      <p id="bento-vt-modal-summary">Live DOM FLIP spring morphed <code id="bento-vt-source-label">#event-stream-card</code> boundaries, <code>28px</code> corner radius, and live optical glass surface into this modal dialog using M3E plush spatial timing (<code id="bento-vt-timing-readout">~500ms</code>, <code>k=340, ζ=0.76</code>), preserving live background waves, continuous scrim blur, and Escape dismissal.</p>
       <svg class="bento-vt-modal__spark" id="bento-vt-modal-svg" viewBox="0 0 480 64" preserveAspectRatio="none" aria-hidden="true">
         <path class="spark-area" id="bento-vt-modal-area" d="M0,48 L60,39 L120,42 L180,28 L240,31 L300,19 L360,23 L420,14 L480,17 L480,64 L0,64 Z" />
         <path class="spark-stroke" id="bento-vt-modal-stroke" d="M0,48 L60,39 L120,42 L180,28 L240,31 L300,19 L360,23 L420,14 L480,17" />
       </svg>
-      <ul class="bento-log-list studio-scroll-fade" id="bento-vt-modal-logs" aria-label="Expanded cluster event diagnostics">
+      <ul class="bento-log-list studio-scroll-fade" id="bento-vt-modal-logs" aria-label="Expanded cluster event diagnostics" tabindex="0">
         <li class="bento-log-item"><span class="bento-log-item__msg">Rebalanced us-east-1 mesh weights</span><span class="bento-log-item__ts tabular-nums">09:12:04</span></li>
         <li class="bento-log-item"><span class="bento-log-item__msg">Canary batch 04 verified zero packet drop</span><span class="bento-log-item__ts tabular-nums">09:11:51</span></li>
         <li class="bento-log-item"><span class="bento-log-item__msg">Synced HCT token seed across 5 container tiers</span><span class="bento-log-item__ts tabular-nums">09:11:28</span></li>
         <li class="bento-log-item"><span class="bento-log-item__msg">Wavy SLA checkpoint straightened cleanly</span><span class="bento-log-item__ts tabular-nums">09:10:49</span></li>
       </ul>
     </div>
-  </section>
-</div>
+  </div>
+</section>
 
 <!-- Layer 4 Personal Studio Non-Blocking Co-Tuning Drawer -->
-<aside class="md3e-blur-surface-high md3e-blur--lg studio-scroll-fade" id="studio-tuner-panel" aria-label="Personal Studio Co-Tuning Drawer" hidden>
+<aside class="md3e-blur-surface-high md3e-blur--lg" id="studio-tuner-panel" aria-label="Personal Studio Co-Tuning Drawer" hidden inert>
   <div class="studio-tuner__header">
     <div>
       <h2 class="studio-tuner__title">Personal Studio Co-Tuner</h2>
       <span class="bento-card__eyebrow">Drag scrubbers (Shift = 0.25x) · Auto-Harmonize adapts untouched tokens</span>
     </div>
-    <div class="bento-controls-row">
+    <div class="studio-tuner__badges">
       <span class="studio-intent-badge" id="studio-intent-badge">balanced-studio</span>
+      <span class="studio-hdr-badge" id="studio-hdr-badge">SDR Fallback</span>
       <button type="button" class="studio-tuner__btn" id="btn-studio-tuner-close" aria-label="Close co-tuning drawer">Close</button>
     </div>
   </div>
 
+  <div class="studio-tuner__body studio-scroll-fade">
   <section class="studio-tuner__group" aria-label="Optical Glass parameters">
     <h3 class="studio-tuner__group-title">Optical Glass</h3>
+    <div class="studio-tuner__row">
+      <button type="button" class="bento-switch" id="btn-studio-hdr" role="switch" aria-checked="true">
+        <span>Adaptive HDR Specular</span>
+        <span class="bento-switch__track" aria-hidden="true"><span class="bento-switch__thumb"></span></span>
+      </button>
+    </div>
+    <div class="studio-tuner__row">
+      <div class="studio-scrubber" role="slider" tabindex="0" data-scrubber-key="hdrBoost" aria-label="HDR Headroom" aria-valuemin="0" aria-valuemax="100" aria-valuenow="35" aria-valuetext="35%">
+        <span class="studio-scrubber__name">HDR Headroom</span>
+        <span class="studio-scrubber__val">35%</span>
+      </div>
+    </div>
     <div class="studio-tuner__row">
       <div class="studio-scrubber" role="slider" tabindex="0" data-scrubber-key="blurPx" aria-label="Backdrop Blur" aria-valuemin="8" aria-valuemax="48" aria-valuenow="28" aria-valuetext="28px">
         <span class="studio-scrubber__name">Backdrop Blur</span>
@@ -2052,6 +2273,7 @@
   </div>
 
   <pre id="studio-css-output" class="studio-scroll-fade" aria-label="Generated Personal Studio CSS patch"></pre>
+  </div>
 </aside>
 
 <!-- Layer 4 Frosted Native <dialog> Command Palette (Ctrl+K) -->
@@ -2067,7 +2289,7 @@
 
 <!-- Scoped Desktop Context Menu ([data-context-menu]) -->
 <div class="bento-context-menu-wrap" id="bento-context-menu-wrap" hidden>
-  <div class="bento-context-menu md3e-blur-surface-high md3e-blur--md" id="bento-context-menu" role="menu" aria-label="Scoped workspace actions">
+  <div class="bento-context-menu md3e-blur-surface-high md3e-blur--md" id="bento-context-menu" role="menu" aria-label="Scoped workspace actions" tabindex="-1">
     <div class="bento-context-menu__header">
       <span id="ctx-menu-target-label">edge-iad-01</span>
       <span class="tabular-nums" id="ctx-menu-meta">us-east-1</span>
@@ -2104,7 +2326,9 @@
 
   const STORAGE_THEME_KEY = 'md3e-shared-theme';
   const STORAGE_SEED_KEY = 'md3e-shared-seed';
+  const STORAGE_VARIANT_KEY = 'md3e-shared-variant';
   const PRESET_SEEDS = new Set(['purple', 'ocean', 'emerald', 'amber', 'teal', 'rose']);
+  const VALID_VARIANTS = new Set(['tonal-spot', 'expressive', 'vibrant', 'neutral', 'monochrome']);
   const osDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
   const rmQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -2158,14 +2382,21 @@
 
   function setBentoSeed(seedOrHex, { persist = true } = {}) {
     if (seedOrHex && seedOrHex.startsWith('#')) {
-      const norm = normalizeHex(seedOrHex);
-      applyDynamicSeed(norm, { specVersion: '2025' });
-      document.getElementById('bento-seed-label').textContent = norm;
-      document.querySelectorAll('[data-bento-seed]').forEach((b) => {
-        b.setAttribute('aria-pressed', 'false');
-      });
-      if (persist) saveSharedPref(STORAGE_SEED_KEY, norm);
-      return norm;
+      let norm = null;
+      try {
+        norm = normalizeHex(seedOrHex);
+      } catch {
+        norm = null;
+      }
+      if (norm) {
+        applyDynamicSeed(norm, { specVersion: '2025' });
+        document.getElementById('bento-seed-label').textContent = norm;
+        document.querySelectorAll('[data-bento-seed]').forEach((b) => {
+          b.setAttribute('aria-pressed', 'false');
+        });
+        if (persist) saveSharedPref(STORAGE_SEED_KEY, norm);
+        return norm;
+      }
     }
     clearDynamicSeed();
     const s = seedOrHex && PRESET_SEEDS.has(seedOrHex) ? seedOrHex : 'purple';
@@ -2179,8 +2410,37 @@
     return s;
   }
 
+  function setBentoVariant(variant, { persist = true } = {}) {
+    const v = variant && VALID_VARIANTS.has(variant) ? variant : '';
+    if (!v) delete root.dataset.colorVariant;
+    else root.dataset.colorVariant = v;
+    if (persist) saveSharedPref(STORAGE_VARIANT_KEY, v);
+    return v;
+  }
+
   setBentoTheme(loadSharedPref(STORAGE_THEME_KEY) || root.dataset.theme || 'dark', { persist: false });
-  setBentoSeed(loadSharedPref(STORAGE_SEED_KEY) || 'purple', { persist: false });
+  try {
+    setBentoSeed(loadSharedPref(STORAGE_SEED_KEY) || 'purple', { persist: false });
+  } catch {
+    setBentoSeed('purple', { persist: false });
+  }
+  setBentoVariant(loadSharedPref(STORAGE_VARIANT_KEY) || '', { persist: false });
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === STORAGE_THEME_KEY || e.key === null) {
+      setBentoTheme(e.key === null ? 'dark' : (e.newValue || root.dataset.theme || 'dark'), { persist: false });
+    }
+    if (e.key === STORAGE_SEED_KEY || e.key === null) {
+      try {
+        setBentoSeed(e.key === null ? 'purple' : (e.newValue || 'purple'), { persist: false });
+      } catch {
+        setBentoSeed('purple', { persist: false });
+      }
+    }
+    if (e.key === STORAGE_VARIANT_KEY || e.key === null) {
+      setBentoVariant(e.key === null ? '' : (e.newValue || ''), { persist: false });
+    }
+  });
 
   themeBtn.addEventListener('click', () => {
     const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
@@ -2209,6 +2469,7 @@
     if (wasSolid) delete root.dataset.reducedTransparency;
     else root.dataset.reducedTransparency = 'true';
     syncTransparencyButton();
+    (window.__MD3E_TUNER__ || studioApi)?.refreshBindings?.();
     showToast(wasSolid ? 'Blur: ON · glass active' : 'Blur: Solid fallback');
   });
 
@@ -2223,9 +2484,21 @@
   const fastSpringSpec = synthesizeSpringLinearCss(620, 0.74, 36);
   const baseSpatialSpec = synthesizeSpringLinearCss(380, 0.78, 36);
   const baseModalSpec = synthesizeSpringLinearCss(340, 0.76, 36);
-  root.style.setProperty('--md-bento-motion-fast-spatial-duration', `${fastSpringSpec.durationMs}ms`);
-  root.style.setProperty('--md-bento-motion-fast-spatial-easing', fastSpringSpec.linearEasing);
-  root.style.setProperty('--md-bento-motion-fast-spatial', fastSpringSpec.cssShorthand);
+  function syncBaseReducedMotionTokens() {
+    if (rmQuery.matches) {
+      root.style.removeProperty('--md-bento-motion-fast-spatial-duration');
+      root.style.removeProperty('--md-bento-motion-fast-spatial-easing');
+      root.style.removeProperty('--md-bento-motion-fast-spatial');
+      root.style.removeProperty('--md-bento-motion-modal-duration');
+      root.style.removeProperty('--md-bento-motion-modal-easing');
+      root.style.removeProperty('--md-bento-motion-modal');
+    } else {
+      root.style.setProperty('--md-bento-motion-fast-spatial-duration', `${fastSpringSpec.durationMs}ms`);
+      root.style.setProperty('--md-bento-motion-fast-spatial-easing', fastSpringSpec.linearEasing);
+      root.style.setProperty('--md-bento-motion-fast-spatial', fastSpringSpec.cssShorthand);
+    }
+  }
+  syncBaseReducedMotionTokens();
 
   // Hero 1 Real-time md3e-morph.js CTA synchronized with Studio physics
   const heroMorphPath = document.getElementById('bento-hero-morph-path');
@@ -2343,7 +2616,7 @@
   }
 
   function tickWavy(ts) {
-    if (document.hidden === true) {
+    if (document.hidden === true || !canvasHost || canvasHost.offsetParent === null) {
       rafId = null;
       lastWavyTs = null;
       return;
@@ -2374,7 +2647,7 @@
     svgHost.setAttribute('aria-valuenow', String(pct));
     canvasHost.setAttribute('aria-valuenow', String(pct));
     wavyBadge.textContent = pct >= 100 ? 'Complete (flat)' : 'Wavy active';
-    if (!rafId && document.hidden !== true) tickWavy();
+    if (!rafId && document.hidden !== true && canvasHost.offsetParent !== null) tickWavy();
     else drawBentoWavy(1 / 60);
   }
 
@@ -2387,19 +2660,34 @@
         rafId = null;
       }
       lastWavyTs = null;
-    } else if (!rafId) {
+    } else if (!rafId && canvasHost && canvasHost.offsetParent !== null) {
       tickWavy();
     }
   });
   if ('MutationObserver' in window) {
     new MutationObserver(() => {
       if (!rafId) drawBentoWavy(1 / 60);
-    }).observe(root, { attributes: true, attributeFilter: ['data-theme', 'data-seed', 'style'] });
+    }).observe(root, { attributes: true, attributeFilter: ['data-theme', 'data-seed', 'data-color-variant', 'data-contrast', 'style'] });
   }
+  if ('ResizeObserver' in window && canvasHost) {
+    new ResizeObserver(() => {
+      if (!rafId && canvasHost.offsetParent !== null) drawBentoWavy(1 / 60);
+    }).observe(canvasHost);
+  }
+  rmQuery.addEventListener('change', () => {
+    syncBaseReducedMotionTokens();
+    syncPhysicsMotionFromStudio(getTunerApi()?.getState?.());
+    if (rmQuery.matches) {
+      bentoCards.forEach(clearCardStagger);
+      drawBentoWavy(1 / 60);
+    } else if (document.hidden !== true && !rafId && canvasHost && canvasHost.offsetParent !== null) {
+      tickWavy();
+    }
+  });
   window.addEventListener('resize', () => {
     if (!rafId) drawBentoWavy(1 / 60);
   });
-  if (document.hidden !== true) tickWavy();
+  if (document.hidden !== true && canvasHost && canvasHost.offsetParent !== null) tickWavy();
   else drawBentoWavy(1 / 60);
 
   // Switches & Physical Sliding Segmented Pill Indicator (`md3e-spring.js`)
@@ -2443,11 +2731,12 @@
   });
 
   function syncPillIndicator(immediate = false) {
-    if (!profileGroup || !pillIndicator) return;
+    if (!profileGroup || !pillIndicator || profileGroup.offsetParent === null) return;
     const active = profilePills.find((p) => p.getAttribute('aria-pressed') === 'true') || profilePills[0];
     if (!active) return;
     const x = active.offsetLeft;
     const w = active.offsetWidth;
+    if (!w) return;
     if (immediate) {
       pillXSpring.snap(x);
       pillWSpring.snap(w);
@@ -2474,7 +2763,19 @@
   syncPillIndicator(true);
   requestAnimationFrame(() => syncPillIndicator(true));
 
-  // Dual-Spring Navigation Rail (80px <-> 220px) & View-Switch Fade Through (130ms exit + Studio Stagger)
+  function getActiveStudioSpringParams(defaultK = 340, defaultZ = 0.76) {
+    const isPersonal = root.dataset.studioProfile === 'personal-studio';
+    if (!isPersonal) return { k: defaultK, z: defaultZ };
+    const cs = getComputedStyle(root);
+    const rawK = parseFloat(cs.getPropertyValue('--md-studio-spring-stiffness'));
+    const rawZ = parseFloat(cs.getPropertyValue('--md-studio-spring-damping'));
+    const snap = (window.__MD3E_TUNER__ || studioApi)?.getState?.();
+    const k = Number.isFinite(rawK) && rawK > 0 ? rawK : (snap?.values?.springStiffness || defaultK);
+    const z = Number.isFinite(rawZ) && rawZ > 0 ? rawZ : (snap?.values?.springDamping || defaultZ);
+    return { k, z };
+  }
+
+  // Dual-Spring Navigation Rail (80px <-> 220px) & Interruptible View-Switch Spring Choreography
   const bentoRail = document.getElementById('bento-rail');
   const bentoRailToggle = document.getElementById('bento-rail-toggle');
   const bentoRailToggleIcon = document.getElementById('bento-rail-toggle-icon');
@@ -2483,23 +2784,79 @@
   const bentoSplitHandle = document.getElementById('bento-split-handle');
   const telemetryTableCard = document.getElementById('telemetry-table-card');
   const eventStreamCard = document.getElementById('event-stream-card');
+  const chunkyControlsCard = document.getElementById('chunky-controls-card');
   const bentoViewBadge = document.getElementById('bento-view-badge');
   const bentoViewBtns = [...document.querySelectorAll('[data-bento-view]')];
   const bentoCards = [...document.querySelectorAll('#bento-grid .bento-card')];
-  let bentoViewTimer = null;
+  let railTarget = bentoRail?.dataset.railExpanded === 'true' ? 1 : 0;
+
+  const railSpring = createSpringAnimator({
+    initialValue: railTarget,
+    stiffness: 380,
+    damping: 0.80,
+    precision: 0.001,
+    onUpdate: (v) => {
+      if (!bentoRail) return;
+      const w = Math.max(64, 80 + 140 * v);
+      const padX = 8 + 4 * Math.max(0, Math.min(1, v));
+      const labelP = Math.max(0, Math.min(1, (v - 0.16) / 0.65));
+      const progressP = Math.max(0, Math.min(1.06, v));
+      bentoRail.style.width = `${w.toFixed(2)}px`;
+      bentoRail.style.paddingInline = `${padX.toFixed(2)}px`;
+      bentoRail.style.setProperty('--rail-progress', progressP.toFixed(4));
+      bentoRail.style.setProperty('--rail-label-opacity', labelP.toFixed(4));
+      bentoRail.style.setProperty('--rail-label-x', `${((1 - labelP) * -8).toFixed(2)}px`);
+    },
+  });
+  railSpring.snap(railTarget);
 
   function setBentoRailExpanded(expanded) {
     if (!bentoRail || !bentoRailToggle) return;
+    railTarget = expanded ? 1 : 0;
     bentoRail.dataset.railExpanded = String(expanded);
     bentoRailToggle.setAttribute('aria-expanded', String(expanded));
     bentoRailToggle.setAttribute('aria-label', expanded ? 'Collapse navigation rail' : 'Expand navigation rail');
     if (bentoRailToggleIcon) bentoRailToggleIcon.textContent = expanded ? 'menu_open' : 'menu';
+    const { k, z } = getActiveStudioSpringParams(380, 0.80);
+    railSpring.configure({ stiffness: k, damping: Math.max(0.74, z) });
+    railSpring.setTarget(railTarget);
     showToast(expanded ? 'Rail expanded (220px)' : 'Rail collapsed (80px)');
   }
 
   bentoRailToggle?.addEventListener('click', () => {
-    setBentoRailExpanded(bentoRail?.dataset.railExpanded !== 'true');
+    setBentoRailExpanded(railTarget !== 1);
   });
+
+  function clearCardStagger(card) {
+    if (!card) return;
+    card.classList.remove('is-stagger-enter');
+    card.style.removeProperty('--bento-stagger-idx');
+  }
+
+  bentoGrid?.addEventListener('animationend', (e) => {
+    if (e.animationName === 'bento-card-stagger-in' && e.target instanceof Element) {
+      clearCardStagger(e.target.closest('.bento-card'));
+    }
+  });
+  bentoGrid?.addEventListener('animationcancel', (e) => {
+    if (e.animationName === 'bento-card-stagger-in' && e.target instanceof Element) {
+      clearCardStagger(e.target.closest('.bento-card'));
+    }
+  });
+
+  const tableScrollEl = document.querySelector('.bento-table-scroll');
+  function blurSplitHandleIfHidden() {
+    if (!bentoSplitHandle) return;
+    const isHidden = bentoSplitHandle.hidden || window.innerWidth < 1200 || bentoSplitHandle.offsetParent === null;
+    if (isHidden && document.activeElement === bentoSplitHandle) {
+      if (tableScrollEl && tableScrollEl.offsetParent !== null && !telemetryTableCard?.hidden) {
+        tableScrollEl.focus({ preventScroll: true });
+      } else {
+        document.getElementById('bento-main')?.focus({ preventScroll: true });
+      }
+    }
+  }
+  window.addEventListener('resize', blurSplitHandleIfHidden);
 
   function syncSplitRowVisibility() {
     if (!bentoSplitRow || !telemetryTableCard || !eventStreamCard) return;
@@ -2508,11 +2865,12 @@
     bentoSplitRow.hidden = !tVis && !eVis;
     bentoSplitRow.classList.toggle('is-single-pane', tVis !== eVis);
     if (bentoSplitHandle) bentoSplitHandle.hidden = !(tVis && eVis);
+    blurSplitHandleIfHidden();
   }
 
   function triggerStaggerReplay() {
+    bentoCards.forEach((card) => clearCardStagger(card));
     if (rmQuery.matches) return;
-    bentoCards.forEach((card) => card.classList.remove('is-stagger-enter'));
     void bentoGrid.offsetWidth;
     let visibleIdx = 0;
     bentoCards.forEach((card) => {
@@ -2524,54 +2882,115 @@
     });
   }
 
+  let activeViewKey = 'all';
+  let pendingViewKey = 'all';
+  let viewPhase = 'idle'; // 'idle' | 'exiting' | 'entering'
+  const viewLabels = {
+    all: 'All Bento',
+    rollout: 'Mesh & Rollout',
+    telemetry: 'Telemetry',
+    stream: 'Runtime Stream',
+  };
+
+  function applyBentoViewDom(viewKey, { skipStagger = false } = {}) {
+    activeViewKey = viewKey;
+    const wasControlsHidden = Boolean(chunkyControlsCard?.hidden);
+    let visibleIdx = 0;
+    bentoCards.forEach((card) => {
+      const views = (card.dataset.bentoViews || 'all').split(/\s+/);
+      const matches = viewKey === 'all' || views.includes(viewKey);
+      card.hidden = !matches;
+      clearCardStagger(card);
+      if (matches) {
+        card.style.setProperty('--bento-stagger-idx', String(visibleIdx));
+        visibleIdx += 1;
+      }
+    });
+    syncSplitRowVisibility();
+    if (bentoViewBadge) {
+      bentoViewBadge.textContent = `View: ${viewLabels[viewKey] || viewKey} (${visibleIdx})`;
+    }
+    if (!skipStagger && !rmQuery.matches) {
+      void bentoGrid.offsetWidth;
+      bentoCards.forEach((card) => {
+        if (!card.hidden) card.classList.add('is-stagger-enter');
+      });
+    }
+    if (wasControlsHidden && !chunkyControlsCard?.hidden) {
+      syncPillIndicator(true);
+    } else {
+      syncPillIndicator(false);
+    }
+    if (canvasHost && canvasHost.offsetParent !== null && !rafId && document.hidden !== true) {
+      tickWavy();
+    }
+    (window.__MD3E_TUNER__ || studioApi)?.refreshBindings?.();
+  }
+
+  const viewSpring = createSpringAnimator({
+    initialValue: 1,
+    stiffness: 380,
+    damping: 0.80,
+    precision: 0.002,
+    onUpdate: (v) => {
+      if (!bentoGrid) return;
+      const opacity = Math.max(0, Math.min(1, v));
+      const scale = 0.985 + 0.015 * v;
+      const ty = (1 - v) * 8;
+      bentoGrid.style.opacity = opacity.toFixed(4);
+      bentoGrid.style.transform = `translate3d(0, ${ty.toFixed(2)}px, 0) scale(${scale.toFixed(4)})`;
+    },
+    onComplete: () => {
+      if (viewPhase === 'exiting') {
+        bentoGrid.classList.remove('is-view-exiting');
+        applyBentoViewDom(pendingViewKey);
+        viewPhase = 'entering';
+        const { k, z } = getActiveStudioSpringParams(380, 0.80);
+        viewSpring.configure({ stiffness: k, damping: Math.max(0.76, z) });
+        viewSpring.setTarget(1);
+        return;
+      }
+      if (viewPhase === 'entering') {
+        viewPhase = 'idle';
+        bentoGrid.style.opacity = '';
+        bentoGrid.style.transform = '';
+      }
+    },
+  });
+
   function switchBentoView(viewKey) {
-    clearTimeout(bentoViewTimer);
+    pendingViewKey = viewKey;
     bentoViewBtns.forEach((btn) => {
       if (btn.dataset.bentoView === viewKey) btn.setAttribute('aria-current', 'page');
       else btn.removeAttribute('aria-current');
     });
-    const labels = {
-      all: 'All Bento',
-      rollout: 'Mesh & Rollout',
-      telemetry: 'Telemetry',
-      stream: 'Runtime Stream',
-    };
-    const applyView = () => {
-      let visibleIdx = 0;
-      bentoCards.forEach((card) => {
-        const views = (card.dataset.bentoViews || 'all').split(/\s+/);
-        const matches = viewKey === 'all' || views.includes(viewKey);
-        card.hidden = !matches;
-        card.classList.remove('is-stagger-enter');
-        card.style.removeProperty('--bento-stagger-idx');
-        if (matches) {
-          card.style.setProperty('--bento-stagger-idx', String(visibleIdx));
-          visibleIdx += 1;
-        }
-      });
-      syncSplitRowVisibility();
-      if (bentoViewBadge) {
-        bentoViewBadge.textContent = `View: ${labels[viewKey] || viewKey} (${visibleIdx})`;
-      }
-      if (!rmQuery.matches) {
-        void bentoGrid.offsetWidth;
-        bentoCards.forEach((card) => {
-          if (!card.hidden) card.classList.add('is-stagger-enter');
-        });
-      }
-      syncPillIndicator(true);
-      studioApi?.refreshBindings();
-    };
-
     if (rmQuery.matches) {
-      applyView();
+      viewPhase = 'idle';
+      bentoGrid.classList.remove('is-view-exiting');
+      viewSpring.snap(1);
+      applyBentoViewDom(viewKey, { skipStagger: true });
+      bentoGrid.style.opacity = '';
+      bentoGrid.style.transform = '';
       return;
     }
-    bentoGrid.classList.add('is-view-exiting');
-    bentoViewTimer = setTimeout(() => {
+    if (viewPhase === 'exiting' && viewKey === activeViewKey) {
+      viewPhase = 'entering';
       bentoGrid.classList.remove('is-view-exiting');
-      applyView();
-    }, 130);
+      const { k, z } = getActiveStudioSpringParams(380, 0.80);
+      viewSpring.configure({ stiffness: k, damping: Math.max(0.76, z) });
+      viewSpring.setTarget(1);
+      return;
+    }
+    if (viewPhase === 'exiting') {
+      return;
+    }
+    if (viewPhase === 'idle' && viewKey === activeViewKey) {
+      return;
+    }
+    viewPhase = 'exiting';
+    bentoGrid.classList.add('is-view-exiting');
+    viewSpring.configure({ stiffness: 1800, damping: 1.0 });
+    viewSpring.setTarget(0);
   }
 
   bentoViewBtns.forEach((btn) => {
@@ -2589,18 +3008,51 @@
     studioApi?.refreshBindings();
   });
 
-  let sortDir = 1;
-  document.querySelectorAll('.bento-sort-trigger').forEach((btn) => {
+  const sortTriggers = [...document.querySelectorAll('.bento-sort-trigger')];
+  let activeSortCol = null;
+  let activeSortDir = 1;
+
+  function compareTelemetryRows(a, b, col, dir) {
+    if (col === 'latency') {
+      const diff = (Number(a.dataset.latency) - Number(b.dataset.latency)) * dir;
+      if (diff !== 0) return diff;
+      return a.dataset.node.localeCompare(b.dataset.node) * dir;
+    }
+    const diff = a.dataset.region.localeCompare(b.dataset.region) * dir;
+    if (diff !== 0) return diff;
+    return a.dataset.node.localeCompare(b.dataset.node) * dir;
+  }
+
+  sortTriggers.forEach((btn) => {
     btn.addEventListener('click', () => {
       const col = btn.dataset.sortCol;
-      sortDir *= -1;
       const rows = [...tbody.querySelectorAll('tr')];
-      rows.sort((a, b) => {
-        if (col === 'latency') return (Number(a.dataset.latency) - Number(b.dataset.latency)) * sortDir;
-        return a.dataset.region.localeCompare(b.dataset.region) * sortDir;
+      const beforeIds = rows.map((r) => r.dataset.node).join(',');
+
+      let nextDir = col === activeSortCol ? -activeSortDir : 1;
+      let sorted = [...rows].sort((a, b) => compareTelemetryRows(a, b, col, nextDir));
+      if (rows.length > 1 && sorted.map((r) => r.dataset.node).join(',') === beforeIds) {
+        nextDir = -nextDir;
+        sorted = [...rows].sort((a, b) => compareTelemetryRows(a, b, col, nextDir));
+      }
+
+      activeSortCol = col;
+      activeSortDir = nextDir;
+      sorted.forEach((r) => tbody.appendChild(r));
+
+      const sortState = nextDir === 1 ? 'ascending' : 'descending';
+      const iconName = nextDir === 1 ? 'arrow_upward' : 'arrow_downward';
+      sortTriggers.forEach((trigger) => {
+        const isCurrent = trigger === btn;
+        const th = trigger.closest('th');
+        if (th) th.setAttribute('aria-sort', isCurrent ? sortState : 'none');
+        trigger.dataset.sortActive = isCurrent ? 'true' : 'false';
+        const icon = trigger.querySelector('.material-symbols-outlined');
+        if (icon) icon.textContent = isCurrent ? iconName : 'unfold_more';
       });
-      rows.forEach((r) => tbody.appendChild(r));
-      showToast(`Sorted by ${col}`);
+
+      const colLabel = col === 'latency' ? 'p95 Latency' : 'Region';
+      showToast(`Sorted by ${colLabel} (${sortState})`);
     });
   });
 
@@ -2612,31 +3064,50 @@
   const ctxItems = [...ctxMenu.querySelectorAll('[role="menuitem"]')];
   let activeCtxHost = null;
   let lastCtxFocusEl = null;
+  let ctxTarget = 0;
 
   const ctxSpring = createSpringAnimator({
     initialValue: 0,
     stiffness: 800,
     damping: 0.78,
+    precision: 0.002,
     onUpdate: (v) => {
       const clamped = Math.max(0, Math.min(1, v));
-      ctxMenu.style.opacity = String(clamped);
-      ctxMenu.style.transform = `scale(${(0.86 + 0.14 * v).toFixed(4)})`;
+      ctxMenu.style.opacity = clamped.toFixed(4);
+      ctxMenu.style.transform = `scale(${Math.max(0.82, 0.86 + 0.14 * v).toFixed(4)})`;
+    },
+    onComplete: () => {
+      if (ctxTarget === 0 && ctxWrap) {
+        ctxWrap.hidden = true;
+        delete ctxMenu.dataset.closing;
+        activeCtxHost = null;
+      }
     },
   });
 
-  function closeContextMenu({ restoreFocus = false, viaPointer = false } = {}) {
-    if (!ctxWrap || ctxWrap.hidden) return;
-    ctxSpring.stop();
-    ctxWrap.hidden = true;
-    activeCtxHost = null;
+  function closeContextMenu({ restoreFocus = false, viaPointer = false, immediate = false } = {}) {
+    if (!ctxWrap || ctxWrap.hidden || (ctxTarget === 0 && !immediate)) return;
+    ctxTarget = 0;
+    ctxMenu.dataset.closing = 'true';
     if (restoreFocus && lastCtxFocusEl instanceof HTMLElement) {
       try { lastCtxFocusEl.focus({ preventScroll: true, focusVisible: !viaPointer }); } catch { lastCtxFocusEl.focus(); }
+    }
+    if (immediate || rmQuery.matches) {
+      ctxSpring.snap(0);
+      ctxWrap.hidden = true;
+      delete ctxMenu.dataset.closing;
+      activeCtxHost = null;
+    } else {
+      ctxSpring.setTarget(0);
     }
   }
 
   function openScopedContextMenu(hostEl, clientX, clientY) {
+    const wasHidden = ctxWrap.hidden;
     activeCtxHost = hostEl;
-    lastCtxFocusEl = document.activeElement;
+    if (wasHidden || !ctxWrap.contains(document.activeElement)) {
+      lastCtxFocusEl = document.activeElement;
+    }
     const isRow = hostEl.dataset.contextMenu === 'telemetry-row';
     if (ctxTargetLabel) {
       ctxTargetLabel.textContent = isRow ? (hostEl.dataset.node || 'node') : (hostEl.dataset.contextTitle || hostEl.id);
@@ -2645,9 +3116,11 @@
       ctxMetaLabel.textContent = isRow ? `${hostEl.dataset.region} · ${hostEl.dataset.latency} ms` : (hostEl.id || 'bento-card');
     }
 
-    ctxWrap.hidden = false;
-    ctxMenu.style.opacity = '0';
-    ctxMenu.style.transform = 'scale(0.86)';
+    if (wasHidden) {
+      ctxWrap.hidden = false;
+      ctxMenu.style.opacity = '0';
+      ctxMenu.style.transform = 'scale(0.86)';
+    }
 
     const vw = window.innerWidth;
     const vh = window.innerHeight;
@@ -2665,7 +3138,11 @@
     ctxMenu.style.transformOrigin = origin;
     ctxMenu.dataset.originQuadrant = origin;
 
-    ctxSpring.snap(0);
+    ctxTarget = 1;
+    delete ctxMenu.dataset.closing;
+    if (wasHidden) {
+      ctxSpring.snap(0);
+    }
     ctxSpring.setTarget(1);
     ctxItems[0]?.focus({ preventScroll: true });
   }
@@ -2689,11 +3166,14 @@
       return;
     }
     const targetName = host.dataset.node || host.dataset.contextTitle || host.id || 'target';
-    closeContextMenu({ restoreFocus: true });
     if (cmd === 'inspect') {
+      closeContextMenu({ restoreFocus: false, immediate: true });
       openVtModal(lastCtxFocusEl, host);
       showToast(`Inspecting ${targetName}`);
-    } else if (cmd === 'toggle-canary') {
+      return;
+    }
+    closeContextMenu({ restoreFocus: true });
+    if (cmd === 'toggle-canary') {
       if (host.dataset.contextMenu === 'telemetry-row') {
         const badge = host.querySelector('.status-pill');
         if (badge) {
@@ -2730,10 +3210,12 @@
     const idx = ctxItems.indexOf(document.activeElement);
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      ctxItems[(idx + 1) % ctxItems.length]?.focus({ preventScroll: true });
+      const nextIdx = idx === -1 ? 0 : (idx + 1) % ctxItems.length;
+      ctxItems[nextIdx]?.focus({ preventScroll: true });
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      ctxItems[(idx - 1 + ctxItems.length) % ctxItems.length]?.focus({ preventScroll: true });
+      const prevIdx = idx === -1 ? ctxItems.length - 1 : (idx - 1 + ctxItems.length) % ctxItems.length;
+      ctxItems[prevIdx]?.focus({ preventScroll: true });
     } else if (e.key === 'Home') {
       e.preventDefault();
       ctxItems[0]?.focus({ preventScroll: true });
@@ -2757,10 +3239,11 @@
   window.addEventListener('resize', () => closeContextMenu());
   window.addEventListener('blur', () => closeContextMenu());
 
-  // View Transitions Card -> Modal Expansion (with bento-vt-scrim z-index layering + live root DOM)
+  // Live DOM FLIP Card -> Modal Expansion (Dual Interruptible Springs: modalSpring + scrimSpring)
   const vtSourceCard = document.getElementById('event-stream-card');
   const vtBackdrop = document.getElementById('bento-vt-backdrop');
   const vtModal = document.getElementById('bento-vt-modal');
+  const vtModalContent = vtModal?.querySelector('.bento-vt-modal__content');
   const vtModalTitle = document.getElementById('bento-vt-modal-title');
   const vtModalSummary = document.getElementById('bento-vt-modal-summary');
   const vtModalArea = document.getElementById('bento-vt-modal-area');
@@ -2771,17 +3254,40 @@
   const bentoTitlebar = document.querySelector('.bento-titlebar');
   const bentoShell = document.querySelector('.bento-shell');
   const studioTunerPanel = document.getElementById('studio-tuner-panel');
+  const tunerBtn = document.getElementById('btn-studio-tuner');
+  const tunerCloseBtn = document.getElementById('btn-studio-tuner-close');
+  const profileToggleBtn = document.getElementById('btn-studio-profile');
+  const profileLabel = document.getElementById('studio-profile-label');
+  const hdrBadgeEl = document.getElementById('studio-hdr-badge');
+  const hdrSwitchBtn = document.getElementById('btn-studio-hdr');
+  const previewMotionBtn = document.getElementById('btn-studio-preview');
+  const copyCssBtn = document.getElementById('btn-studio-copy-css');
+  const cmdDialog = document.getElementById('studio-cmd-dialog');
+  const cmdOpenBtn = document.getElementById('btn-studio-cmdk');
+  const cmdCloseBtn = document.getElementById('btn-studio-cmd-close');
+  const cmdInput = document.getElementById('studio-cmd-input');
+  const cmdList = document.getElementById('studio-cmd-list');
+  const skipLinkEl = document.querySelector('.skip-link');
+  const getTunerApi = () => window.__MD3E_TUNER__ || studioApi;
+
   let lastTrigger = vtExpandBtn;
   let activeInspectHost = vtSourceCard;
-  let vtSeq = 0;
+  let activeMorphCard = null;
+  let vtTarget = 0;
+  let vtModalP = 0;
+  let vtScrimP = 0;
+  let vtModalSettled = true;
+  let vtScrimSettled = true;
+  let vtSourceRect = null;
+  let vtTargetRect = null;
+  let vtSourceRadius = 28;
+  let tunerTarget = 0;
 
   function getActiveModalMotionMeta() {
-    const snap = studioApi?.getState?.();
-    const isPersonal = root.dataset.studioProfile === 'personal-studio';
-    const k = isPersonal && snap ? snap.values.springStiffness : 340;
-    const z = isPersonal && snap ? snap.values.springDamping : 0.76;
+    const snap = getTunerApi()?.getState?.();
+    const { k, z } = getActiveStudioSpringParams(340, 0.76);
     const spring = synthesizeSpringLinearCss(k, z, 36);
-    const intent = isPersonal && snap ? snap.inferredIntent : 'desktop-bento';
+    const intent = root.dataset.studioProfile === 'personal-studio' && snap ? snap.inferredIntent : 'desktop-bento';
     return { k, z, durationMs: spring.durationMs, intent, spring };
   }
 
@@ -2800,7 +3306,7 @@
     if (vtModalSummary) {
       vtModalSummary.innerHTML = '';
       vtModalSummary.append(
-        'View Transitions API morphed ',
+        'Live DOM FLIP spring morphed ',
       );
       const srcCode = document.createElement('code');
       srcCode.id = 'bento-vt-source-label';
@@ -2814,9 +3320,9 @@
         srcCode,
         ' boundaries, ',
         radCode,
-        ' corner radius, and optical surface into this modal dialog using M3E plush spatial timing (',
+        ' corner radius, and live optical glass surface into this modal dialog using M3E plush spatial timing (',
         timeCode,
-        `, ${intent}), preserving live background waves, scrim z-index layering, and Escape dismissal.`,
+        `, ${intent}), preserving live background waves, continuous scrim blur, and Escape dismissal.`,
       );
     }
 
@@ -2864,84 +3370,344 @@
         vtModalLogs.appendChild(li);
       });
     }
-    studioApi?.refreshBindings();
   }
 
   function setModalBackgroundInert(isOpen) {
+    if (skipLinkEl) skipLinkEl.inert = isOpen;
     if (bentoTitlebar) bentoTitlebar.inert = isOpen;
     if (bentoShell) bentoShell.inert = isOpen;
-    if (studioTunerPanel) studioTunerPanel.inert = isOpen;
+    if (ctxWrap) ctxWrap.inert = isOpen;
+    if (studioTunerPanel) {
+      studioTunerPanel.inert = isOpen ? true : (tunerTarget === 0);
+    }
   }
+
+  function getVtSourceRect(el) {
+    if (el && typeof el.getBoundingClientRect === 'function') {
+      const prevTransform = el === vtSourceCard ? el.style.transform : '';
+      if (el === vtSourceCard && prevTransform) el.style.transform = '';
+      const r = el.getBoundingClientRect();
+      if (el === vtSourceCard && prevTransform) el.style.transform = prevTransform;
+      if (r.width >= 24 && r.height >= 24) {
+        return { left: r.left, top: r.top, width: r.width, height: r.height };
+      }
+    }
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const w = Math.min(420, vw - 48);
+    const h = 220;
+    return { left: (vw - w) / 2, top: (vh - h) / 2, width: w, height: h };
+  }
+
+  function getVtSourceRadius(el) {
+    if (!el) return 28;
+    const parsed = parseFloat(getComputedStyle(el).borderTopLeftRadius);
+    return Number.isFinite(parsed) ? parsed : 28;
+  }
+
+  function measureVtTargetRect() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const marginX = vw < 520 ? 16 : 24;
+    const marginY = vh < 560 ? 16 : 24;
+    const targetW = Math.min(680, Math.max(240, vw - marginX * 2));
+    const maxH = Math.max(240, vh - marginY * 2);
+
+    const prevVis = vtModal.style.visibility;
+    const prevLeft = vtModal.style.left;
+    const prevTop = vtModal.style.top;
+    const prevW = vtModal.style.width;
+    const prevH = vtModal.style.height;
+    const prevMaxH = vtModal.style.maxHeight;
+
+    vtModal.style.visibility = 'hidden';
+    vtModal.style.left = '0px';
+    vtModal.style.top = '0px';
+    vtModal.style.width = `${targetW}px`;
+    vtModal.style.height = 'auto';
+    vtModal.style.maxHeight = `${maxH}px`;
+
+    const measuredH = Math.min(maxH, Math.max(220, Math.ceil(vtModal.getBoundingClientRect().height || 360)));
+
+    vtModal.style.visibility = prevVis;
+    vtModal.style.left = prevLeft;
+    vtModal.style.top = prevTop;
+    vtModal.style.width = prevW;
+    vtModal.style.height = prevH;
+    vtModal.style.maxHeight = prevMaxH;
+
+    return {
+      left: Math.round((vw - targetW) / 2),
+      top: Math.round((vh - measuredH) / 2),
+      width: targetW,
+      height: measuredH,
+    };
+  }
+
+  function renderVtModalFrame(p) {
+    vtModalP = p;
+    if (!vtSourceRect || !vtTargetRect) return;
+    const clamp01 = (v) => Math.max(0, Math.min(1, v));
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const w = Math.max(48, lerp(vtSourceRect.width, vtTargetRect.width, p));
+    const h = Math.max(48, lerp(vtSourceRect.height, vtTargetRect.height, p));
+    const left = lerp(vtSourceRect.left, vtTargetRect.left, p);
+    const top = lerp(vtSourceRect.top, vtTargetRect.top, p);
+    const radius = Math.max(0, lerp(vtSourceRadius, 28, p));
+    vtModal.style.left = `${left.toFixed(2)}px`;
+    vtModal.style.top = `${top.toFixed(2)}px`;
+    vtModal.style.width = `${w.toFixed(2)}px`;
+    vtModal.style.height = `${h.toFixed(2)}px`;
+    vtModal.style.borderRadius = `${radius.toFixed(2)}px`;
+
+    if (activeMorphCard === vtSourceCard) {
+      if (p > 0.42) {
+        vtModal.style.opacity = '1';
+        vtModal.style.visibility = '';
+        if (vtModalContent) {
+          const contentOpacity = clamp01((p - 0.14) / 0.44);
+          const contentShiftY = (1 - Math.min(1.04, Math.max(0, p))) * 10;
+          vtModalContent.style.opacity = contentOpacity.toFixed(4);
+          vtModalContent.style.transform = `translate3d(0, ${contentShiftY.toFixed(2)}px, 0)`;
+        }
+        vtSourceCard.dataset.vtExpanded = 'true';
+        delete vtSourceCard.dataset.vtLanding;
+        vtSourceCard.style.opacity = '';
+        vtSourceCard.style.transform = '';
+      } else {
+        const modalAlpha = clamp01((p - 0.08) / 0.32);
+        vtModal.style.opacity = modalAlpha.toFixed(4);
+        vtModal.style.visibility = (vtTarget === 0 && p <= 0.06) ? 'hidden' : '';
+        if (vtModalContent) {
+          const contentOpacity = clamp01((p - 0.14) / 0.44);
+          const contentShiftY = (1 - Math.min(1.04, Math.max(0, p))) * 10;
+          vtModalContent.style.opacity = contentOpacity.toFixed(4);
+          vtModalContent.style.transform = `translate3d(0, ${contentShiftY.toFixed(2)}px, 0)`;
+        }
+        delete vtSourceCard.dataset.vtExpanded;
+        vtSourceCard.dataset.vtLanding = 'true';
+        const cardAlpha = clamp01((0.44 - p) / 0.34);
+        vtSourceCard.style.opacity = cardAlpha.toFixed(4);
+        const dx = (left + w / 2) - (vtSourceRect.left + vtSourceRect.width / 2);
+        const dy = (top + h / 2) - (vtSourceRect.top + vtSourceRect.height / 2);
+        const sx = w / Math.max(1, vtSourceRect.width);
+        const sy = h / Math.max(1, vtSourceRect.height);
+        if (p >= 0) {
+          vtSourceCard.style.transform = `translate3d(${dx.toFixed(2)}px, ${dy.toFixed(2)}px, 0) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
+        } else {
+          const cushion = Math.max(0.935, 1 + p * 0.56);
+          const landY = dy + p * -42;
+          const landSx = Math.min(1, sx) * cushion;
+          const landSy = Math.min(1, sy) * cushion;
+          vtSourceCard.style.transform = `translate3d(${dx.toFixed(2)}px, ${landY.toFixed(2)}px, 0) scale(${landSx.toFixed(4)}, ${landSy.toFixed(4)})`;
+        }
+      }
+    } else {
+      const modalAlpha = clamp01((p - 0.02) / 0.34);
+      vtModal.style.opacity = modalAlpha.toFixed(4);
+      vtModal.style.visibility = (vtTarget === 0 && p <= 0.015) ? 'hidden' : '';
+      if (vtModalContent) {
+        const contentOpacity = clamp01((p - 0.08) / 0.44);
+        const contentShiftY = (1 - Math.min(1.04, Math.max(0, p))) * 10;
+        vtModalContent.style.opacity = contentOpacity.toFixed(4);
+        vtModalContent.style.transform = `translate3d(0, ${contentShiftY.toFixed(2)}px, 0)`;
+      }
+    }
+  }
+
+  function renderVtScrimFrame(p) {
+    vtScrimP = p;
+    const clamped = Math.max(0, Math.min(1, p));
+    vtBackdrop.style.setProperty('--scrim-progress', clamped.toFixed(4));
+  }
+
+  function finalizeVtModalCloseIfSettled() {
+    if (vtTarget !== 0) return;
+    if (!vtModalSettled || !vtScrimSettled) return;
+    if (Math.abs(vtModalP) > 0.002 || Math.abs(vtScrimP) > 0.002) return;
+    vtBackdrop.hidden = true;
+    delete vtBackdrop.dataset.closing;
+    vtBackdrop.style.setProperty('--scrim-progress', '0');
+    vtModal.hidden = true;
+    vtModal.dataset.open = 'false';
+    delete vtModal.dataset.animating;
+    vtModal.style.opacity = '';
+    vtModal.style.visibility = '';
+    vtModal.style.left = '';
+    vtModal.style.top = '';
+    vtModal.style.width = '';
+    vtModal.style.height = '';
+    vtModal.style.borderRadius = '';
+    if (vtModalContent) {
+      vtModalContent.style.opacity = '';
+      vtModalContent.style.transform = '';
+    }
+    if (vtSourceCard) {
+      delete vtSourceCard.dataset.vtExpanded;
+      delete vtSourceCard.dataset.vtLanding;
+      vtSourceCard.style.opacity = '';
+      vtSourceCard.style.transform = '';
+    }
+    activeMorphCard = null;
+  }
+
+  const modalSpring = createSpringAnimator({
+    initialValue: 0,
+    stiffness: 340,
+    damping: 0.76,
+    precision: 0.001,
+    onUpdate: renderVtModalFrame,
+    onComplete: () => {
+      vtModalSettled = true;
+      if (vtTarget === 1) {
+        delete vtModal.dataset.animating;
+        getTunerApi()?.refreshBindings?.();
+      } else {
+        finalizeVtModalCloseIfSettled();
+      }
+    },
+  });
+
+  const scrimSpring = createSpringAnimator({
+    initialValue: 0,
+    stiffness: 800,
+    damping: 1.0,
+    precision: 0.001,
+    onUpdate: renderVtScrimFrame,
+    onComplete: () => {
+      vtScrimSettled = true;
+      finalizeVtModalCloseIfSettled();
+    },
+  });
 
   function openVtModal(triggerEl, hostEl = vtSourceCard) {
     lastTrigger = triggerEl || vtExpandBtn;
+    const wasHidden = vtModal.hidden;
     populateVtModalContent(hostEl);
-    setModalBackgroundInert(true);
-    const canMorphSource = Boolean(vtSourceCard && !vtSourceCard.hidden && vtSourceCard.offsetParent !== null);
-    root.dataset.vtKind = 'modal';
-    if (canMorphSource) vtSourceCard.classList.add('is-vt-active');
-
-    const apply = () => {
-      vtSourceCard.classList.remove('is-vt-active');
-      if (canMorphSource) vtSourceCard.dataset.vtExpanded = 'true';
-      vtBackdrop.hidden = false;
-      vtModal.dataset.open = 'true';
-    };
-
-    const seq = ++vtSeq;
-    if (typeof document.startViewTransition === 'function' && !rmQuery.matches) {
-      const t = document.startViewTransition(apply);
-      t.ready.catch(() => {});
-      t.finished.finally(() => {
-        if (seq === vtSeq) {
-          delete root.dataset.vtKind;
-          vtModalTitle.focus();
-        }
-      });
-    } else {
-      apply();
-      delete root.dataset.vtKind;
-      vtModalTitle.focus();
+    const sourceEl = (activeInspectHost && activeInspectHost.offsetParent !== null)
+      ? activeInspectHost
+      : (vtSourceCard && vtSourceCard.offsetParent !== null ? vtSourceCard : null);
+    activeMorphCard = sourceEl === vtSourceCard ? vtSourceCard : null;
+    if (vtSourceCard) {
+      clearCardStagger(vtSourceCard);
+      if (activeMorphCard !== vtSourceCard) {
+        delete vtSourceCard.dataset.vtExpanded;
+        delete vtSourceCard.dataset.vtLanding;
+        vtSourceCard.style.opacity = '';
+        vtSourceCard.style.transform = '';
+      }
     }
+    vtSourceRect = getVtSourceRect(sourceEl);
+    vtSourceRadius = getVtSourceRadius(sourceEl);
+
+    if (wasHidden) {
+      vtBackdrop.hidden = false;
+      vtModal.hidden = false;
+    }
+    vtModal.style.visibility = '';
+    vtTargetRect = measureVtTargetRect();
+
+    vtTarget = 1;
+    vtModalSettled = false;
+    vtScrimSettled = false;
+    delete vtBackdrop.dataset.closing;
+    vtModal.dataset.open = 'true';
+    vtModal.dataset.animating = 'true';
+    setModalBackgroundInert(true);
+
+    const { k, z } = getActiveStudioSpringParams(340, 0.76);
+    modalSpring.configure({ stiffness: k, damping: z });
+    scrimSpring.configure({ stiffness: 800, damping: 1.0 });
+
+    if (wasHidden) {
+      modalSpring.snap(0);
+      scrimSpring.snap(0);
+    }
+    modalSpring.setTarget(1);
+    scrimSpring.setTarget(1);
+    vtModalTitle?.focus({ preventScroll: true });
   }
 
   function closeVtModal() {
-    if (vtBackdrop.hidden) return;
+    if (vtModal.hidden || vtTarget === 0) return;
+    vtTarget = 0;
+    vtModalSettled = false;
+    vtScrimSettled = false;
+    vtBackdrop.dataset.closing = 'true';
+    vtModal.dataset.open = 'false';
+    vtModal.dataset.animating = 'true';
     setModalBackgroundInert(false);
-    const canMorphSource = Boolean(vtSourceCard && !vtSourceCard.hidden);
-    root.dataset.vtKind = 'modal';
 
-    const apply = () => {
-      vtModal.dataset.open = 'false';
-      vtBackdrop.hidden = true;
-      delete vtSourceCard.dataset.vtExpanded;
-      if (canMorphSource) vtSourceCard.classList.add('is-vt-active');
-    };
+    const sourceEl = (activeInspectHost && activeInspectHost.offsetParent !== null)
+      ? activeInspectHost
+      : (vtSourceCard && vtSourceCard.offsetParent !== null ? vtSourceCard : null);
+    activeMorphCard = sourceEl === vtSourceCard ? vtSourceCard : null;
+    vtSourceRect = getVtSourceRect(sourceEl);
+    vtSourceRadius = getVtSourceRadius(sourceEl);
 
-    const seq = ++vtSeq;
-    if (typeof document.startViewTransition === 'function' && !rmQuery.matches) {
-      const t = document.startViewTransition(apply);
-      t.ready.catch(() => {});
-      t.finished.finally(() => {
-        if (seq === vtSeq) {
-          vtSourceCard.classList.remove('is-vt-active');
-          delete root.dataset.vtKind;
-          lastTrigger?.focus();
-        }
-      });
-    } else {
-      apply();
-      vtSourceCard.classList.remove('is-vt-active');
-      delete root.dataset.vtKind;
-      lastTrigger?.focus();
+    const isUsableTrigger = lastTrigger
+      && lastTrigger !== document.body
+      && lastTrigger !== document.documentElement
+      && lastTrigger.isConnected
+      && lastTrigger.offsetParent !== null;
+    let restoreEl = isUsableTrigger ? lastTrigger : null;
+    if (!restoreEl && activeInspectHost && activeInspectHost.isConnected) {
+      restoreEl = activeInspectHost.closest('.bento-table-scroll')
+        || activeInspectHost.querySelector('button, [href], [tabindex]:not([tabindex="-1"])')
+        || activeInspectHost;
+      if (restoreEl === activeInspectHost && !restoreEl.hasAttribute('tabindex')) {
+        restoreEl.setAttribute('tabindex', '-1');
+      }
     }
+    if (!restoreEl) restoreEl = vtExpandBtn;
+    restoreEl?.focus({ preventScroll: true });
+
+    const { k, z } = getActiveStudioSpringParams(340, 0.76);
+    const zCollapse = z <= 0.80 ? Math.min(z, 0.66) : Math.min(0.88, z * 0.90);
+    modalSpring.configure({ stiffness: Math.max(280, k), damping: zCollapse });
+    scrimSpring.configure({ stiffness: 680, damping: 1.0 });
+
+    modalSpring.setTarget(0);
+    scrimSpring.setTarget(0);
   }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab' || vtTarget !== 1 || vtModal.hidden || cmdDialog?.open) return;
+    const focusables = [...vtModal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+      .filter((el) => el.offsetParent !== null && !el.closest('[hidden], [inert]'));
+    if (!focusables.length) {
+      e.preventDefault();
+      vtModalTitle?.focus({ preventScroll: true });
+      return;
+    }
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey) {
+      if (document.activeElement === first || !vtModal.contains(document.activeElement) || document.activeElement === vtModalTitle) {
+        e.preventDefault();
+        last.focus({ preventScroll: true });
+      }
+    } else if (document.activeElement === last || !vtModal.contains(document.activeElement)) {
+      e.preventDefault();
+      first.focus({ preventScroll: true });
+    }
+  });
 
   vtExpandBtn.addEventListener('click', () => openVtModal(vtExpandBtn, vtSourceCard));
   document.getElementById('rail-expand-vt').addEventListener('click', (e) => openVtModal(e.currentTarget, vtSourceCard));
   vtCloseBtn.addEventListener('click', closeVtModal);
   vtBackdrop.addEventListener('click', (e) => {
     if (e.target === vtBackdrop) closeVtModal();
+  });
+  window.addEventListener('resize', () => {
+    if (!vtModal.hidden && vtTarget === 1) {
+      const sourceEl = (activeInspectHost && activeInspectHost.offsetParent !== null)
+        ? activeInspectHost
+        : (vtSourceCard && vtSourceCard.offsetParent !== null ? vtSourceCard : null);
+      vtSourceRect = getVtSourceRect(sourceEl);
+      vtTargetRect = measureVtTargetRect();
+      renderVtModalFrame(vtModalP);
+    }
   });
 
   // Bidirectional Adaptive Blur Toolbar (View Transition scoped strictly to .is-toolbar-morphing)
@@ -2950,6 +3716,7 @@
   const dockIcon = document.getElementById('bento-dock-icon');
   const modeLabel = document.getElementById('bento-toolbar-mode-label');
   let toolbarVtSeq = 0;
+  let activeToolbarVt = null;
 
   function toggleBentoToolbarDock() {
     const next = bentoToolbar.dataset.toolbarMode === 'docked' ? 'floating' : 'docked';
@@ -2960,13 +3727,18 @@
       modeLabel.textContent = `${next} · md3e-blur-primary`;
       showToast(`Bento toolbar -> ${next}`);
     };
-    if (typeof document.startViewTransition === 'function' && !rmQuery.matches) {
+    if (typeof document.startViewTransition === 'function' && !rmQuery.matches && vtTarget !== 1 && tunerTarget !== 1 && bentoToolbar.offsetParent !== null) {
+      activeToolbarVt?.skipTransition?.();
       const seq = ++toolbarVtSeq;
       bentoToolbar.classList.add('is-toolbar-morphing');
       const t = document.startViewTransition(apply);
+      activeToolbarVt = t;
       t.ready.catch(() => {});
       t.finished.finally(() => {
-        if (seq === toolbarVtSeq) bentoToolbar.classList.remove('is-toolbar-morphing');
+        if (seq === toolbarVtSeq) {
+          bentoToolbar.classList.remove('is-toolbar-morphing');
+          if (activeToolbarVt === t) activeToolbarVt = null;
+        }
       });
     } else {
       apply();
@@ -2974,38 +3746,43 @@
   }
   dockToggle.addEventListener('click', toggleBentoToolbarDock);
 
-  // Layer 4 Personal Studio Engine + Co-Tuning Drawer + Split Handle + Ctrl+K Command Palette
-  const tunerBtn = document.getElementById('btn-studio-tuner');
-  const tunerCloseBtn = document.getElementById('btn-studio-tuner-close');
-  const profileToggleBtn = document.getElementById('btn-studio-profile');
-  const profileLabel = document.getElementById('studio-profile-label');
-  const previewMotionBtn = document.getElementById('btn-studio-preview');
-  const copyCssBtn = document.getElementById('btn-studio-copy-css');
-  const cmdDialog = document.getElementById('studio-cmd-dialog');
-  const cmdOpenBtn = document.getElementById('btn-studio-cmdk');
-  const cmdCloseBtn = document.getElementById('btn-studio-cmd-close');
-  const cmdInput = document.getElementById('studio-cmd-input');
-  const cmdList = document.getElementById('studio-cmd-list');
+  // Layer 4 Personal Studio Engine + Interruptible Co-Tuning Drawer + Split Handle + Ctrl+K Command Palette
+  let inStudioSync = false;
 
   function syncPhysicsMotionFromStudio(snap) {
-    const isPersonal = root.dataset.studioProfile === 'personal-studio';
-    const k = isPersonal && snap ? snap.values.springStiffness : 340;
-    const z = isPersonal && snap ? snap.values.springDamping : 0.76;
-    const modalSpec = isPersonal && snap
-      ? synthesizeSpringLinearCss(k, z, 36)
-      : baseModalSpec;
-    root.style.setProperty('--md-bento-motion-modal-duration', `${modalSpec.durationMs}ms`);
-    root.style.setProperty('--md-bento-motion-modal-easing', modalSpec.linearEasing);
-    root.style.setProperty('--md-bento-motion-modal', modalSpec.cssShorthand);
-    heroMorpher.configure({ stiffness: k, damping: z });
-    if (heroMorphCaption) {
-      heroMorphCaption.textContent = `28px outer / 16px concentric inner well · M3E spring k=${k}, ζ=${Number(z).toFixed(2)} (~${modalSpec.durationMs}ms)`;
-    }
-    if (bentoSplitHandle && snap) {
-      bentoSplitHandle.setAttribute('aria-valuenow', String(snap.values.splitRatio));
-    }
-    if (!vtBackdrop.hidden) {
-      populateVtModalContent(activeInspectHost);
+    if (inStudioSync) return;
+    inStudioSync = true;
+    try {
+      const isPersonal = root.dataset.studioProfile === 'personal-studio';
+      const k = isPersonal && snap ? snap.values.springStiffness : 340;
+      const z = isPersonal && snap ? snap.values.springDamping : 0.76;
+      const modalSpec = isPersonal && snap
+        ? synthesizeSpringLinearCss(k, z, 36)
+        : baseModalSpec;
+      if (!rmQuery.matches) {
+        root.style.setProperty('--md-bento-motion-modal-duration', `${modalSpec.durationMs}ms`);
+        root.style.setProperty('--md-bento-motion-modal-easing', modalSpec.linearEasing);
+        root.style.setProperty('--md-bento-motion-modal', modalSpec.cssShorthand);
+      } else {
+        root.style.removeProperty('--md-bento-motion-modal-duration');
+        root.style.removeProperty('--md-bento-motion-modal-easing');
+        root.style.removeProperty('--md-bento-motion-modal');
+      }
+      heroMorpher.configure({ stiffness: k, damping: z });
+      if (heroMorphCaption) {
+        heroMorphCaption.textContent = `28px outer / 16px concentric inner well · M3E spring k=${k}, ζ=${Number(z).toFixed(2)} (~${modalSpec.durationMs}ms)`;
+      }
+      if (bentoSplitHandle) {
+        const ratioVal = isPersonal && snap ? snap.values.splitRatio : 58;
+        bentoSplitHandle.setAttribute('aria-valuenow', String(ratioVal));
+      }
+      if (!vtModal.hidden && vtTarget === 1) {
+        populateVtModalContent(activeInspectHost);
+        vtTargetRect = measureVtTargetRect();
+        renderVtModalFrame(vtModalP);
+      }
+    } finally {
+      inStudioSync = false;
     }
   }
 
@@ -3013,14 +3790,79 @@
     onChange: syncPhysicsMotionFromStudio,
   });
 
+  if (hdrSwitchBtn && hdrSwitchBtn.dataset.studioHdrBound !== 'true') {
+    hdrSwitchBtn.dataset.studioHdrBound = 'true';
+    hdrSwitchBtn.addEventListener('click', () => {
+      const tuner = getTunerApi();
+      if (typeof tuner?.setHdrEnabled === 'function') {
+        const next = !(tuner.isHdrEnabled?.() ?? (hdrSwitchBtn.getAttribute('aria-checked') === 'true'));
+        tuner.setHdrEnabled(next);
+        showToast(next ? 'Adaptive HDR Specular: ON' : 'Adaptive HDR Specular: SDR');
+      } else {
+        const next = hdrSwitchBtn.getAttribute('aria-checked') !== 'true';
+        hdrSwitchBtn.setAttribute('aria-checked', String(next));
+        root.dataset.studioHdr = next ? 'on' : 'off';
+        if (hdrBadgeEl) hdrBadgeEl.textContent = next ? 'HDR Ready' : 'HDR Off';
+        showToast(next ? 'Adaptive HDR Specular: ON' : 'Adaptive HDR Specular: SDR');
+      }
+    });
+  }
+
+  function syncTitlebarBottomVar() {
+    if (!bentoTitlebar) return;
+    const h = Math.ceil(Math.max(44, bentoTitlebar.getBoundingClientRect().height));
+    root.style.setProperty('--md-bento-titlebar-bottom', `${h + 8}px`);
+  }
+  syncTitlebarBottomVar();
+  if ('ResizeObserver' in window && bentoTitlebar) {
+    new ResizeObserver(syncTitlebarBottomVar).observe(bentoTitlebar);
+  }
+  window.addEventListener('resize', syncTitlebarBottomVar);
+
+  function finalizeTunerClose() {
+    if (!studioTunerPanel) return;
+    studioTunerPanel.hidden = true;
+    studioTunerPanel.inert = true;
+    delete studioTunerPanel.dataset.tunerState;
+    studioTunerPanel.style.opacity = '';
+    studioTunerPanel.style.transform = '';
+  }
+
+  const tunerSpring = createSpringAnimator({
+    initialValue: 0,
+    stiffness: 420,
+    damping: 0.82,
+    precision: 0.001,
+    onUpdate: (v) => {
+      if (!studioTunerPanel) return;
+      if (tunerTarget === 0 && v <= 0.015) {
+        tunerSpring.stop();
+        finalizeTunerClose();
+        return;
+      }
+      const clampedOpacity = Math.max(0, Math.min(1, v));
+      const shiftX = (1 - v) * 44;
+      studioTunerPanel.style.opacity = clampedOpacity.toFixed(4);
+      studioTunerPanel.style.transform = `translate3d(${shiftX.toFixed(2)}px, 0, 0)`;
+    },
+    onComplete: () => {
+      if (!studioTunerPanel) return;
+      if (tunerTarget === 0) {
+        finalizeTunerClose();
+      } else {
+        studioTunerPanel.style.transform = 'none';
+      }
+    },
+  });
+
   function setStudioProfile(active) {
     root.dataset.studioProfile = active ? 'personal-studio' : 'base';
     if (profileToggleBtn) profileToggleBtn.setAttribute('aria-pressed', String(active));
     if (profileLabel) profileLabel.textContent = active ? 'Studio: ON' : 'Studio: Base';
-    if (!active && studioTunerPanel && !studioTunerPanel.hidden) {
+    if (!active && tunerTarget === 1) {
       setTunerOpen(false);
     }
-    syncPhysicsMotionFromStudio(studioApi?.getState());
+    syncPhysicsMotionFromStudio(getTunerApi()?.getState?.());
     showToast(active ? 'Personal Studio Layer 4: ON' : 'Layer 3 Base Bento active');
   }
 
@@ -3029,19 +3871,40 @@
     if (open && root.dataset.studioProfile !== 'personal-studio') {
       setStudioProfile(true);
     }
-    studioTunerPanel.hidden = !open;
+    tunerTarget = open ? 1 : 0;
     tunerBtn.setAttribute('aria-expanded', String(open));
     tunerBtn.setAttribute('aria-pressed', String(open));
+
+    const { k, z } = getActiveStudioSpringParams(420, 0.82);
+
     if (open) {
-      studioApi?.refreshBindings();
+      tunerSpring.configure({ stiffness: Math.max(360, k), damping: Math.max(0.76, z) });
+      const wasHidden = studioTunerPanel.hidden;
+      syncTitlebarBottomVar();
+      studioTunerPanel.hidden = false;
+      studioTunerPanel.inert = false;
+      studioTunerPanel.dataset.tunerState = 'open';
+      if (wasHidden) {
+        tunerSpring.snap(0);
+      }
+      tunerSpring.setTarget(1);
+      getTunerApi()?.refreshBindings?.();
       studioTunerPanel.querySelector('.studio-scrubber')?.focus({ preventScroll: true });
+    } else {
+      studioTunerPanel.inert = true;
+      if (studioTunerPanel.hidden) {
+        return;
+      }
+      studioTunerPanel.dataset.tunerState = 'closing';
+      tunerSpring.configure({ stiffness: 900, damping: 1.0, precision: 0.001 });
+      tunerSpring.setTarget(0);
     }
   }
 
-  tunerBtn?.addEventListener('click', () => setTunerOpen(studioTunerPanel?.hidden !== false));
+  tunerBtn?.addEventListener('click', () => setTunerOpen(tunerTarget !== 1));
   tunerCloseBtn?.addEventListener('click', () => {
     setTunerOpen(false);
-    tunerBtn?.focus();
+    tunerBtn?.focus({ preventScroll: true });
   });
   profileToggleBtn?.addEventListener('click', () => {
     setStudioProfile(root.dataset.studioProfile !== 'personal-studio');
@@ -3054,7 +3917,7 @@
   });
 
   copyCssBtn?.addEventListener('click', () => {
-    const cssText = studioApi?.exportCss() || '';
+    const cssText = getTunerApi()?.exportCss?.() || '';
     navigator.clipboard?.writeText(cssText).catch(() => {});
     showToast('Copied Studio CSS patch');
   });
@@ -3062,31 +3925,39 @@
   // Resizable Split Handle (#bento-split-handle) — Drag 32%..68%, Double-Click / Enter Spring Reset to 58%
   let splitDrag = null;
   let splitResetActive = false;
+  let curSplitVal = 58;
   const splitSpring = createSpringAnimator({
     initialValue: 58,
     stiffness: 340,
     damping: 0.76,
     precision: 0.05,
-    onUpdate: (v, vel) => {
+    onUpdate: (v) => {
+      curSplitVal = v;
       if (!splitResetActive) return;
-      root.style.setProperty('--md-studio-split-ratio', `${v.toFixed(2)}%`);
-      bentoSplitHandle?.setAttribute('aria-valuenow', String(Math.round(v)));
-      if (vel === 0) {
-        splitResetActive = false;
-        studioApi?.setParam('splitRatio', 58, { source: 'human', announce: false });
-        showToast('Bento split reset -> 58%');
-      }
+      const bounded = Math.max(32, Math.min(68, v));
+      root.style.setProperty('--md-studio-split-ratio', `${bounded.toFixed(2)}%`);
+      bentoSplitHandle?.setAttribute('aria-valuenow', String(Math.round(Math.max(32, Math.min(68, bounded)))));
+    },
+    onComplete: () => {
+      if (!splitResetActive) return;
+      splitResetActive = false;
+      curSplitVal = 58;
+      root.style.setProperty('--md-studio-split-ratio', '58%');
+      bentoSplitHandle?.setAttribute('aria-valuenow', '58');
+      getTunerApi()?.setParam?.('splitRatio', 58, { source: 'human', announce: false });
+      showToast('Bento split reset -> 58%');
     },
   });
 
   function resetSplitWithSpring() {
-    const snap = studioApi?.getState();
-    const cur = snap?.values?.splitRatio ?? 58;
-    const k = snap?.values?.springStiffness ?? 340;
-    const z = snap?.values?.springDamping ?? 0.76;
+    const snap = getTunerApi()?.getState?.();
+    const cur = splitResetActive ? curSplitVal : (snap?.values?.splitRatio ?? 58);
+    const { k, z } = getActiveStudioSpringParams(340, 0.76);
     splitSpring.configure({ stiffness: k, damping: z });
+    if (!splitResetActive) {
+      splitSpring.snap(cur);
+    }
     splitResetActive = true;
-    splitSpring.snap(cur);
     splitSpring.setTarget(58);
   }
 
@@ -3107,7 +3978,8 @@
     if (!rect.width) return;
     const rawPct = ((e.clientX - rect.left) / rect.width) * 100;
     const clamped = Math.max(32, Math.min(68, Math.round(rawPct)));
-    studioApi?.setParam('splitRatio', clamped, { source: 'human', announce: false });
+    curSplitVal = clamped;
+    getTunerApi()?.setParam?.('splitRatio', clamped, { source: 'human', announce: false });
     root.style.setProperty('--md-studio-split-ratio', `${clamped}%`);
     bentoSplitHandle.setAttribute('aria-valuenow', String(clamped));
   });
@@ -3136,29 +4008,37 @@
       const next = Math.max(32, Math.min(68, cur + delta));
       splitResetActive = false;
       splitSpring.stop();
-      studioApi?.setParam('splitRatio', next, { source: 'human' });
+      curSplitVal = next;
+      getTunerApi()?.setParam?.('splitRatio', next, { source: 'human' });
       root.style.setProperty('--md-studio-split-ratio', `${next}%`);
       bentoSplitHandle.setAttribute('aria-valuenow', String(next));
     } else if (e.key === 'Home') {
       e.preventDefault();
-      studioApi?.setParam('splitRatio', 32, { source: 'human' });
+      splitResetActive = false;
+      splitSpring.stop();
+      curSplitVal = 32;
+      getTunerApi()?.setParam?.('splitRatio', 32, { source: 'human' });
       root.style.setProperty('--md-studio-split-ratio', '32%');
       bentoSplitHandle.setAttribute('aria-valuenow', '32');
     } else if (e.key === 'End') {
       e.preventDefault();
-      studioApi?.setParam('splitRatio', 68, { source: 'human' });
+      splitResetActive = false;
+      splitSpring.stop();
+      curSplitVal = 68;
+      getTunerApi()?.setParam?.('splitRatio', 68, { source: 'human' });
       root.style.setProperty('--md-studio-split-ratio', '68%');
       bentoSplitHandle.setAttribute('aria-valuenow', '68');
     }
   });
 
-  // Frosted <dialog> Command Palette (Ctrl+K) with Live Fuzzy Search Filtering
+  // Frosted Interruptible <dialog> Command Palette (Ctrl+K) with Live Fuzzy Search Filtering
   const STUDIO_COMMANDS = [
     { id: 'cmd-theme', label: 'Toggle Theme (Light / Dark)', hint: 'Theme', keywords: 'theme dark light mode contrast', run: () => themeBtn.click() },
-    { id: 'cmd-tuner', label: 'Toggle Personal Studio Co-Tuning Drawer', hint: 'Tuner', keywords: 'tuner studio scrubbers glass physics drawer', run: () => setTunerOpen(studioTunerPanel?.hidden !== false) },
-    { id: 'cmd-harmonize', label: 'Auto-Harmonize Untouched Studio Tokens', hint: 'AI Sync', keywords: 'harmonize auto studio intent co-tune', run: () => { if (root.dataset.studioProfile !== 'personal-studio') setStudioProfile(true); studioApi?.harmonize(); } },
-    { id: 'cmd-rail', label: 'Toggle Navigation Rail (80px <-> 220px)', hint: '[', keywords: 'rail nav sidebar collapse expand', run: () => setBentoRailExpanded(bentoRail?.dataset.railExpanded !== 'true') },
-    { id: 'cmd-expand', label: 'Expand Runtime Diagnostics Modal', hint: 'VT', keywords: 'expand view transition diagnostics modal', run: () => openVtModal(cmdOpenBtn, vtSourceCard) },
+    { id: 'cmd-tuner', label: 'Toggle Personal Studio Co-Tuning Drawer', hint: 'Tuner', keywords: 'tuner studio scrubbers glass physics drawer', run: () => setTunerOpen(tunerTarget !== 1) },
+    { id: 'cmd-hdr', label: 'Toggle Adaptive HDR Specular', hint: 'HDR', keywords: 'hdr display-p3 specular headroom wide gamut', run: () => hdrSwitchBtn?.click() },
+    { id: 'cmd-harmonize', label: 'Auto-Harmonize Untouched Studio Tokens', hint: 'AI Sync', keywords: 'harmonize auto studio intent co-tune', run: () => { if (root.dataset.studioProfile !== 'personal-studio') setStudioProfile(true); getTunerApi()?.harmonize?.(); } },
+    { id: 'cmd-rail', label: 'Toggle Navigation Rail (80px <-> 220px)', hint: '[', keywords: 'rail nav sidebar collapse expand', run: () => setBentoRailExpanded(railTarget !== 1) },
+    { id: 'cmd-expand', label: 'Expand Runtime Diagnostics Modal', hint: 'FLIP', keywords: 'expand modal flip diagnostics', run: () => openVtModal(cmdOpenBtn, vtSourceCard) },
     { id: 'cmd-view-all', label: 'Switch View: All Bento (8)', hint: 'View', keywords: 'all bento overview 8 cards', run: () => switchBentoView('all') },
     { id: 'cmd-view-rollout', label: 'Switch View: Mesh & Rollout', hint: 'View', keywords: 'rollout mesh wave hero', run: () => switchBentoView('rollout') },
     { id: 'cmd-view-telemetry', label: 'Switch View: Node Telemetry', hint: 'View', keywords: 'telemetry table latency', run: () => switchBentoView('telemetry') },
@@ -3171,11 +4051,67 @@
     { id: 'cmd-blur', label: 'Toggle Optical Glass Blur (ON / Solid)', hint: 'Blur', keywords: 'blur transparency solid fallback glass', run: () => rtBtn.click() },
     { id: 'cmd-profile', label: 'Toggle Layer 4 Personal Studio Profile', hint: 'Layer 4', keywords: 'studio profile personal base layer 4', run: () => setStudioProfile(root.dataset.studioProfile !== 'personal-studio') },
     { id: 'cmd-toolbar', label: 'Dock / Float Adaptive Blur Toolbar', hint: 'Toolbar', keywords: 'toolbar dock float morph', run: () => toggleBentoToolbarDock() },
-    { id: 'cmd-reset', label: 'Reset Studio Scrubbers & Split Ratio', hint: 'Reset', keywords: 'reset default studio 58% 500ms', run: () => { studioApi?.reset(); root.style.setProperty('--md-studio-split-ratio', '58%'); } },
+    { id: 'cmd-reset', label: 'Reset Studio Scrubbers & Split Ratio', hint: 'Reset', keywords: 'reset default studio 58% 500ms', run: () => { getTunerApi()?.reset?.(); root.style.setProperty('--md-studio-split-ratio', '58%'); } },
   ];
 
   let filteredCmds = [...STUDIO_COMMANDS];
   let selectedCmdIdx = 0;
+  let cmdTarget = 0;
+  let cmdLastFocusEl = null;
+  let cmdSuppressRestoreFocus = false;
+  let cmdCloseHandled = false;
+  let cmdBackdropDownOutside = false;
+
+  function restoreCmdDialogFocus() {
+    if (!cmdSuppressRestoreFocus) {
+      const restore = (cmdLastFocusEl && cmdLastFocusEl.isConnected) ? cmdLastFocusEl : cmdOpenBtn;
+      restore?.focus({ preventScroll: true });
+    }
+    cmdSuppressRestoreFocus = false;
+    cmdLastFocusEl = null;
+  }
+
+  function finalizeCmdDialogClose() {
+    if (!cmdDialog) return;
+    cmdCloseHandled = true;
+    delete cmdDialog.dataset.closing;
+    cmdDialog.style.opacity = '';
+    cmdDialog.style.transform = '';
+    cmdDialog.style.removeProperty('--cmd-backdrop-progress');
+    if (cmdDialog.open) {
+      cmdDialog.close();
+    }
+    restoreCmdDialogFocus();
+  }
+
+  const cmdSpring = createSpringAnimator({
+    initialValue: 0,
+    stiffness: 520,
+    damping: 0.84,
+    precision: 0.001,
+    onUpdate: (v) => {
+      if (!cmdDialog) return;
+      if (cmdTarget === 0 && v <= 0.015) {
+        cmdSpring.stop();
+        finalizeCmdDialogClose();
+        return;
+      }
+      const opacity = Math.max(0, Math.min(1, v));
+      const scale = 0.94 + 0.06 * v;
+      const ty = (1 - v) * 14;
+      cmdDialog.style.opacity = opacity.toFixed(4);
+      cmdDialog.style.transform = `translate3d(0, ${ty.toFixed(2)}px, 0) scale(${scale.toFixed(4)})`;
+      cmdDialog.style.setProperty('--cmd-backdrop-progress', opacity.toFixed(4));
+    },
+    onComplete: () => {
+      if (!cmdDialog) return;
+      if (cmdTarget === 0) {
+        finalizeCmdDialogClose();
+      } else {
+        cmdDialog.style.transform = 'none';
+      }
+    },
+  });
 
   function fuzzyScore(query, text) {
     if (!query) return 1;
@@ -3229,30 +4165,85 @@
       btn.addEventListener('click', () => executeStudioCommand(cmd));
       cmdList.appendChild(btn);
     });
-    studioApi?.refreshBindings();
+    cmdList.querySelector('.studio-cmd-item[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' });
+    getTunerApi()?.refreshBindings?.();
+  }
+
+  function updateCmdSelection(nextIdx) {
+    if (!filteredCmds.length) return;
+    selectedCmdIdx = (nextIdx + filteredCmds.length) % filteredCmds.length;
+    const items = cmdList?.querySelectorAll('.studio-cmd-item');
+    items?.forEach((item, idx) => {
+      item.setAttribute('aria-selected', String(idx === selectedCmdIdx));
+    });
+    cmdList?.querySelector('.studio-cmd-item[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' });
+  }
+
+  function closeCmdPalette({ immediate = false, suppressFocusRestore = false } = {}) {
+    if (!cmdDialog || !cmdDialog.open) return;
+    if (cmdTarget === 0 && !immediate) return;
+    if (suppressFocusRestore) cmdSuppressRestoreFocus = true;
+    cmdTarget = 0;
+    cmdDialog.dataset.closing = 'true';
+    if (immediate || rmQuery.matches) {
+      cmdSpring.stop();
+      finalizeCmdDialogClose();
+    } else {
+      cmdSpring.configure({ stiffness: 1100, damping: 1.0, precision: 0.001 });
+      cmdSpring.setTarget(0);
+    }
   }
 
   function executeStudioCommand(cmd) {
     if (!cmd) return;
-    cmdDialog?.close();
+    closeCmdPalette({ immediate: true, suppressFocusRestore: true });
     cmd.run();
   }
 
   function openCmdPalette() {
     if (!cmdDialog) return;
-    if (cmdDialog.open) {
-      cmdDialog.close();
+    if (cmdTarget === 1 && cmdDialog.open) {
+      closeCmdPalette();
       return;
     }
-    if (cmdInput) cmdInput.value = '';
-    selectedCmdIdx = 0;
-    renderCommandList();
-    cmdDialog.showModal();
+    const wasClosed = !cmdDialog.open;
+    cmdTarget = 1;
+    cmdCloseHandled = false;
+    delete cmdDialog.dataset.closing;
+    if (wasClosed) {
+      cmdLastFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : cmdOpenBtn;
+      if (cmdInput) cmdInput.value = '';
+      selectedCmdIdx = 0;
+      renderCommandList();
+      cmdSpring.snap(0);
+      cmdDialog.showModal();
+    }
+    const { k, z } = getActiveStudioSpringParams(520, 0.84);
+    cmdSpring.configure({ stiffness: Math.max(460, k), damping: Math.max(0.80, z), precision: 0.001 });
+    cmdSpring.setTarget(1);
     cmdInput?.focus({ preventScroll: true });
   }
 
+  function isOutsideDialogRect(dialogEl, clientX, clientY) {
+    const r = dialogEl.getBoundingClientRect();
+    return clientX < r.left || clientX > r.right || clientY < r.top || clientY > r.bottom;
+  }
+
   cmdOpenBtn?.addEventListener('click', openCmdPalette);
-  cmdCloseBtn?.addEventListener('click', () => cmdDialog?.close());
+  cmdCloseBtn?.addEventListener('click', () => closeCmdPalette());
+  cmdDialog?.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    closeCmdPalette();
+  });
+  cmdDialog?.addEventListener('pointerdown', (e) => {
+    cmdBackdropDownOutside = e.target === cmdDialog && isOutsideDialogRect(cmdDialog, e.clientX, e.clientY);
+  });
+  cmdDialog?.addEventListener('pointerup', (e) => {
+    if (cmdBackdropDownOutside && e.target === cmdDialog && isOutsideDialogRect(cmdDialog, e.clientX, e.clientY)) {
+      closeCmdPalette();
+    }
+    cmdBackdropDownOutside = false;
+  });
   cmdInput?.addEventListener('input', () => {
     selectedCmdIdx = 0;
     renderCommandList();
@@ -3260,51 +4251,69 @@
   cmdInput?.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      if (filteredCmds.length) {
-        selectedCmdIdx = (selectedCmdIdx + 1) % filteredCmds.length;
-        renderCommandList();
-      }
+      updateCmdSelection(selectedCmdIdx + 1);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      if (filteredCmds.length) {
-        selectedCmdIdx = (selectedCmdIdx - 1 + filteredCmds.length) % filteredCmds.length;
-        renderCommandList();
-      }
+      updateCmdSelection(selectedCmdIdx - 1);
     } else if (e.key === 'Enter') {
       e.preventDefault();
       executeStudioCommand(filteredCmds[selectedCmdIdx]);
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      cmdDialog?.close();
+      e.stopPropagation();
+      closeCmdPalette();
+    }
+  });
+  cmdDialog?.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      closeCmdPalette();
     }
   });
   cmdDialog?.addEventListener('close', () => {
-    cmdOpenBtn?.focus({ preventScroll: true });
+    cmdTarget = 0;
+    delete cmdDialog.dataset.closing;
+    cmdDialog.style.opacity = '';
+    cmdDialog.style.transform = '';
+    cmdDialog.style.removeProperty('--cmd-backdrop-progress');
+    if (!cmdCloseHandled) {
+      restoreCmdDialogFocus();
+    }
+    cmdCloseHandled = false;
   });
 
-  // Global Keyboard Shortcuts (Ctrl+K Command Palette, Escape VT Modal, `[` Navigation Rail)
+  // Global Keyboard Shortcuts (Ctrl+K Command Palette, Escape Context/Modal/Tuner, `[` Navigation Rail)
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k') {
       e.preventDefault();
       openCmdPalette();
       return;
     }
-    if (e.key === 'Escape' && !vtBackdrop.hidden) {
-      e.preventDefault();
-      closeVtModal();
-      return;
-    }
-    if (e.key === 'Escape' && studioTunerPanel && !studioTunerPanel.hidden && !cmdDialog?.open) {
-      e.preventDefault();
-      setTunerOpen(false);
-      tunerBtn?.focus();
-      return;
+    if (e.key === 'Escape') {
+      if (cmdDialog?.open) return;
+      if (ctxTarget === 1) {
+        e.preventDefault();
+        closeContextMenu({ restoreFocus: true });
+        return;
+      }
+      if (vtTarget === 1) {
+        e.preventDefault();
+        closeVtModal();
+        return;
+      }
+      if (tunerTarget === 1) {
+        e.preventDefault();
+        setTunerOpen(false);
+        tunerBtn?.focus({ preventScroll: true });
+        return;
+      }
     }
     const target = e.target;
     const inEditable = target instanceof Element && target.matches(':read-write, select, input, textarea');
     if (!inEditable && !e.ctrlKey && !e.metaKey && !e.altKey && e.key === '[' && window.innerWidth >= 840) {
       e.preventDefault();
-      setBentoRailExpanded(bentoRail?.dataset.railExpanded !== 'true');
+      setBentoRailExpanded(railTarget !== 1);
     }
   });
 

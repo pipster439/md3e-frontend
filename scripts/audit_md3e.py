@@ -62,12 +62,13 @@ Finding codes
     MD3E026  unbound md3e-* modifier or legacy MWC bridge class (warning)
     MD3E027  slider accent-color without appearance:none or fixed menu hit-trap (warning)
     MD3E028  unbalanced CSS braces { / }                         (error)
+    MD3E029  complex-component hygiene (label bleed, dialog scroll/ARIA, widget state) (warning)
     MD3E101  [desktop-bento] 1px border or rectangular box-shadow (custom)
     MD3E102  [desktop-bento] <4 surface-container nesting tiers   (custom)
     MD3E103  [desktop-bento] missing concentric 28px/16px radii   (custom)
     MD3E104  [desktop-bento] missing Hero wave/sparkline/morph anchors (custom)
-    MD3E201  [personal-studio] optical glass / caustic / reduced-transparency hygiene (custom)
-    MD3E202  [personal-studio] <dialog> modal overscroll-behavior / role / focusable controls (custom)
+    MD3E201  [personal-studio] optical glass / clean canvas (no caustic bleed) / HDR / RT hygiene (custom)
+    MD3E202  [personal-studio] <dialog> modal overscroll-behavior / role / scroll-lock / focusable controls (custom)
 """
 
 from __future__ import annotations
@@ -82,6 +83,17 @@ from dataclasses import dataclass, field
 SEVERITIES = ("error", "warning", "info", "custom")
 SEVERITY_RANK = {s: i for i, s in enumerate(SEVERITIES)}
 AUDIT_MODES = ("strict", "desktop-bento", "personal-studio")
+
+
+def normalize_mode(val: str) -> str:
+    low = val.strip().lower()
+    if low == "default":
+        return "strict"
+    if low in AUDIT_MODES:
+        return low
+    raise argparse.ArgumentTypeError(
+        f"invalid mode {val!r}; choose from {', '.join(AUDIT_MODES)} (alias: default)"
+    )
 
 
 def normalize_severity(val: str) -> str:
@@ -364,6 +376,146 @@ class RuleBlock:
     declarations: list[tuple[str, str, int, str]] = field(default_factory=list)
     in_forced_colors: bool = False
     custom_color_vars: dict[str, tuple[str, int, str]] = field(default_factory=dict)
+    in_reduced_transparency: bool = False
+    in_prefers_contrast: bool = False
+
+
+LAYOUT_ALLOW_DISCRETE_PROPS = frozenset({
+    "flex-direction",
+    "grid-template-columns",
+    "grid-template-rows",
+    "flex-wrap",
+    "gap",
+    "row-gap",
+    "column-gap",
+})
+OPEN_STATE_PSEUDO_RE = re.compile(r"(?::popover-open|\.\:popover-open|\[open\b|:open\b)", re.I)
+
+
+def _strip_functional_pseudo(text: str, name: str) -> str:
+    """Remove `:name(...)` functional pseudos with balanced parentheses."""
+    out: list[str] = []
+    i = 0
+    low = text.lower()
+    pat = f":{name}("
+    n = len(text)
+    while i < n:
+        if low.startswith(pat, i):
+            depth = 1
+            j = i + len(pat)
+            while j < n and depth > 0:
+                if text[j] == "(":
+                    depth += 1
+                elif text[j] == ")":
+                    depth -= 1
+                j += 1
+            i = j
+        else:
+            out.append(text[i])
+            i += 1
+    return "".join(out)
+
+
+def _extract_balanced_call_args(text: str, start_idx: int) -> tuple[str, int]:
+    """Given index at `(`, return `(inner, end_idx_after_close)`."""
+    depth = 1
+    j = start_idx + 1
+    n = len(text)
+    while j < n and depth > 0:
+        if text[j] == "(":
+            depth += 1
+        elif text[j] == ")":
+            depth -= 1
+        j += 1
+    return text[start_idx + 1 : j - 1 if depth == 0 else j], j
+
+
+def _branch_specificity(branch: str) -> tuple[int, int, int]:
+    """Compute CSS specificity `(a, b, c)` honouring `:where()` = 0 and `:is()/:not()/:has()` max arg."""
+    s = re.sub(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'', "[]", branch.strip())
+    s = _strip_functional_pseudo(s, "where")
+    a = b = c = 0
+
+    def eval_segment(seg: str) -> tuple[int, int, int]:
+        la = lb = lc = 0
+        # Recursively fold :is(...), :not(...), :has(...)
+        buf: list[str] = []
+        idx = 0
+        low_seg = seg.lower()
+        while idx < len(seg):
+            matched_fn = None
+            for fn in ("is", "not", "has", "matches"):
+                if low_seg.startswith(f":{fn}(", idx):
+                    matched_fn = fn
+                    break
+            if matched_fn:
+                inner, end_i = _extract_balanced_call_args(seg, idx + len(matched_fn) + 1)
+                args = split_top_level_commas(inner)
+                best = max((_branch_specificity(arg) for arg in args if arg.strip()), default=(0, 0, 0))
+                la += best[0]
+                lb += best[1]
+                lc += best[2]
+                idx = end_i
+            else:
+                buf.append(seg[idx])
+                idx += 1
+        rem = "".join(buf)
+        # Strip ::pseudo-elements first -> c += 1 each
+        la += len(re.findall(r"#[a-zA-Z_-][a-zA-Z0-9_-]*", rem))
+        rem = re.sub(r"#[a-zA-Z_-][a-zA-Z0-9_-]*", " ", rem)
+        pe_matches = re.findall(r"::[a-zA-Z_-][a-zA-Z0-9_-]*(?:\([^)]*\))?", rem)
+        lc += len(pe_matches)
+        rem = re.sub(r"::[a-zA-Z_-][a-zA-Z0-9_-]*(?:\([^)]*\))?", " ", rem)
+        # Attribute selectors & classes & single-colon pseudo-classes -> b += 1 each
+        lb += len(re.findall(r"\[[^\]]*\]", rem))
+        rem = re.sub(r"\[[^\]]*\]", " ", rem)
+        lb += len(re.findall(r"\.[a-zA-Z_-][a-zA-Z0-9_-]*", rem))
+        rem = re.sub(r"\.[a-zA-Z_-][a-zA-Z0-9_-]*", " ", rem)
+        lb += len(re.findall(r":[a-zA-Z_-][a-zA-Z0-9_-]*(?:\([^)]*\))?", rem))
+        rem = re.sub(r":[a-zA-Z_-][a-zA-Z0-9_-]*(?:\([^)]*\))?", " ", rem)
+        # Remaining type selectors (skip combinators & universal *)
+        for tok in re.findall(r"[a-zA-Z_][a-zA-Z0-9_-]*", rem):
+            lc += 1
+        return (la, lb, lc)
+
+    ta, tb, tc = eval_segment(s)
+    return (a + ta, b + tb, c + tc)
+
+
+def _selector_subject_tokens(sel: str) -> set[str]:
+    """Extract normalized class/id tokens from a selector for RT overlap matching."""
+    tokens = set(re.findall(r"(?:\.|#)[a-zA-Z_-][a-zA-Z0-9_-]*", sel))
+    if not tokens:
+        for t in re.findall(r"\b(?:dialog|aside|header|nav|section|footer)\b", sel.lower()):
+            tokens.add(t)
+    return tokens
+
+
+def _selector_stem(branch: str) -> str:
+    """Extract canonical base component selector stem before state pseudos/attributes."""
+    s = re.sub(r":popover-open|\.\:popover-open|\[open[^\]]*\]|\[data-state[^\]]*\]|:open\b|:focus-visible|:hover|:active", "", branch, flags=re.I)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
+def _extract_keyframe_props(cleaned_css: str) -> dict[str, set[str]]:
+    """Map @keyframes names to animated CSS property names."""
+    kf_map: dict[str, set[str]] = {}
+    for m in re.finditer(r"@keyframes\s+([a-zA-Z0-9_-]+)\s*\{", cleaned_css):
+        name = m.group(1)
+        depth = 1
+        j = m.end()
+        n = len(cleaned_css)
+        while j < n and depth > 0:
+            if cleaned_css[j] == "{":
+                depth += 1
+            elif cleaned_css[j] == "}":
+                depth -= 1
+            j += 1
+        body = cleaned_css[m.end() : j - 1 if depth == 0 else j]
+        props = {pm.group(1).lower() for pm in re.finditer(r"([a-z-]+)\s*:", body, re.I)}
+        kf_map[name] = props
+    return kf_map
 
 
 # ===========================================================================
@@ -525,7 +677,7 @@ def parse_css_rules(css_text: str, base_line: int = 1) -> list[RuleBlock]:
     """Brace-aware CSS rule extractor tracking reduced-motion & forced-colors."""
     cleaned = strip_css_comments(css_text)
     rules: list[RuleBlock] = []
-    stack: list[tuple[str, bool, bool, int]] = []
+    stack: list[tuple[str, bool, bool, bool, bool, int]] = []
     current_decls: dict[int, list[tuple[str, str, int, str]]] = {}
     current_custom_colors: dict[int, dict[str, tuple[str, int, str]]] = {}
     buf: list[str] = []
@@ -600,9 +752,13 @@ def parse_css_rules(css_text: str, base_line: int = 1) -> list[RuleBlock]:
                 header = nested_sel.strip()
             is_rm = bool(re.search(r"prefers-reduced-motion\s*:\s*reduce", header, re.I))
             is_fc = bool(re.search(r"forced-colors\s*:\s*active", header, re.I))
+            is_rt = bool(re.search(r"prefers-reduced-transparency\s*:\s*reduce", header, re.I))
+            is_hc = bool(re.search(r"prefers-contrast\s*:\s*more", header, re.I))
             parent_rm = stack[-1][1] if stack else False
             parent_fc = stack[-1][2] if stack else False
-            stack.append((header, parent_rm or is_rm, parent_fc or is_fc, lineno))
+            parent_rt = stack[-1][3] if stack else False
+            parent_hc = stack[-1][4] if stack else False
+            stack.append((header, parent_rm or is_rm, parent_fc or is_fc, parent_rt or is_rt, parent_hc or is_hc, lineno))
             current_decls[len(stack) - 1] = []
             current_custom_colors[len(stack) - 1] = {}
             buf = []
@@ -611,12 +767,12 @@ def parse_css_rules(css_text: str, base_line: int = 1) -> list[RuleBlock]:
             body = "".join(buf)
             if stack:
                 idx = len(stack) - 1
-                sel, in_rm, in_fc, sel_line = stack.pop()
+                sel, in_rm, in_fc, in_rt, in_hc, sel_line = stack.pop()
                 b_decls, b_colors = flush_declarations(body, buf_start_line)
                 decls = current_decls.pop(idx, []) + b_decls
                 c_colors = {**current_custom_colors.pop(idx, {}), **b_colors}
                 if sel and not sel.startswith("@") and (decls or c_colors):
-                    rules.append(RuleBlock(sel, sel_line, in_rm, decls, in_fc, c_colors))
+                    rules.append(RuleBlock(sel, sel_line, in_rm, decls, in_fc, c_colors, in_rt, in_hc))
             buf = []
             buf_start_line = lineno
         else:
@@ -1084,6 +1240,82 @@ def _selector_is_fixed_menu_wrapper(sel: str) -> bool:
     return bool(FIXED_MENU_WRAPPER_RE.search(subject))
 
 
+FLOATING_LABEL_CLASS_RE = re.compile(
+    r"(?:^|[.\s>+~\[])(?:[a-z0-9_-]*(?:text-field|md3e-field|outlined-field|floating)[a-z0-9_-]*(?:__|-)label|"
+    r"floating-label|outlined-label|md3e-field__label|md3e-text-field__label)\b",
+    re.IGNORECASE,
+)
+ROOT_SUBJECT_RE = re.compile(r"^(?:html|body|:root)(?=$|[.\[:#])", re.IGNORECASE)
+DIALOG_LOCK_TRIGGER_RE = re.compile(
+    r"(?:dialog|modal|scroll[-_]?lock|no[-_]?scroll|noscroll|is-locked|lock[-_]?scroll|has-dialog)",
+    re.IGNORECASE,
+)
+HDR_BROAD_SUBJECT_RE = re.compile(r"^(?:body|p|\*)(?=$|[.\[:#])", re.IGNORECASE)
+WIDGET_STATE_SELECTOR_RE = re.compile(
+    r":focus-visible|\[[^\]]*(?:data-highlighted|data-selected|aria-selected|aria-checked|"
+    r"data-range-start|data-in-range|data-range-end|data-today|data-active|data-focus-visible)[^\]]*\]",
+    re.IGNORECASE,
+)
+WIDGET_ROLE_HINTS = {
+    "listbox": re.compile(r"listbox|option|select|combobox|cmd-item|data-highlighted|data-selected|aria-selected", re.IGNORECASE),
+    "menu": re.compile(r"menu|menuitem|menuitemcheckbox|popover|data-highlighted|aria-checked|data-selected", re.IGNORECASE),
+    "grid": re.compile(r"grid|gridcell|datepicker|date-picker|calendar|day|data-selected|aria-selected|data-range-start|data-in-range|data-range-end", re.IGNORECASE),
+}
+
+
+def _selector_targets_floating_label(sel: str) -> bool:
+    s = sel.strip()
+    if not s or "::" in s:
+        return False
+    subject = _rightmost_compound_selector(s)
+    if not subject or "::" in subject:
+        return False
+    if FLOATING_LABEL_CLASS_RE.search(subject):
+        return True
+    if re.match(r"^label(?=$|[.\[:#])", subject, re.I) and re.search(
+        r"text-field|md3e-field|outlined|floating", s, re.I
+    ):
+        return True
+    return False
+
+
+def _rule_has_opaque_background(rule: RuleBlock) -> tuple[int, str] | None:
+    if any(p in ("mask-image", "-webkit-mask-image") for p, _, _, _ in rule.declarations):
+        return None
+    if any(p == "background-clip" and strip_important(v).lower() == "text" for p, v, _, _ in rule.declarations):
+        return None
+    for prop, value, lineno, raw in rule.declarations:
+        if prop in ("background", "background-color"):
+            clean_v = strip_important(value).lower()
+            if clean_v and clean_v not in ("transparent", "none", "inherit", "initial", "unset"):
+                return (lineno, raw)
+    return None
+
+
+def _rule_is_root_dialog_scroll_lock(rule: RuleBlock, *, doc_has_dialog: bool = False) -> tuple[int, str] | None:
+    branches = split_top_level_commas(rule.selector)
+    root_branches = [b for b in branches if ROOT_SUBJECT_RE.match(_rightmost_compound_selector(b))]
+    if not root_branches:
+        return None
+    overflow_decl = next(
+        (
+            (lineno, raw)
+            for prop, value, lineno, raw in rule.declarations
+            if prop in ("overflow", "overflow-y", "overflow-block")
+            and strip_important(value).lower().split()[0:1] in (["hidden"], ["clip"])
+        ),
+        None,
+    )
+    if overflow_decl is None:
+        return None
+    for b in root_branches:
+        if DIALOG_LOCK_TRIGGER_RE.search(b):
+            return overflow_decl
+        if doc_has_dialog and re.search(r":has\s*\(|\.(?:is-open|open|active|locked)\b|\[(?:data-open|open|aria-modal)", b, re.I):
+            return overflow_decl
+    return None
+
+
 class Checker:
     def __init__(self, path: pathlib.Path, *, is_snippet: bool = False, mode: str = "strict") -> None:
         self.path_obj = path
@@ -1091,7 +1323,7 @@ class Checker:
         self.ext = path.suffix.lower()
         self.token_file = is_token_file(path)
         self.is_snippet = is_snippet
-        self.mode = mode
+        self.mode = "strict" if mode == "default" else mode
         self.findings: list[Finding] = []
 
     def add(self, code, severity, message, fix, path, line, snippet="") -> None:
@@ -1218,6 +1450,8 @@ class Checker:
         morphing_bases: set[str],
         appearance_none_selectors: set[str] | None = None,
         pointer_events_none_selectors: set[str] | None = None,
+        *,
+        doc_has_dialog: bool = False,
     ) -> bool:
         has_motion = False
         is_data_view_rule = any(DATA_VIEW_SELECTOR_RE.search(s) for s in rule.selector.split(","))
@@ -1302,6 +1536,37 @@ class Checker:
                 appearance_none_selectors or set(),
                 pointer_events_none_selectors or set(),
             )
+
+        # Outlined floating label opaque background bleed check (MD3E029)
+        if not self.token_file and not is_data_view_rule and not rule.in_forced_colors:
+            branches = split_top_level_commas(rule.selector)
+            if any(_selector_targets_floating_label(b) for b in branches):
+                opaque_bg = _rule_has_opaque_background(rule)
+                if opaque_bg is not None:
+                    self.add(
+                        "MD3E029",
+                        "warning",
+                        "Floating text-field `<label>` applies an opaque `background` patch that bleeds on frosted/gradient/nested surfaces.",
+                        "Use a `<fieldset><legend>` transparent border cutout (or `mask-image`) instead of an opaque label background.",
+                        self.path,
+                        opaque_bg[0],
+                        opaque_bg[1],
+                    )
+
+        # Root html/body dialog scroll-locking check (MD3E029 / MD3E202)
+        if not self.token_file and not is_data_view_rule:
+            scroll_lock = _rule_is_root_dialog_scroll_lock(rule, doc_has_dialog=doc_has_dialog)
+            if scroll_lock is not None:
+                is_studio = self.mode == "personal-studio"
+                self.add(
+                    "MD3E202" if is_studio else "MD3E029",
+                    "custom" if is_studio else "warning",
+                    "Root `html`/`body` scroll-lock (`overflow: hidden`) causes layout shift and breaks sticky containers with `<dialog>`.",
+                    "Remove root `html`/`body` `overflow: hidden`; use `dialog:modal { overscroll-behavior: contain; }` and `dialog::backdrop { overflow: hidden; overscroll-behavior: contain; }`.",
+                    self.path,
+                    scroll_lock[0],
+                    scroll_lock[1],
+                )
 
         return has_motion
 
@@ -1473,43 +1738,103 @@ class Checker:
         *,
         has_reduced_transparency: bool = False,
         linked_studio_css: bool = False,
+        check_hdr_file_rules: bool = True,
     ) -> None:
-        if self.mode != "personal-studio" or self.is_snippet or linked_studio_css:
+        if self.mode != "personal-studio":
             return
 
         has_rt_support = has_reduced_transparency or bool(
             re.search(r"data-reduced-transparency", cleaned_css, re.I)
         )
 
-        caustic_rules = [
-            r for r in rules
-            if re.search(r"\.studio-caustic-field\b", r.selector, re.I)
-        ]
-        if caustic_rules:
-            has_pe_none = any(
-                prop == "pointer-events" and strip_important(val).lower() == "none"
-                for r in caustic_rules
-                for prop, val, _, _ in r.declarations
-            )
-            if not has_pe_none:
+        # Ban global .studio-caustic-field ambient light-bleed overlays even in snippets/linked docs
+        for r in rules:
+            if re.search(r"\.studio-caustic-field\b", r.selector, re.I):
                 self.add(
                     "MD3E201",
                     "custom",
-                    "Personal Studio `.studio-caustic-field` must declare `pointer-events: none`.",
-                    "Add `pointer-events: none;` on `.studio-caustic-field` so ambient optical caustics never intercept pointer input.",
+                    "Global `.studio-caustic-field` ambient light-bleed overlay pollutes dark canvas purity.",
+                    "Delete `.studio-caustic-field`; keep dark `--md-sys-color-surface` pure and rely on real UI cards and card-local specular/spotlight highlights.",
                     self.path,
-                    caustic_rules[0].start_line,
-                    caustic_rules[0].selector,
+                    r.start_line,
+                    r.selector,
+                )
+
+        # Adaptive HDR optical hygiene: forbid broad HDR / constrained-high on body or p
+        for r in rules:
+            branches = split_top_level_commas(r.selector)
+            broad_branches = [b for b in branches if HDR_BROAD_SUBJECT_RE.match(_rightmost_compound_selector(b))]
+            if not broad_branches:
+                continue
+            for prop, val, lineno, raw in r.declarations:
+                clean_v = strip_important(val).lower()
+                if prop == "dynamic-range-limit" and clean_v in ("constrained-high", "high", "no-limit"):
+                    self.add(
+                        "MD3E201",
+                        "custom",
+                        f"HDR `dynamic-range-limit: {clean_v}` must not be applied broadly to `{', '.join(broad_branches)}`.",
+                        "Keep `body` and `p` prose at `dynamic-range-limit: standard`; restrict `constrained-high` to self-luminous micro-details (spotlight, specular rim, active indicators, scrubber focus).",
+                        self.path,
+                        lineno,
+                        raw,
+                    )
+                elif re.search(r"color\(\s*display-p3\b|--md-studio-hdr-boost", val, re.I):
+                    self.add(
+                        "MD3E201",
+                        "custom",
+                        f"HDR / Display-P3 boost must not be applied broadly to `{', '.join(broad_branches)}`.",
+                        "Restrict `color(display-p3 ...)` and `--md-studio-hdr-boost` to self-luminous micro-details (spotlight, specular rim, active indicators, scrubber focus); keep body/prose in SDR.",
+                        self.path,
+                        lineno,
+                        raw,
+                    )
+
+        if self.is_snippet or linked_studio_css:
+            return
+
+        has_hdr_css = bool(
+            re.search(
+                r"dynamic-range\s*:\s*high\b|dynamic-range-limit\s*:\s*constrained-high\b|color\(\s*display-p3\b",
+                cleaned_css,
+                re.I,
+            )
+        )
+        if has_hdr_css and check_hdr_file_rules:
+            has_sdr_fallback = bool(
+                re.search(r"dynamic-range-limit\s*:\s*standard\b|data-studio-hdr\s*=\s*[\"']off[\"']", cleaned_css, re.I)
+            )
+            has_contrast_fallback = bool(
+                re.search(r"prefers-contrast\s*:\s*more\b|data-contrast\s*=\s*[\"']high[\"']|forced-colors\s*:\s*active\b", cleaned_css, re.I)
+            )
+            if not has_sdr_fallback:
+                self.add(
+                    "MD3E201",
+                    "custom",
+                    "Personal Studio HDR optical CSS lacks an SDR / `[data-studio-hdr=\"off\"]` fallback.",
+                    "Add `dynamic-range-limit: standard` and `[data-studio-hdr=\"off\"]` SDR collapse rules.",
+                    self.path,
+                    1,
+                    "",
                 )
             if not has_rt_support:
                 self.add(
                     "MD3E201",
                     "custom",
-                    "Personal Studio `.studio-caustic-field` lacks a reduced-transparency suppression path.",
-                    "Hide `.studio-caustic-field` under `@media (prefers-reduced-transparency: reduce)` and `[data-reduced-transparency=\"true\"]`.",
+                    "Personal Studio HDR optical CSS lacks a `prefers-reduced-transparency: reduce` fallback.",
+                    "Collapse HDR specular/glass boosts to `dynamic-range-limit: standard` inside `@media (prefers-reduced-transparency: reduce)` / `[data-reduced-transparency=\"true\"]`.",
                     self.path,
-                    caustic_rules[0].start_line,
-                    caustic_rules[0].selector,
+                    1,
+                    "",
+                )
+            if not has_contrast_fallback:
+                self.add(
+                    "MD3E201",
+                    "custom",
+                    "Personal Studio HDR optical CSS lacks a `prefers-contrast: more` / `forced-colors` fallback.",
+                    "Collapse HDR boosts inside `@media (prefers-contrast: more)`, `[data-contrast=\"high\"]`, and `@media (forced-colors: active)`.",
+                    self.path,
+                    1,
+                    "",
                 )
 
         if re.search(r"--md-studio-(?:blur-px|glass-alpha|glass-saturate)\s*:", cleaned_css) and not has_rt_support:
@@ -1558,6 +1883,7 @@ class Checker:
         linked_motion_css: bool = False,
         has_reduced_transparency_doc: bool = False,
         linked_studio_css: bool = False,
+        doc_has_dialog: bool = False,
     ) -> None:
         self._check_css_brace_balance(css_text, base_line=base_line)
         cleaned_css = strip_css_comments(css_text)
@@ -1611,6 +1937,7 @@ class Checker:
                 morphing_bases,
                 appearance_none_selectors,
                 pointer_events_none_selectors,
+                doc_has_dialog=doc_has_dialog,
             ):
                 has_motion = True
             if blur_hit is None:
@@ -1627,11 +1954,17 @@ class Checker:
                 self.path, blur_hit[0], blur_hit[1],
             )
 
+        if check_file_rules:
+            self._audit_rt_specificity(rules)
+            self._audit_keyframe_fill_cascade(rules, cleaned_css)
+            self._audit_allow_discrete_layout_drops(rules)
+
         self._audit_personal_studio_css(
             cleaned_css,
             rules,
             has_reduced_transparency=has_reduced_transparency,
             linked_studio_css=linked_studio_css,
+            check_hdr_file_rules=check_file_rules,
         )
 
         if not check_file_rules:
@@ -1740,23 +2073,21 @@ class Checker:
         if self.mode != "personal-studio":
             return
 
-        # 1. Modal <dialog> semantic & focusable-controls checks (apply to snippets and full docs)
-        for m in re.finditer(rf"<dialog\b({TAG_ATTRS_PAT})>", markup_clean, re.I):
-            attrs = m.group(1)
-            ln = markup_clean[:m.start()].count("\n") + 1
-            if ln in exempt_lines:
-                continue
-            line_text = lines[ln - 1] if ln - 1 < len(lines) else ""
-            if re.search(r"""\brole\s*=\s*(?:"dialog"|'dialog')""", attrs, re.I):
-                self.add(
-                    "MD3E202",
-                    "custom",
-                    "Native `<dialog>` has implicit dialog semantics; remove redundant `role=\"dialog\"`.",
-                    "Remove `role=\"dialog\"` from `<dialog>` and use native `.showModal()` / `closedby=\"any\"` with `aria-labelledby` or `aria-label`.",
-                    self.path,
-                    ln,
-                    line_text,
-                )
+        # 1. Ban .studio-caustic-field HTML elements & check focusable controls inside <dialog> (snippets + full docs)
+        for m in re.finditer(rf"<([a-z][a-z0-9:-]*)\b({TAG_ATTRS_PAT})>", markup_clean, re.I):
+            attrs = m.group(2)
+            if re.search(r"\bstudio-caustic-field\b", attrs):
+                ln = markup_clean[:m.start()].count("\n") + 1
+                if ln not in exempt_lines:
+                    self.add(
+                        "MD3E201",
+                        "custom",
+                        "Global `.studio-caustic-field` ambient light-bleed element pollutes dark `--md-sys-color-surface` purity.",
+                        "Delete `<div class=\"studio-caustic-field\">` and rely on real UI cards, dividers, and card-local specular/spotlight highlights.",
+                        self.path,
+                        ln,
+                        lines[ln - 1] if ln - 1 < len(lines) else "",
+                    )
 
         dialog_blocks = list(re.finditer(rf"<dialog\b({TAG_ATTRS_PAT})>([\s\S]*?)</dialog>", markup_clean, re.I))
         for dm in dialog_blocks:
@@ -1805,7 +2136,7 @@ class Checker:
         if has_doc_exempt or (has_analytical_view and not has_hero_card):
             return
 
-        # 2. Full-doc Layer 4 optical glass + caustic + reduced-transparency hygiene (MD3E201)
+        # 2. Full-doc Layer 4 optical glass + clean canvas + HDR + reduced-transparency hygiene (MD3E201)
         has_studio_profile = bool(re.search(r"""data-studio-profile\s*=\s*(?:"personal-studio"|'personal-studio')""", text, re.I))
         has_studio_tokens = linked_studio_css or bool(re.search(r"--md-studio-(?:blur-px|glass-alpha)\s*:", combined_css))
         if not (has_studio_profile and has_studio_tokens):
@@ -1820,13 +2151,12 @@ class Checker:
             )
 
         has_optical_glass = linked_blur_css or bool(re.search(r"\bmd3e-blur-", markup_clean)) or "backdrop-filter" in combined_css
-        has_caustic = bool(re.search(r"\bstudio-caustic-field\b", markup_clean + "\n" + combined_css))
-        if not (has_optical_glass and has_caustic):
+        if not has_optical_glass:
             self.add(
                 "MD3E201",
                 "custom",
-                "Personal Studio document is missing optical glass (`.md3e-blur-*`) or ambient caustic field (`.studio-caustic-field`).",
-                "Include `.studio-caustic-field` (`aria-hidden=\"true\"`) and `.md3e-blur-*` optical glass chrome.",
+                "Personal Studio document is missing optical glass (`.md3e-blur-*` or `backdrop-filter`).",
+                "Include `.md3e-blur-*` optical glass chrome (`md3e-blur.css`) over real UI cards without global caustic blobs.",
                 self.path,
                 1,
                 "",
@@ -1842,44 +2172,420 @@ class Checker:
             self.add(
                 "MD3E201",
                 "custom",
-                "Personal Studio optical glass & caustic layer lacks reduced-transparency support.",
+                "Personal Studio optical glass layer lacks reduced-transparency support.",
                 "Link `md3e-blur.css` / `md3e-studio.css` or provide `@media (prefers-reduced-transparency: reduce)` solid surface fallbacks.",
                 self.path,
                 1,
                 "",
             )
 
-        # 3. Full-doc <dialog> modal overscroll-behavior hygiene (MD3E202)
+        has_hdr_css = bool(
+            re.search(
+                r"dynamic-range\s*:\s*high\b|dynamic-range-limit\s*:\s*constrained-high\b|color\(\s*display-p3\b",
+                combined_css,
+                re.I,
+            )
+        )
+        if has_hdr_css and not linked_studio_css:
+            has_sdr_fallback = bool(
+                re.search(r"dynamic-range-limit\s*:\s*standard\b|data-studio-hdr\s*=\s*[\"']off[\"']", combined_css, re.I)
+            )
+            has_contrast_fallback = bool(
+                re.search(r"prefers-contrast\s*:\s*more\b|data-contrast\s*=\s*[\"']high[\"']|forced-colors\s*:\s*active\b", combined_css, re.I)
+            )
+            if not has_sdr_fallback:
+                self.add(
+                    "MD3E201",
+                    "custom",
+                    "Personal Studio HDR optical CSS lacks an SDR / `[data-studio-hdr=\"off\"]` fallback.",
+                    "Add `dynamic-range-limit: standard` and `[data-studio-hdr=\"off\"]` SDR collapse rules (or link `md3e-studio.css`).",
+                    self.path,
+                    1,
+                    "",
+                )
+            if not has_contrast_fallback:
+                self.add(
+                    "MD3E201",
+                    "custom",
+                    "Personal Studio HDR optical CSS lacks a `prefers-contrast: more` / `forced-colors` fallback.",
+                    "Collapse HDR boosts inside `@media (prefers-contrast: more)`, `[data-contrast=\"high\"]`, and `@media (forced-colors: active)`.",
+                    self.path,
+                    1,
+                    "",
+                )
+
+    def _audit_rt_specificity(self, rules: list[RuleBlock]) -> None:
+        if self.is_snippet:
+            return
+        rt_none_rules: list[tuple[RuleBlock, list[tuple[int, int, int]], set[str]]] = []
+        blur_rules: list[tuple[RuleBlock, int, str, list[tuple[int, int, int]], set[str]]] = []
+
+        for r in rules:
+            if r.in_reduced_transparency:
+                has_none = any(
+                    prop in ("backdrop-filter", "-webkit-backdrop-filter")
+                    and strip_important(val).lower() in ("none", "unset", "initial")
+                    for prop, val, _, _ in r.declarations
+                )
+                if has_none:
+                    specs = [_branch_specificity(b) for b in split_top_level_commas(r.selector) if b.strip()]
+                    rt_none_rules.append((r, specs, _selector_subject_tokens(r.selector)))
+            elif not r.in_prefers_contrast and not r.in_forced_colors:
+                for prop, val, lineno, raw in r.declarations:
+                    if prop in ("backdrop-filter", "-webkit-backdrop-filter") and "blur(" in val:
+                        specs = [_branch_specificity(b) for b in split_top_level_commas(r.selector) if b.strip()]
+                        blur_rules.append((r, lineno, raw, specs, _selector_subject_tokens(r.selector)))
+                        break
+
+        if not rt_none_rules or not blur_rules:
+            return
+
+        for br, lineno, raw, b_specs, b_tokens in blur_rules:
+            if not b_specs or not b_tokens:
+                continue
+            matching_rt = [
+                (rt_r, rt_specs)
+                for rt_r, rt_specs, rt_tokens in rt_none_rules
+                if (rt_tokens & b_tokens) or "*" in rt_r.selector
+            ]
+            if not matching_rt:
+                continue
+            best_rt_spec = max(
+                (spec for _, rt_specs in matching_rt for spec in rt_specs),
+                default=(0, 0, 0),
+            )
+            min_blur_spec = min(b_specs)
+            if best_rt_spec < min_blur_spec:
+                self.add(
+                    "MD3E022",
+                    "error",
+                    f"`backdrop-filter: blur(...)` selector `{br.selector}` (specificity {min_blur_spec}) overrides lower-specificity `@media (prefers-reduced-transparency: reduce)` fallback ({best_rt_spec}).",
+                    "Wrap non-essential qualifiers (`:not(...)`) inside `:where(...)` so `@media (prefers-reduced-transparency: reduce)` wins CSS specificity.",
+                    self.path,
+                    lineno,
+                    raw,
+                )
+
+    def _audit_keyframe_fill_cascade(
+        self,
+        rules: list[RuleBlock],
+        cleaned_css: str,
+        full_text: str | None = None,
+    ) -> None:
+        if self.is_snippet or self.token_file:
+            return
+        kf_props = _extract_keyframe_props(cleaned_css)
+        if not kf_props:
+            return
+
+        has_anim_cleanup = False
+        if full_text:
+            for sm in re.finditer(r"<script\b[^>]*>([\s\S]*?)</script>", full_text, re.I):
+                if re.search(r"\b(?:animationend|animationcancel)\b", sm.group(1)):
+                    has_anim_cleanup = True
+                    break
+
+        transitioned_bases: set[str] = set()
+        for r in rules:
+            for prop, val, _, _ in r.declarations:
+                if prop in ("transition", "transition-property") and re.search(r"\b(?:transform|opacity)\b", val, re.I):
+                    for b in split_top_level_commas(r.selector):
+                        stem = re.split(r"[:\[]", b.strip())[0].split(".")[-1]
+                        if stem:
+                            transitioned_bases.add(f".{stem}")
+
+        for r in rules:
+            if r.in_reduced_motion:
+                continue
+            anim_names: list[str] = []
+            fill_modes: list[str] = []
+            anim_line = r.start_line
+            anim_raw = r.selector
+            for prop, val, lineno, raw in r.declarations:
+                low_v = strip_important(val).lower()
+                if prop == "animation-name":
+                    anim_names.extend([t.strip() for t in split_top_level_commas(val)])
+                    anim_line, anim_raw = lineno, raw
+                elif prop == "animation-fill-mode":
+                    fill_modes.extend([t.strip().lower() for t in split_top_level_commas(val)])
+                    anim_line, anim_raw = lineno, raw
+                elif prop == "animation":
+                    for seg in split_top_level_commas(low_v):
+                        toks = seg.split()
+                        for t in toks:
+                            if t in ("both", "forwards"):
+                                fill_modes.append(t)
+                        for kf in kf_props:
+                            if kf.lower() in toks:
+                                anim_names.append(kf)
+                    anim_line, anim_raw = lineno, raw
+
+            if not any(fm in ("both", "forwards") for fm in fill_modes):
+                continue
+            locks_tr_op = any(
+                (kf_props.get(kf, set()) & {"transform", "opacity"})
+                or any(k.lower() == kf.lower() and (ps & {"transform", "opacity"}) for k, ps in kf_props.items())
+                for kf in anim_names
+            )
+            if not locks_tr_op:
+                continue
+
+            is_enter_cls = bool(re.search(r"stagger-enter|card-enter|is-[a-z-]*enter", r.selector, re.I))
+            shares_transition = any(tb in r.selector for tb in transitioned_bases)
+            if (is_enter_cls or shares_transition) and not has_anim_cleanup:
+                self.add(
+                    "MD3E019",
+                    "warning",
+                    f"`{r.selector}` retains `animation-fill-mode: both|forwards` on `transform`/`opacity` without `animationend` cleanup, locking inline/state styles via CSS Animation cascade.",
+                    "Remove the entrance class on `animationend`/`animationcancel`, or switch to `animation-fill-mode: backwards`.",
+                    self.path,
+                    anim_line,
+                    anim_raw,
+                )
+
+    def _audit_allow_discrete_layout_drops(self, rules: list[RuleBlock]) -> None:
+        if self.token_file:
+            return
+        discrete_stems: set[str] = set()
+        for r in rules:
+            has_discrete = any(
+                (prop == "transition-behavior" and "allow-discrete" in val.lower())
+                or (prop == "transition" and "allow-discrete" in val.lower())
+                for prop, val, _, _ in r.declarations
+            )
+            if not has_discrete:
+                continue
+            for b in split_top_level_commas(r.selector):
+                if OPEN_STATE_PSEUDO_RE.search(b):
+                    continue
+                stem = _selector_stem(b)
+                if stem:
+                    discrete_stems.add(stem)
+
+        if not discrete_stems:
+            return
+
+        base_props_by_stem: dict[str, set[str]] = {s: set() for s in discrete_stems}
+        open_rules: list[tuple[str, RuleBlock, list[tuple[str, int, str]]]] = []
+
+        for r in rules:
+            for b in split_top_level_commas(r.selector):
+                stem = _selector_stem(b)
+                if stem not in discrete_stems:
+                    continue
+                if OPEN_STATE_PSEUDO_RE.search(b):
+                    hits = [(prop, ln, raw) for prop, _, ln, raw in r.declarations if prop in LAYOUT_ALLOW_DISCRETE_PROPS]
+                    if hits:
+                        open_rules.append((stem, r, hits))
+                else:
+                    for prop, _, _, _ in r.declarations:
+                        if prop in LAYOUT_ALLOW_DISCRETE_PROPS:
+                            base_props_by_stem[stem].add(prop)
+
+        for stem, open_r, hits in open_rules:
+            base_props = base_props_by_stem.get(stem, set())
+            missing = [(prop, ln, raw) for prop, ln, raw in hits if prop not in base_props]
+            if missing:
+                prop_list = ", ".join(f"`{p}`" for p, _, _ in missing)
+                self.add(
+                    "MD3E029",
+                    "warning",
+                    f"`{open_r.selector}` sets {prop_list} only in its `:popover-open`/`[open]` state while `{stem}` uses `transition-behavior: allow-discrete`, causing layout collapse/squishing during close exit.",
+                    f"Move {prop_list} onto the base `{stem}` rule so layout direction/columns/gap persist throughout the exit transition.",
+                    self.path,
+                    missing[0][1],
+                    missing[0][2],
+                )
+
+    def _audit_complex_components_document(
+        self,
+        text: str,
+        combined_css: str,
+        all_rules: list[RuleBlock],
+        markup_clean: str,
+        lines: list[str],
+        exempt_lines: set[int],
+        *,
+        linked_studio_css: bool = False,
+        has_custom_external_css: bool = False,
+    ) -> None:
+        is_studio = self.mode == "personal-studio"
+        dialog_code = "MD3E202" if is_studio else "MD3E029"
+        dialog_sev = "custom" if is_studio else "warning"
+
+        # 1. Native <dialog> redundant role="dialog" / aria-modal (applies to snippets + full docs)
+        for m in re.finditer(rf"<dialog\b({TAG_ATTRS_PAT})>", markup_clean, re.I):
+            attrs = m.group(1)
+            ln = markup_clean[:m.start()].count("\n") + 1
+            if ln in exempt_lines:
+                continue
+            line_text = lines[ln - 1] if ln - 1 < len(lines) else ""
+            if re.search(r"""\brole\s*=\s*(?:"dialog"|'dialog')""", attrs, re.I):
+                self.add(
+                    dialog_code,
+                    dialog_sev,
+                    "Native `<dialog>` has implicit dialog semantics; remove redundant `role=\"dialog\"`.",
+                    "Remove `role=\"dialog\"` from `<dialog>` and use native `.showModal()` / `closedby=\"any\"` with `aria-labelledby` or `aria-label`.",
+                    self.path,
+                    ln,
+                    line_text,
+                )
+            if re.search(r"""\baria-modal\s*=""", attrs, re.I):
+                self.add(
+                    dialog_code,
+                    dialog_sev,
+                    "Native `<dialog>` opened via `.showModal()` handles modality natively; remove redundant `aria-modal`.",
+                    "Remove `aria-modal` from `<dialog>` and open modals with `.showModal()`.",
+                    self.path,
+                    ln,
+                    line_text,
+                )
+
+        if self.is_snippet or self.token_file:
+            return
+        is_full_doc = bool(re.search(r"<!doctype\s+html|<html\b", text, re.I))
+        if not is_full_doc:
+            return
+
+        # 2. JS root scroll-lock inside <script> on a document with <dialog>
         first_dialog = re.search(rf"<dialog\b({TAG_ATTRS_PAT})>", markup_clean, re.I)
         if first_dialog:
-            has_modal_overscroll = linked_studio_css or bool(
+            for sm in re.finditer(r"<script\b[^>]*>([\s\S]*?)</script>", text, re.I):
+                js_body = sm.group(1)
+                js_clean = re.sub(r"//[^\n]*|/\*[\s\S]*?\*/", "", js_body)
+                lock_m = re.search(
+                    r"document\.(?:body|documentElement)\.style\.overflow(?:Y|Block)?\s*=\s*['\"](?:hidden|clip)['\"]",
+                    js_clean,
+                )
+                if lock_m:
+                    base_ln = text[:sm.start(1)].count("\n") + 1
+                    ln = base_ln + js_clean[:lock_m.start()].count("\n")
+                    self.add(
+                        dialog_code,
+                        dialog_sev,
+                        "Script applies root `html`/`body` `overflow: hidden` scroll-lock alongside `<dialog>`.",
+                        "Remove `document.body/documentElement.style.overflow = 'hidden'`; use `dialog:modal { overscroll-behavior: contain; }`.",
+                        self.path,
+                        ln,
+                        lock_m.group(0),
+                    )
+
+        # 3. Full-doc <dialog> requires dialog:modal { overscroll-behavior: contain; }
+        if first_dialog and not has_custom_external_css:
+            has_modal_overscroll = linked_studio_css or any(
                 re.search(
-                    r"(?:dialog\b[^,{]*(?::modal|::backdrop)|\.studio-cmd-dialog\b)[^}]*\boverscroll-behavior(?:-(?:y|block))?\s*:\s*(?:contain|none)\b",
-                    combined_css,
+                    r"(?:^|[\s,>+~])(?:dialog\b[^,{]*:modal|\.md3e-dialog\b[^,{]*:modal|\.studio-cmd-dialog\b[^,{]*:modal)",
+                    rule.selector,
                     re.I,
                 )
+                and any(
+                    prop in ("overscroll-behavior", "overscroll-behavior-y", "overscroll-behavior-block")
+                    and strip_important(val).lower() in ("contain", "none")
+                    for prop, val, _, _ in rule.declarations
+                )
+                for rule in all_rules
             )
             if not has_modal_overscroll:
                 d_ln = markup_clean[:first_dialog.start()].count("\n") + 1
                 self.add(
-                    "MD3E202",
-                    "custom",
-                    "Personal Studio `<dialog>` modal lacks `overscroll-behavior: contain` on `:modal` / `::backdrop`.",
-                    "Link `md3e-studio.css` or add `dialog:modal, dialog::backdrop { overscroll-behavior: contain; }`.",
+                    dialog_code,
+                    dialog_sev,
+                    "`<dialog>` modal lacks `dialog:modal { overscroll-behavior: contain; }` scroll containment.",
+                    "Add `dialog:modal { overscroll-behavior: contain; }` and `dialog::backdrop { overflow: hidden; overscroll-behavior: contain; }` (or link `md3e-studio.css`).",
                     self.path,
                     d_ln,
                     lines[d_ln - 1] if d_ln - 1 < len(lines) else "",
+                )
+
+        # 4. Custom Select / Date Picker / Menu Contract (MD3E029)
+        if has_custom_external_css:
+            return
+        widget_re = re.compile(
+            rf"""<([a-z][a-z0-9:-]*)\b({TAG_ATTRS_PAT}\b(?:role\s*=\s*(?:"(listbox|menu|grid)"|'(listbox|menu|grid)')|focusgroup\s*=\s*(?:"[^"]*\bmenu\b[^"]*"|'[^']*\bmenu\b[^']*'))[^>]*?)>""",
+            re.I,
+        )
+        for wm in widget_re.finditer(markup_clean):
+            tag = wm.group(1).lower()
+            attrs = wm.group(2)
+            role = (wm.group(3) or wm.group(4) or "menu").lower()
+            ln = markup_clean[:wm.start()].count("\n") + 1
+            if re.search(r"\bdata-md3e-exempt\b", attrs, re.I):
+                continue
+            if role == "grid" and (
+                ln in exempt_lines and re.search(r"\b(?:data-table|stats-table|telemetry-table|analytics-grid)\b", attrs, re.I)
+            ):
+                continue
+            if role != "grid" and ln in exempt_lines:
+                continue
+
+            if linked_studio_css and role == "listbox" and re.search(r"studio-cmd-(?:list|dialog__list)", attrs, re.I):
+                continue
+
+            stems: set[str] = set()
+            id_m = re.search(r"""\bid\s*=\s*(?:"([^"]*)"|'([^']*)')""", attrs, re.I)
+            if id_m:
+                wid = (id_m.group(1) or id_m.group(2) or "").strip()
+                if len(wid) >= 3:
+                    stems.add(wid)
+                    if "__" in wid:
+                        stems.add(wid.split("__", 1)[0])
+            cls_m = re.search(r"""\bclass\s*=\s*(?:"([^"]*)"|'([^']*)')""", attrs, re.I)
+            if cls_m:
+                for c in (cls_m.group(1) or cls_m.group(2) or "").split():
+                    if c.startswith("md3e-blur"):
+                        continue
+                    if len(c) >= 3:
+                        stems.add(c)
+                        if "__" in c:
+                            stems.add(c.split("__", 1)[0])
+                        if "--" in c:
+                            stems.add(c.split("--", 1)[0])
+
+            role_hint_re = WIDGET_ROLE_HINTS[role]
+            has_state_css = any(
+                WIDGET_STATE_SELECTOR_RE.search(rule.selector)
+                and (
+                    any(stem in rule.selector for stem in stems)
+                    or role_hint_re.search(rule.selector)
+                )
+                for rule in all_rules
+            )
+            if not has_state_css:
+                self.add(
+                    "MD3E029",
+                    "warning",
+                    f"Custom `[role=\"{role}\"]` widget (`<{tag}>`) lacks keyboard-focus or active-state styling (`[data-highlighted]`, `:focus-visible`, `aria-selected`, `[data-selected]`).",
+                    f"Add `:focus-visible`, `[data-highlighted]`, `aria-selected`, or `[data-selected]` token rules for `[role=\"{role}\"]` items/cells.",
+                    self.path,
+                    ln,
+                    lines[ln - 1] if ln - 1 < len(lines) else "",
                 )
 
     def audit_markup_document(self, text: str) -> None:
         linked_motion_css = bool(re.search(r"md3e-motion\.css", text))
         linked_studio_css = bool(re.search(r"md3e-studio\.css", text))
         linked_blur_css = bool(re.search(r"md3e-blur\.css", text))
+        markup_only = strip_tag_blocks(strip_tag_blocks(text, "script"), "style")
+        markup_clean = strip_html_comments(markup_only)
+        exempt_lines = find_exempt_line_set(markup_clean)
+        lines = markup_clean.splitlines()
+        doc_has_dialog = bool(re.search(r"<dialog\b", markup_clean, re.I))
+
+        has_custom_external_css = False
+        for lm in re.finditer(r"""<link\b([^>]*\brel\s*=\s*["']stylesheet["'][^>]*)>""", markup_clean, re.I):
+            href_m = re.search(r"""\bhref\s*=\s*(?:"([^"]*)"|'([^']*)')""", lm.group(1), re.I)
+            href = (href_m.group(1) or href_m.group(2) or "") if href_m else ""
+            if href and not re.search(r"fonts\.googleapis\.com|md3e-[a-z0-9-]+\.css", href, re.I):
+                has_custom_external_css = True
+                break
+
         # 1. Audit all <style> blocks using full CSS parser
         style_blocks = extract_style_blocks(text)
         combined_css = strip_css_comments("\n".join(blk for blk, _ in style_blocks))
         has_rt_doc = bool(re.search(r"prefers-reduced-transparency\s*:\s*reduce\b", combined_css, re.I))
+        all_rules: list[RuleBlock] = []
         for blk, start_line in style_blocks:
+            all_rules.extend(parse_css_rules(blk, base_line=start_line))
             self.audit_css(
                 blk,
                 base_line=start_line,
@@ -1887,9 +2593,13 @@ class Checker:
                 linked_motion_css=linked_motion_css,
                 has_reduced_transparency_doc=has_rt_doc,
                 linked_studio_css=linked_studio_css,
+                doc_has_dialog=doc_has_dialog,
             )
 
         if not self.is_snippet and style_blocks:
+            self._audit_rt_specificity(all_rules)
+            self._audit_keyframe_fill_cascade(all_rules, combined_css, text)
+            self._audit_allow_discrete_layout_drops(all_rules)
             has_hover = ":hover" in combined_css
             has_focus_visible = ":focus-visible" in combined_css
             has_reduced = "prefers-reduced-motion" in combined_css
@@ -1911,12 +2621,11 @@ class Checker:
                 )
 
         # 2. Inline style="..." checks outside <script>/<style> (honouring data-view exemptions)
-        markup_only = strip_tag_blocks(strip_tag_blocks(text, "script"), "style")
-        markup_clean = strip_html_comments(markup_only)
-        exempt_lines = find_exempt_line_set(markup_clean)
-        lines = markup_clean.splitlines()
         for i, line in enumerate(lines, start=1):
             is_exempt_line = i in exempt_lines
+            is_floating_label_line = bool(
+                re.search(r"<label\b[^>]*(?:md3e-text-field__label|md3e-field__label|floating-label|outlined-label)", line, re.I)
+            )
             for sm in STYLE_ATTR_RE.finditer(line):
                 style_val = sm.group(1) if sm.group(1) is not None else sm.group(2)
                 inline_decls = iter_inline_declarations(style_val)
@@ -1933,6 +2642,20 @@ class Checker:
                         check_font_size(self, prop, val, i, line)
                         check_shadow(self, prop, val, i, line)
                         check_bento_decl(self, prop, val, i, line)
+                        if (
+                            is_floating_label_line
+                            and prop in ("background", "background-color")
+                            and strip_important(val).lower() not in ("transparent", "none", "inherit", "initial", "unset", "")
+                        ):
+                            self.add(
+                                "MD3E029",
+                                "warning",
+                                "Floating text-field `<label>` applies an inline opaque `background` patch.",
+                                "Use a `<fieldset><legend>` transparent cutout (or `mask-image`) instead of a solid label background.",
+                                self.path,
+                                i,
+                                line,
+                            )
                     check_color_mix(self, val, i, line)
                     check_motion(self, prop, val, i, line)
                     check_misc(self, prop, val, i, line)
@@ -1944,7 +2667,7 @@ class Checker:
                             self.path, i, line,
                         )
 
-        # 3. HTML component, icon, tag, accessibility & desktop-bento / personal-studio structural checks
+        # 3. HTML component, icon, tag, accessibility & desktop-bento / personal-studio / complex-component checks
         self._audit_desktop_bento_document(text, combined_css, markup_only)
         self._audit_personal_studio_document(
             text,
@@ -1954,6 +2677,16 @@ class Checker:
             exempt_lines,
             linked_studio_css=linked_studio_css,
             linked_blur_css=linked_blur_css,
+        )
+        self._audit_complex_components_document(
+            text,
+            combined_css,
+            all_rules,
+            markup_clean,
+            lines,
+            exempt_lines,
+            linked_studio_css=linked_studio_css,
+            has_custom_external_css=has_custom_external_css,
         )
         self._audit_html_semantics(markup_only, full_text=text, exempt_lines=exempt_lines)
 
@@ -2386,6 +3119,7 @@ FENCE_LANG_EXT = {
 
 
 def audit_markdown(path: pathlib.Path, text: str, *, mode: str = "strict") -> list[Finding]:
+    mode = normalize_mode(mode)
     findings: list[Finding] = []
     fence_re = re.compile(r"```([a-zA-Z0-9_-]+)\s*\n([\s\S]*?)```")
     for m in fence_re.finditer(text):
@@ -2433,6 +3167,7 @@ def iter_files(paths: list[str], exclude: list[str], *, include_markdown: bool =
 
 
 def audit(paths: list[str], exclude: list[str], *, include_markdown: bool = False, mode: str = "strict") -> tuple[list[FileReport], int]:
+    mode = normalize_mode(mode)
     files = iter_files(paths, exclude, include_markdown=include_markdown)
     reports: list[FileReport] = []
     for path in files:
@@ -2496,8 +3231,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true", help="emit JSON")
     parser.add_argument("--markdown", action="store_true",
                         help="also audit HTML/CSS fenced code blocks in .md files")
-    parser.add_argument("--mode", choices=AUDIT_MODES, default="strict",
-                        help="audit policy profile: strict (default), desktop-bento, or personal-studio")
+    parser.add_argument("--mode", type=normalize_mode, default="strict",
+                        help="audit policy profile: strict (default, alias: default), desktop-bento, or personal-studio")
     parser.add_argument("--exclude", default="",
                         help="comma-separated substrings to skip")
     parser.add_argument("--fail-on", type=normalize_severity, default="error",

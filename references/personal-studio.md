@@ -26,14 +26,15 @@ Activate Layer 4 on top of a Desktop Bento shell only when explicitly requested:
 </head>
 ```
 
-`assets/tokens/md3e-studio.css` scopes all 12 personal-studio defaults strictly to `:root[data-studio-profile="personal-studio"]`:
+`assets/tokens/md3e-studio.css` scopes all Personal Studio defaults (11 tunable parameters plus derived optical glass brightness/contrast and HDR headroom flags) strictly to `:root[data-studio-profile="personal-studio"]`:
 
 | Token | Default | Range | Role |
 |---|---|---|---|
 | `--md-studio-blur-px` | `28px` | `8..48px` | Optical backdrop blur radius |
 | `--md-studio-glass-alpha` | `56%` | `32..88%` | Translucent surface tint weight (`in oklab`) |
 | `--md-studio-glass-saturate` | `190%` | `100..240%` | Optical backdrop saturation boost |
-| `--md-studio-specular-alpha` | `18%` | `0..36%` | Top inner specular rim opacity (`md3e-blur.css`) |
+| `--md-studio-specular-alpha` | `18%` | `0..36%` | Top `1px` inset specular rim opacity (`md3e-blur.css`) |
+| `--md-studio-hdr-boost` | `35%` | `0..100%` | Adaptive HDR wide-gamut optical headroom for micro-details (`data-studio-hdr="on"`) |
 | `--md-studio-glass-brightness` | `1.10` | fixed / tuned | Optical glass brightness multiplier |
 | `--md-studio-glass-contrast` | `1.05` | fixed / tuned | Optical glass contrast multiplier |
 | `--md-studio-spring-stiffness` | `340` | `180..900` | Modal/workspace spatial spring stiffness (`~500ms` plush settle) |
@@ -45,17 +46,26 @@ Activate Layer 4 on top of a Desktop Bento shell only when explicitly requested:
 
 ---
 
-## 2. High-Presence Optical Glass & Chromatic Caustic Field
+## 2. High-Presence Optical Glass, Pure Dark Canvas & Adaptive HDR Optics
 
-Layer 4 pairs Android 16-inspired optical window glass (`md3e-blur.css` under `[data-studio-profile="personal-studio"]`) with a subtle ambient `oklab` caustic light field so translucent panels actually have rich tonal material behind them to refract:
+Layer 4 pairs Android 16-inspired optical window glass (`md3e-blur.css` under `[data-studio-profile="personal-studio"]`) with **pure unpolluted canvas surfaces** and **micro-scoped Adaptive HDR Optical Headroom**:
 
-1. **Multi-Layer Optical Glass Filter (`md3e-blur.css`)**:
+1. **Pure Dark Surface & Real Refraction Grounding (Zero Global Canvas Light-Bleed)**:
+   - Dark-mode global `--md-sys-color-surface` MUST stay **100% clean and pure**. Never inject global viewport ambient light-bleed blobs or multi-gradient backdrop overlays (such as the legacy `.studio-caustic-field` pattern, which `MD3E201` actively bans as a dark-canvas pollutant).
+   - Translucent glass refraction (`backdrop-filter: blur(...) saturate(...)`) is anchored strictly to **real underlying UI cards, dividers, charts, and `surface-container-*` panels** as well as **card-local micro-details** (`[data-studio-spotlight]::after`).
+2. **Multi-Layer Optical Glass Filter (`md3e-blur.css`)**:
    - Upgrades `.md3e-blur-surface*` and accent blur chrome with `blur(var(--md-studio-blur-px)) saturate(var(--md-studio-glass-saturate)) brightness(var(--md-studio-glass-brightness)) contrast(var(--md-studio-glass-contrast))`.
-   - Applies translucent tinting strictly via `color-mix(in oklab, var(--md3e-blur-tint) var(--md-studio-glass-alpha), transparent)` (never `in oklch` on neutral surfaces — `MD3E018`) and adds a crisp top specular rim (`--md3e-specular-tint`, `--md3e-specular-alpha`) only on rectangular glass containers, leaving `.md3e-shape*` non-rectangular masks untouched (`MD3E023`).
-2. **Ambient Chromatic Caustic Field (`.studio-caustic-field`)**:
-   - `<div class="studio-caustic-field" aria-hidden="true"></div>` sits behind the Bento workspace (`pointer-events: none`) and projects soft `oklab` radial pools derived from `--md-sys-color-primary`, `--md-sys-color-tertiary`, and `--md-sys-color-secondary`.
-3. **Mandatory Solid & High-Contrast Fallbacks (`MD3E022`, `MD3E201`)**:
-   - Both `@media (prefers-reduced-transparency: reduce)` and `[data-reduced-transparency="true"]` (as well as `@media (prefers-contrast: more)`, `[data-contrast="high"]`, and `@media (forced-colors: active)`) MUST strip `backdrop-filter` / `-webkit-backdrop-filter` back to `none`, restore opaque `--md3e-blur-fallback` (`surface-container-*`) backgrounds, and hide `.studio-caustic-field`.
+   - Applies translucent tinting strictly via `color-mix(in oklab, var(--md3e-blur-tint) var(--md-studio-glass-alpha), transparent)` (**never** `color-mix(in oklch, ...)` on neutral/surface tokens — `MD3E018` Chromium powerless-hue bug) and tunes the top `1px` inset specular catchlight (`--md3e-specular-tint`, `--md3e-specular-alpha`) only on rectangular glass containers, leaving `.md3e-shape*` non-rectangular masks untouched (`MD3E023`).
+3. **Adaptive HDR Optical Headroom (`data-studio-hdr="on"`)**:
+   - When the display supports wide-gamut / HDR headroom (`@media (color-gamut: p3)` and `@media (dynamic-range: high)`), `:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]` scales self-luminous micro-details via `--md-studio-hdr-boost`, `color(display-p3 ...)` / `color-mix(in oklab, ...)`, and `dynamic-range-limit: constrained-high`.
+   - **Strict HDR Scope (`MD3E201`)**: Apply HDR headroom and `dynamic-range-limit: constrained-high` **ONLY** to:
+     - Card pointer spotlight (`[data-studio-spotlight]::after`),
+     - Top `1px` inset specular rim (`.md3e-blur-surface*`, `.studio-tuner-panel`, `.bento-vt-modal`),
+     - Active navigation/segmented indicators (`.bento-pill-indicator`, `.bento-rail__indicator`, `.md3e-seg-indicator`),
+     - Scrubber focus & active fill/thumb (`.studio-scrubber:focus-visible`, `.studio-scrubber::after`).
+   - **NEVER** apply HDR boost or `dynamic-range-limit: constrained-high` to `body`, `p`, prose copy, or large background surfaces (keep those explicitly at `dynamic-range-limit: standard`).
+4. **Mandatory Solid, SDR & High-Contrast Fallbacks (`MD3E022`, `MD3E201`)**:
+   - `[data-studio-hdr="off"]`, `@media (prefers-reduced-transparency: reduce)`, `[data-reduced-transparency="true"]`, `@media (prefers-contrast: more)`, `[data-contrast="high"]`, and `@media (forced-colors: active)` MUST collapse `dynamic-range-limit` back to `standard` (reverting micro-details to standard SDR HCT roles), strip `backdrop-filter` / `-webkit-backdrop-filter` back to `none`, hide pointer spotlights, and restore opaque `--md3e-blur-fallback` (`surface-container-*`) backgrounds.
 
 ```css
 :root[data-studio-profile="personal-studio"] {
@@ -63,6 +73,7 @@ Layer 4 pairs Android 16-inspired optical window glass (`md3e-blur.css` under `[
   --md-studio-glass-alpha: 56%;
   --md-studio-glass-saturate: 190%;
   --md-studio-specular-alpha: 18%;
+  --md-studio-hdr-boost: 35%;
   --md-studio-glass-brightness: 1.10;
   --md-studio-glass-contrast: 1.05;
   --md-studio-spotlight-px: 260px;
@@ -70,15 +81,10 @@ Layer 4 pairs Android 16-inspired optical window glass (`md3e-blur.css` under `[
   --md-studio-split-ratio: 58%;
 }
 
-.studio-caustic-field {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background-image:
-    radial-gradient(640px circle at 18% 22%, color-mix(in oklab, var(--md-sys-color-primary) 16%, transparent), transparent 64%),
-    radial-gradient(560px circle at 82% 28%, color-mix(in oklab, var(--md-sys-color-tertiary) 14%, transparent), transparent 62%),
-    radial-gradient(620px circle at 54% 84%, color-mix(in oklab, var(--md-sys-color-secondary) 12%, transparent), transparent 66%);
+/* Keep global surfaces and body copy strictly SDR so dark --md-sys-color-surface stays pure */
+:root[data-studio-profile="personal-studio"] body,
+:root[data-studio-profile="personal-studio"] p {
+  dynamic-range-limit: standard;
 }
 
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -99,37 +105,96 @@ Layer 4 pairs Android 16-inspired optical window glass (`md3e-blur.css` under `[
   }
 }
 
-@media (prefers-reduced-transparency: reduce) {
-  .studio-caustic-field {
-    display: none;
+/* Adaptive HDR Optical Headroom — strictly scoped to micro-details */
+@media (color-gamut: p3) {
+  :root[data-studio-profile="personal-studio"][data-studio-hdr="on"] .bento-pill-indicator,
+  :root[data-studio-profile="personal-studio"][data-studio-hdr="on"] .bento-rail__indicator,
+  :root[data-studio-profile="personal-studio"][data-studio-hdr="on"] .md3e-seg-indicator {
+    background: color-mix(
+      in oklab,
+      color(display-p3 0.72 0.62 1) var(--md-studio-hdr-boost, 35%),
+      var(--md-sys-color-secondary-container)
+    );
   }
+}
+
+@media (dynamic-range: high) {
+  :root[data-studio-profile="personal-studio"][data-studio-hdr="on"] [data-studio-spotlight]::after,
+  :root[data-studio-profile="personal-studio"][data-studio-hdr="on"] .studio-tuner-panel,
+  :root[data-studio-profile="personal-studio"][data-studio-hdr="on"] .bento-vt-modal,
+  :root[data-studio-profile="personal-studio"][data-studio-hdr="on"] .bento-pill-indicator,
+  :root[data-studio-profile="personal-studio"][data-studio-hdr="on"] .bento-rail__indicator,
+  :root[data-studio-profile="personal-studio"][data-studio-hdr="on"] .md3e-seg-indicator,
+  :root[data-studio-profile="personal-studio"][data-studio-hdr="on"] .studio-scrubber:focus-visible,
+  :root[data-studio-profile="personal-studio"][data-studio-hdr="on"] .studio-scrubber::after {
+    dynamic-range-limit: constrained-high;
+  }
+
+  :root[data-studio-profile="personal-studio"][data-studio-hdr="on"] .md3e-blur-surface,
+  :root[data-studio-profile="personal-studio"][data-studio-hdr="on"] .studio-tuner-panel,
+  :root[data-studio-profile="personal-studio"][data-studio-hdr="on"] .bento-vt-modal {
+    --md3e-specular-tint: color-mix(
+      in oklab,
+      color(display-p3 1 1 1) var(--md-studio-hdr-boost, 35%),
+      var(--md-sys-color-on-surface)
+    );
+    --md3e-specular-alpha: clamp(18%, calc(var(--md-studio-specular-alpha, 18%) + var(--md-studio-hdr-boost, 35%) * 0.25), 42%);
+  }
+
+  :root[data-studio-profile="personal-studio"][data-studio-hdr="on"] .studio-scrubber:focus-visible {
+    outline-color: color-mix(
+      in oklab,
+      color(display-p3 0.78 0.70 1) var(--md-studio-hdr-boost, 35%),
+      var(--md-sys-color-secondary)
+    );
+  }
+}
+
+/* Automatic SDR, Reduced Transparency, High Contrast & Forced Colors fallbacks */
+:root[data-studio-profile="personal-studio"][data-studio-hdr="off"] [data-studio-spotlight]::after,
+:root[data-studio-profile="personal-studio"][data-studio-hdr="off"] .studio-tuner-panel,
+:root[data-studio-profile="personal-studio"][data-studio-hdr="off"] .bento-vt-modal,
+:root[data-studio-profile="personal-studio"][data-studio-hdr="off"] .bento-pill-indicator,
+:root[data-studio-profile="personal-studio"][data-studio-hdr="off"] .bento-rail__indicator,
+:root[data-studio-profile="personal-studio"][data-studio-hdr="off"] .md3e-seg-indicator,
+:root[data-studio-profile="personal-studio"][data-studio-hdr="off"] .studio-scrubber:focus-visible {
+  dynamic-range-limit: standard;
+}
+
+@media (prefers-reduced-transparency: reduce) {
   :root[data-studio-profile="personal-studio"] .studio-glass-panel {
     background-color: var(--md-sys-color-surface-container-high);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+    dynamic-range-limit: standard;
   }
 }
 
-[data-reduced-transparency="true"] .studio-caustic-field {
-  display: none;
-}
-
-[data-reduced-transparency="true"] .studio-glass-panel {
+[data-reduced-transparency="true"] .studio-glass-panel,
+[data-contrast="high"] .studio-glass-panel {
   background-color: var(--md-sys-color-surface-container-high);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+  dynamic-range-limit: standard;
+}
+
+@media (prefers-contrast: more) {
+  :root[data-studio-profile="personal-studio"] .studio-glass-panel {
+    background-color: var(--md-sys-color-surface-container-high);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    dynamic-range-limit: standard;
+  }
 }
 
 @media (forced-colors: active) {
-  .studio-caustic-field {
-    display: none;
-  }
   .studio-glass-panel {
     background-color: Canvas;
     color: CanvasText;
     border: 1px solid CanvasText;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+    dynamic-range-limit: standard;
   }
 }
 ```
@@ -140,14 +205,15 @@ Layer 4 pairs Android 16-inspired optical window glass (`md3e-blur.css` under `[
 
 Layer 4 introduces a **bidirectional Human-AI Co-Tuning loop** in `assets/tokens/md3e-studio.js` so users sculpt aesthetic feel directly through tactile horizontal scrubbers while AI agents read structured live intent and harmonize complementary parameters without overriding human choices.
 
-### 3.1 `STUDIO_PARAM_SCHEMA` (10 Parameters Across 3 Groups)
+### 3.1 `STUDIO_PARAM_SCHEMA` (11 Parameters Across 3 Groups)
 
 | Group | Key | Range | Default | Unit | CSS Variable / Side Effect |
 |---|---|---|---|---|---|
-| **Optical Glass** | `blurPx` | `8..48` | `28` | `px` | `--md-studio-blur-px` |
-| **Optical Glass** | `glassAlpha` | `32..88` | `56` | `%` | `--md-studio-glass-alpha` |
-| **Optical Glass** | `glassSaturate` | `100..240` | `190` | `%` | `--md-studio-glass-saturate` |
-| **Optical Glass** | `specularAlpha` | `0..36` | `18` | `%` | `--md-studio-specular-alpha` |
+| **Optical Glass & HDR** | `blurPx` | `8..48` | `28` | `px` | `--md-studio-blur-px` |
+| **Optical Glass & HDR** | `glassAlpha` | `32..88` | `56` | `%` | `--md-studio-glass-alpha` |
+| **Optical Glass & HDR** | `glassSaturate` | `100..240` | `190` | `%` | `--md-studio-glass-saturate` |
+| **Optical Glass & HDR** | `specularAlpha` | `0..36` | `18` | `%` | `--md-studio-specular-alpha` |
+| **Optical Glass & HDR** | `hdrBoost` | `0..100` | `35` | `%` | `--md-studio-hdr-boost` (micro-detail P3/HDR optical headroom) |
 | **Physics & Choreography** | `springStiffness` | `180..900` | `340` | `—` | Recomputes `--md-bento-motion-default-spatial*` via `synthesizeSpringLinearCss` |
 | **Physics & Choreography** | `springDamping` | `0.58..1.00` | `0.76` | `—` | Recomputes `--md-bento-motion-default-spatial*` via `synthesizeSpringLinearCss` |
 | **Physics & Choreography** | `staggerMs` | `12..60` | `32` | `ms` | `--md-studio-stagger-ms` |
@@ -155,18 +221,21 @@ Layer 4 introduces a **bidirectional Human-AI Co-Tuning loop** in `assets/tokens
 | **Desktop Micro-Interactions** | `spotlightAlpha` | `0..24` | `12` | `%` | `--md-studio-spotlight-alpha` |
 | **Desktop Micro-Interactions** | `splitRatio` | `32..68` | `58` | `%` | `--md-studio-split-ratio` |
 
-### 3.2 Horizontal Drag Scrubber Contract (`.studio-scrubber[role="slider"]`)
+### 3.2 Horizontal Drag Scrubber & HDR Switch Contract
 
 Each parameter control in `#studio-tuner-panel` is a focusable custom scrubber (`role="slider"`, `tabindex="0"`, `aria-label`, `aria-valuemin`, `aria-valuemax`, `aria-valuenow`) with:
 - **Horizontal pointer drag** (`pointerdown` + `setPointerCapture` + `pointermove`) mapped smoothly across the track range.
 - **`Shift` precision mode (`0.25×` delta scaling)** for fine pixel/decimal adjustments during pointer drag.
 - **Full keyboard & wheel support**: `ArrowLeft` / `ArrowRight` (and `ArrowDown` / `ArrowUp`) step by 1 unit (`Shift` for fine or `PageUp` / `PageDown` for 10× steps), `Home` / `End` jump to bounds, and pointer wheel adjusts fine increments.
 - **Accessible target & focus**: `min-block-size: var(--md-sys-touch-target-min)` (`48px` via `::before` hit area if visually compact) and `3px solid var(--md-sys-color-secondary)` `:focus-visible` focus ring (`2px` offset).
+- **HDR Capability Badge & Optical Switch (`#studio-hdr-badge`, `#btn-studio-hdr`)**: `detectHdrCapabilities()` inspects `matchMedia('(dynamic-range: high)')`, `matchMedia('(color-gamut: p3)')`, `CSS.supports('color', 'color(display-p3 1 1 1)')`, and `CSS.supports('dynamic-range-limit', 'constrained-high')` (safely guarded for Node/SSR), syncing `:root[data-studio-hdr="on|off"]`, `:root[data-studio-hdr-capable="hdr|p3|sdr"]`, `#studio-hdr-badge`, and `#btn-studio-hdr` (`role="switch"`, `aria-checked`).
 
 ```html
 <section id="studio-tuner-panel" class="studio-tuner-panel md3e-blur-surface-high md3e-blur--lg" aria-label="Personal Studio Co-Tuner">
   <div class="studio-tuner-header">
     <span id="studio-intent-badge">Balanced Studio</span>
+    <span id="studio-hdr-badge">HDR Ready</span>
+    <button type="button" role="switch" id="btn-studio-hdr" aria-checked="true" aria-label="Adaptive HDR optical headroom">HDR</button>
     <div class="studio-tuner-actions">
       <button type="button" class="md3e-btn md3e-btn--tonal md3e-btn--s" id="btn-studio-harmonize">Auto-Harmonize</button>
       <button type="button" class="md3e-btn md3e-btn--outlined md3e-btn--s" id="btn-studio-preview">Preview Patch</button>
@@ -190,55 +259,131 @@ Each parameter control in `#studio-tuner-panel` is a focusable custom scrubber (
     <span class="studio-scrubber__val tabular-nums">56%</span>
   </div>
 
+  <div
+    class="studio-scrubber"
+    role="slider"
+    tabindex="0"
+    data-scrubber-key="hdrBoost"
+    data-scrubber-source="default"
+    aria-label="Adaptive HDR optical headroom boost"
+    aria-valuemin="0"
+    aria-valuemax="100"
+    aria-valuenow="35"
+  >
+    <span class="studio-scrubber__name">HDR Headroom</span>
+    <span class="studio-scrubber__val tabular-nums">35%</span>
+  </div>
+
   <pre id="studio-css-output" aria-label="Generated Personal Studio CSS patch"></pre>
   <script id="md3e-studio-telemetry" type="application/json">{
     "profile": "personal-studio",
     "inferredIntent": "balanced-studio",
     "humanModifiedKeys": [],
     "humanDeltas": {},
-    "values": { "glassAlpha": 56, "springStiffness": 340 }
+    "values": { "glassAlpha": 56, "hdrBoost": 35, "springStiffness": 340 },
+    "hdr": { "dynamicRangeHigh": true, "colorGamutP3": true, "enabled": true, "effective": true, "boostPct": 35 }
   }</script>
 </section>
 ```
 
-### 3.3 Bidirectional Human-AI Co-Tuning Loop
+### 3.3 Bidirectional Human-AI Co-Tuning Loop (`window.__MD3E_TUNER__`)
 
-1. **Human Primary Input (`source: 'human'`)**: The user drags 1–2 scrubbers manually (for example, lowers `glassAlpha` from `56%` to `44%`, or drops `springStiffness` from `340` to `260`). `md3e-studio.js` pins those keys as `source === 'human'`.
-2. **Synchronous Telemetry Emission (`#md3e-studio-telemetry` & `window.__MD3E_STUDIO__`)**:
-   - On every update, `initPersonalStudio()` serializes live state into `<script id="md3e-studio-telemetry" type="application/json">` with `values`, `sources`, `humanModifiedKeys`, `humanDeltas`, and `inferredIntent` (computed by `inferHumanIntent(state)` into labels such as `frosted-crystal`, `silk-cinematic`, `crisp-utility`, `tactile-focus`, or `balanced-studio`).
-   - Simultaneously, `window.__MD3E_STUDIO__` exposes `{ getState, setParam, harmonize, reset, exportCss, applyUrlOrStorage, statusCapsule, animateTabularCounter, refreshBindings, destroy }` (alongside exported helpers `createStatusCapsule` and `animateTabularCounter` in `md3e-studio.js`) so an IDE agent or browser automation harness can read live deltas and apply co-tuned updates.
+1. **Human Primary Input (`source: 'human'`)**: The user drags 1–2 scrubbers manually (for example, lowers `glassAlpha` from `56%` to `44%`, adjusts `hdrBoost`, or drops `springStiffness` from `340` to `260`). `md3e-studio.js` pins those keys as `source === 'human'`.
+2. **Synchronous Telemetry Emission (`#md3e-studio-telemetry` & `window.__MD3E_TUNER__`)**:
+   - On every update, `initPersonalStudio()` serializes live state into `<script id="md3e-studio-telemetry" type="application/json">` with `values`, `sources`, `humanModifiedKeys`, `humanDeltas`, `inferredIntent` (`frosted-crystal`, `silk-cinematic`, `crisp-utility`, `tactile-focus`, or `balanced-studio`), and `hdr` (`{ dynamicRangeHigh, colorGamutP3, cssDisplayP3, cssDynamicRangeLimit, effectiveHdr, enabled, effective, boostPct }`).
+   - Simultaneously, `window.__MD3E_TUNER__` (with `window.__MD3E_STUDIO__ = window.__MD3E_TUNER__` maintained as an identical alias) exposes `{ getState, setParam, harmonize, reset, exportCss, getHdrCapabilities, isHdrEnabled, setHdrEnabled, applyUrlOrStorage, statusCapsule, animateTabularCounter, refreshBindings, destroy }` so an IDE agent or browser harness can inspect HDR capability, toggle optical headroom, read live deltas, and harmonize parameters cleanly.
 3. **Coupled AI / Algorithmic Harmonization (`computeHarmonizedParams(state)` / `#btn-studio-harmonize`)**:
    - Reads `humanModifiedKeys`, `humanDeltas`, and `inferredIntent` from `#md3e-studio-telemetry` (or `getState()`).
    - Computes coupled complementary adjustments across **untouched** parameters while **locking and preserving every `human`-pinned key** untouched:
-     - *Example (Optical coupling)*: Lowering `glassAlpha` or raising `blurPx` boosts `glassSaturate`, raises `specularAlpha` to preserve edge definition, and subtly adjusts `spotlightAlpha`.
+     - *Example (Optical & HDR coupling)*: Lowering `glassAlpha` or raising `blurPx` boosts `glassSaturate`, raises `specularAlpha` to preserve edge definition, and tunes `hdrBoost` / `spotlightAlpha` proportionally.
      - *Example (Physics coupling)*: Softening `springStiffness` adjusts `springDamping` and tunes `--md-studio-stagger-ms` proportionally so card staggers match the slower organic settle time.
 4. **Live Preview & Exportable CSS Patch (`#studio-css-output`)**:
-   - `formatStudioCssPatch(values)` emits a ready-to-paste `:root[data-studio-profile="personal-studio"] { ... }` CSS block inside `#studio-css-output` for live preview (`#btn-studio-preview`), clipboard export (`#btn-studio-copy-css`), or reset (`#btn-studio-reset`).
+   - `formatStudioCssPatch(values)` emits a ready-to-paste `:root[data-studio-profile="personal-studio"] { ... }` CSS block inside `#studio-css-output` (including `--md-studio-hdr-boost` and `data-studio-hdr` state) for live preview (`#btn-studio-preview`), clipboard export (`#btn-studio-copy-css`), or reset (`#btn-studio-reset`).
 
 ```js
-// Programmatic AI Co-Tuning inspection & harmonization via window.__MD3E_STUDIO__
-const telemetryEl = document.getElementById('md3e-studio-telemetry');
-const telemetry = JSON.parse(telemetryEl.textContent);
-// telemetry -> { inferredIntent: "frosted-crystal", humanModifiedKeys: ["glassAlpha"], humanDeltas: { glassAlpha: -12 }, ... }
+// Programmatic AI Co-Tuning & HDR control via window.__MD3E_TUNER__ (alias: window.__MD3E_STUDIO__)
+const tuner = window.__MD3E_TUNER__;
+const caps = tuner.getHdrCapabilities();
+// caps -> { dynamicRangeHigh, colorGamutP3, cssDisplayP3, cssDynamicRangeLimit, effectiveHdr }
 
-const result = window.__MD3E_STUDIO__.harmonize();
-// Human-pinned keys (e.g. glassAlpha) stay locked; untouched keys (blurPx, glassSaturate, specularAlpha)
+tuner.setHdrEnabled(caps.effectiveHdr);
+const result = tuner.harmonize();
+// Human-pinned keys (e.g. glassAlpha) stay locked; untouched keys (blurPx, glassSaturate, specularAlpha, hdrBoost)
 // update with source: "ai", and #studio-css-output reflects the clean diff.
-const cssPatch = window.__MD3E_STUDIO__.exportCss();
+const cssPatch = tuner.exportCss();
 ```
 
 ---
 
-## 4. Desktop Ergonomics & Frame-Rate Engine
+## 4. Desktop Ergonomics, Live DOM FLIP Modal Choreography & Frame-Rate Engine
 
-Layer 4 adds desktop-first ergonomics built strictly on native HTML standards, `in oklab` color math, and refresh-rate-invariant motion:
+Layer 4 adds desktop-first ergonomics built strictly on native HTML standards, `in oklab` color math, and interruptible refresh-rate-invariant motion:
+
+### 4.1 Why Frosted Modals Must Use Live DOM FLIP (Never `document.startViewTransition()`)
+
+Never wrap a `backdrop-filter` modal (`#bento-vt-modal` + `#bento-vt-backdrop`) in `document.startViewTransition()`:
+1. **Static Bitmap Isolation**: `startViewTransition()` rasterizes the source card and target modal into **static frozen bitmap snapshots** (`::view-transition-old/new`), which **cannot sample live pixels through `backdrop-filter`** mid-flight. During opening, the modal composites as an opaque washed-out grey rectangle and **jumps abruptly to dark translucent glass** when the View Transition tears down and hands back to live DOM.
+2. **Asymmetric Scrim & Modal Tear-Down**: Running separate View Transition groups (such as a `220ms` backdrop scrim vs a `500ms` modal panel) strips backdrop blur at the end of close and produces a **1-frame scrim re-flash**.
+3. **Zero Mid-Flight Interruptibility**: Static View Transition snapshots lock layout state until animation completion rather than reversing cleanly from live velocity.
+
+**The Live DOM FLIP + Dual `createSpringAnimator` Solution**:
+- Keep `#bento-vt-backdrop` (`z-index: 900`, above bottom toolbars) and `#bento-vt-modal` (`z-index: 910`) as **live DOM nodes on every single frame** of open and close.
+- **Never animate `transform: scale()` on a `backdrop-filter` container** (which shifts Chromium's sampled blur kernel and causes a settle jump). Instead, set `position: fixed; margin: 0;` and interpolate live viewport geometry (`left`, `top`, `width`, `height`, `border-radius`) between `#event-stream-card.getBoundingClientRect()` and the centered resting modal bounds, plus subtle inner-content opacity/offset — keeping `backdrop-filter` **1:1 pixel-accurate on every frame** with **zero end-of-animation color jump**.
+- Drive `#bento-vt-backdrop` with a second synchronized `createSpringAnimator` (`scrimSpring`) updating `--scrim-progress` (`0 -> 1`) mapped continuously to `opacity` and `backdrop-filter: blur(calc(var(--scrim-progress) * 14px))`, setting `hidden = true` **only** when `target === 0` and settled (`p <= 0.002`) — eliminating Frame-1 blur pop and close-end scrim re-flash completely.
+- **100% Mid-Flight Interruptibility (150ms Reversal)**: Never place `inert` on `#bento-vt-backdrop` or use an animation mutex lock. Pressing `Escape`, clicking `#bento-vt-backdrop`, or clicking `#btn-vt-close` at **any millisecond mid-open** (for example, `150ms`) immediately calls `modalSpring.setTarget(0, { onRest })` and `scrimSpring.setTarget(0, { onRest })`, preserving exact live geometry and instantaneous velocity (`createSpringAnimator` cancels any superseded `onRest` callback from the earlier target and exposes `.getTarget()`, `.getValue()`, `.getVelocity()`, `.isAnimating()`, `.jump(value)`), smoothly reversing back into `#event-stream-card` and returning focus to `#btn-vt-expand`. Clicking `#btn-vt-expand` mid-close immediately reverses back to `1`.
+- **Every Interactive Transition Interruptible**: `#studio-tuner-panel` (live spring slide/opacity drawer), `#studio-cmd-dialog` (native `<dialog>` intercepting `cancel` / backdrop outside-click to spring-reverse cleanly without `<input type="search">` swallowing the first `Escape`), `switchBentoView`, `#bento-rail`, `#bento-profile-group`, and `#bento-context-menu` all retarget cleanly mid-flight with zero locked timeouts.
+
+```js
+// Dual createSpringAnimator Live DOM FLIP controller (zero startViewTransition bitmap jump)
+const modalSpring = createSpringAnimator({
+  initialValue: 0,
+  stiffness: 340,
+  damping: 0.76,
+  precision: 0.001,
+  onUpdate(p) {
+    // Interpolate live fixed left/top/width/height/border-radius (never transform: scale() on blur host)
+    applyLiveModalGeometry(p);
+  },
+});
+
+const scrimSpring = createSpringAnimator({
+  initialValue: 0,
+  stiffness: 1600,
+  damping: 1.0,
+  precision: 0.002,
+  onUpdate(p) {
+    vtBackdrop.style.setProperty('--scrim-progress', p.toFixed(4));
+  },
+});
+
+function openVtModal() {
+  vtBackdrop.hidden = false;
+  vtModal.hidden = false;
+  modalSpring.setTarget(1); // Cancels any stale close onRest automatically; preserves live velocity
+  scrimSpring.setTarget(1);
+}
+
+function closeVtModal() {
+  scrimSpring.setTarget(0, {
+    onRest() { vtBackdrop.hidden = true; },
+  });
+  modalSpring.setTarget(0, {
+    onRest() {
+      vtModal.hidden = true;
+      btnVtExpand.focus();
+    },
+  });
+}
+```
+
+### 4.2 Desktop Controls, Scrollbars & Refresh-Rate Engine
 
 1. **`Ctrl+K` Command Palette (`<dialog id="studio-cmd-dialog" closedby="any">`)**:
    - Uses native `<dialog closedby="any">` for light-dismiss backdrop click and `Escape` restoration — **never** add redundant `role="dialog"` or `aria-modal` (`MD3E020` / `MD3E202`).
-   - Locks background scroll leakage with `dialog.studio-cmd-dialog:modal { overscroll-behavior: contain; }` and `dialog.studio-cmd-dialog::backdrop { overflow: hidden; overscroll-behavior: contain; }`.
-   - Provides live fuzzy filtering across workspace commands (`Theme`, `Seed`, `Rail`, `Tuner`, `Harmonize`, `Expand`, view filters).
+   - Locks background scroll leakage with `dialog.studio-cmd-dialog:modal { overscroll-behavior: contain; }` and `dialog.studio-cmd-dialog::backdrop { overflow: hidden; overscroll-behavior: contain; }` (never locking scroll on `html`/`body`).
+   - Provides live fuzzy filtering across workspace commands (`Theme`, `Seed`, `Rail`, `Tuner`, `Harmonize`, `Expand`, view filters) without intercepting the first `Escape` keystroke.
 2. **Pointer Spotlight (`[data-studio-spotlight]`, `in oklab`)**:
-   - A `requestAnimationFrame`-coalesced pointermove listener sets `--studio-mx` and `--studio-my` on `[data-studio-spotlight]` hosts, painting a soft radial highlight sized by `--md-studio-spotlight-px` and mixed via `color-mix(in oklab, var(--md-sys-color-primary) var(--md-studio-spotlight-alpha), transparent)`.
+   - A `requestAnimationFrame`-coalesced pointermove listener sets `--studio-mx` and `--studio-my` on `[data-studio-spotlight]` hosts, painting a soft card-local radial highlight sized by `--md-studio-spotlight-px` and mixed via `color-mix(in oklab, var(--md-sys-color-primary) var(--md-studio-spotlight-alpha), transparent)`.
 3. **Thin Desktop Scrollbars (`>= 3:1`) + Soft-Edge Scroll Fades (`.studio-scroll-fade`)**:
    - Applies `scrollbar-width: thin` with `scrollbar-color: var(--md3e-scrollbar-thumb) var(--md3e-scrollbar-track)` (`--md-sys-color-outline` over `--md-sys-color-surface-container-low`, `>= 3:1` thumb/track contrast; plus `@supports not (scrollbar-color: auto)` WebKit fallback and `@media (pointer: coarse)` / `prefers-contrast: more` `scrollbar-width: auto` fallback), paired with `.studio-scroll-fade` `-webkit-mask-image` / `mask-image` soft top/bottom edges toggled dynamically by `[data-scroll-edges="top|bottom|both|none"]`.
 4. **Spring-Resetting Split Handle (`#bento-split-handle`)**:
@@ -372,5 +517,5 @@ Only run `--mode=personal-studio` when explicitly verifying a Personal Studio de
 python scripts/audit_md3e.py assets/starter/desktop-bento.html --mode=personal-studio --fail-on=warning
 ```
 
-- `--mode=personal-studio` inherits Layer 3 Bento checks (`MD3E101`–`MD3E104`, `CUSTOM`) plus Layer 4 checks (`MD3E201` optical glass + caustic/reduced-transparency hygiene, `MD3E202` `<dialog>` modal `overscroll-behavior` / no redundant `role="dialog"` / focusable controls — `CUSTOM` unless a core WCAG/contrast/focus `ERROR` triggers).
+- `--mode=personal-studio` inherits Layer 3 Bento checks (`MD3E101`–`MD3E104`, `CUSTOM`) plus Layer 4 checks (`MD3E201` bans global `.studio-caustic-field` ambient light-bleed blobs, verifies optical glass + reduced-transparency fallback hygiene, and enforces micro-scoped HDR hygiene without `body`/`p` boost + SDR/RT/HC fallbacks; `MD3E202` verifies `<dialog>` modal `overscroll-behavior: contain`, zero redundant `role="dialog"` / `aria-modal`, and focusable controls — `CUSTOM` unless a core WCAG/contrast/focus `ERROR` triggers).
 - `--mode=strict` remains 100% isolated from `MD3E101+` and `MD3E201+`, and `CUSTOM` findings never lower `official_compliance.score`.

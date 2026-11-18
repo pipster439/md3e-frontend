@@ -1447,11 +1447,11 @@ class DualSkillAndDesktopChoreographyTests(unittest.TestCase):
             "white-space: nowrap",
             "is-view-exiting",
             "30ms",
-            "startViewTransition",
-            "bento-vt-panel",
             "createSpringAnimator",
         ):
             self.assertIn(snippet, bento_html)
+        self.assertNotIn("bento-vt-panel", bento_html)
+        self.assertNotIn("bento-vt-scrim", bento_html)
 
         self.assertIn("if (e.shiftKey) return;", bento_md)
         self.assertIn("[data-context-menu]", bento_md)
@@ -1463,7 +1463,7 @@ class DualSkillAndDesktopChoreographyTests(unittest.TestCase):
         for snippet in (
             "nav-rail__label",
             "nav-rail__indicator",
-            "is-view-exiting",
+            "viewFadeSpring",
             "md3e-seg-indicator",
             "attachSpringSegmentedIndicator",
             "createSpringAnimator",
@@ -1595,7 +1595,7 @@ class RootCauseAndPersonalStudioTests(unittest.TestCase):
             self.assertTrue(payload["custom_extensions"]["active"])
             self.assertGreaterEqual(payload["custom_extensions"]["custom"], 2)
 
-        # Clean compliant personal-studio snippet/doc passes with 0 findings across all severities
+        # Clean compliant personal-studio snippet/doc passes with 0 findings across all severities (no caustic field!)
         good_studio_html = """<!doctype html>
 <html lang="en" data-layout-profile="desktop-bento" data-studio-profile="personal-studio">
 <head>
@@ -1611,7 +1611,6 @@ class RootCauseAndPersonalStudioTests(unittest.TestCase):
 </style>
 </head>
 <body>
-  <div class="studio-caustic-field" aria-hidden="true"></div>
   <main>
     <article class="card bento-card--hero">
       <div class="wave"></div>
@@ -1629,6 +1628,211 @@ class RootCauseAndPersonalStudioTests(unittest.TestCase):
 </html>"""
         self.assertEqual(
             audit_md3e.Checker(pathlib.Path("good-studio.html"), mode="personal-studio").run(good_studio_html),
+            [],
+        )
+
+    def test_md3e201_bans_caustic_field_and_enforces_hdr_hygiene(self) -> None:
+        caustic_html = """<!doctype html>
+<html lang="en" data-layout-profile="desktop-bento" data-studio-profile="personal-studio">
+<head>
+<link rel="stylesheet" href="../tokens/md3e-blur.css">
+<link rel="stylesheet" href="../tokens/md3e-studio.css">
+<style>
+  .shell { background: var(--md-sys-color-surface-container-lowest); }
+  .card { background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-extra-large); }
+  .well { background: var(--md-sys-color-surface-container); border-radius: var(--md-sys-shape-corner-large); }
+  .hi { background: var(--md-sys-color-surface-container-high); }
+  .kpi { font-size: var(--md-sys-typescale-display-large-size); }
+  .wrap { filter: drop-shadow(0 4px 12px color-mix(in oklab, var(--md-sys-color-shadow) 24%, transparent)); }
+  .studio-caustic-field { position: fixed; inset: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+  <div class="studio-caustic-field" aria-hidden="true"></div>
+  <main>
+    <article class="card bento-card--hero">
+      <div class="wave"></div>
+      <svg class="sparkline" viewBox="0 0 100 20" aria-hidden="true"></svg>
+      <div class="wrap"><button type="button" class="md3e-shape md3e-shape-sunny" aria-label="Morph">Go</button></div>
+    </article>
+  </main>
+</body>
+</html>"""
+        caustic_f = [
+            f for f in audit_md3e.Checker(pathlib.Path("caustic.html"), mode="personal-studio").run(caustic_html)
+            if f.code == "MD3E201"
+        ]
+        self.assertGreaterEqual(len(caustic_f), 2)
+        self.assertTrue(all(f.severity == "custom" for f in caustic_f))
+
+        bad_hdr_css = """
+        @media (dynamic-range: high) {
+          body { dynamic-range-limit: constrained-high; }
+          p { color: color(display-p3 1 0.2 0.2); }
+        }
+        """
+        hdr_f = [
+            f for f in audit_md3e.Checker(pathlib.Path("bad_hdr.css"), mode="personal-studio").run(bad_hdr_css)
+            if f.code == "MD3E201"
+        ]
+        # 2 broad body/p HDR findings + 3 missing fallback findings (SDR, reduced-transparency, contrast)
+        self.assertGreaterEqual(len(hdr_f), 4)
+        self.assertTrue(all(f.severity == "custom" for f in hdr_f))
+
+        good_hdr_css = """
+        :root[data-studio-profile="personal-studio"] {
+          --md-studio-hdr-boost: 35%;
+        }
+        body, p {
+          dynamic-range-limit: standard;
+        }
+        @media (dynamic-range: high) and (color-gamut: p3) {
+          :root[data-studio-profile="personal-studio"][data-studio-hdr="on"] [data-studio-spotlight]::after {
+            dynamic-range-limit: constrained-high;
+            background: radial-gradient(260px circle at 50% 50%, color(display-p3 0.6 0.45 1 / 0.22), transparent 74%);
+          }
+        }
+        :root[data-studio-hdr="off"] [data-studio-spotlight]::after {
+          dynamic-range-limit: standard;
+        }
+        @media (prefers-reduced-transparency: reduce) {
+          :root[data-studio-profile="personal-studio"] [data-studio-spotlight]::after {
+            dynamic-range-limit: standard;
+            display: none;
+          }
+        }
+        @media (prefers-contrast: more) {
+          :root[data-studio-profile="personal-studio"] [data-studio-spotlight]::after {
+            dynamic-range-limit: standard;
+            display: none;
+          }
+        }
+        """
+        self.assertEqual(
+            [f for f in audit_md3e.Checker(pathlib.Path("good_hdr.css"), mode="personal-studio").run(good_hdr_css) if f.code == "MD3E201"],
+            [],
+        )
+
+    def test_md3e029_complex_components_and_default_mode_alias(self) -> None:
+        self.assertEqual(audit_md3e.normalize_mode("default"), "strict")
+        self.assertEqual(audit_md3e.Checker(pathlib.Path("x.css"), mode="default").mode, "strict")
+
+        # 1. Floating label opaque background patch bleed check
+        bad_label_css = """
+        .md3e-text-field--outlined .md3e-text-field__label {
+          position: absolute;
+          background: var(--md-sys-color-surface);
+        }
+        .md3e-field label {
+          background-color: var(--md-sys-color-surface-container-low);
+        }
+        """
+        m029_lbl = [f for f in audit_md3e.Checker(pathlib.Path("lbl.css"), mode="default").run(bad_label_css) if f.code == "MD3E029"]
+        self.assertEqual(len(m029_lbl), 2)
+        self.assertTrue(all(f.severity == "warning" for f in m029_lbl))
+
+        good_notch_css = """
+        .md3e-field__outline {
+          border: 1px solid var(--md-sys-color-outline);
+          background: transparent;
+        }
+        .md3e-text-field__label {
+          background: transparent;
+        }
+        """
+        self.assertEqual(
+            [f for f in audit_md3e.Checker(pathlib.Path("notch.css"), mode="default").run(good_notch_css) if f.code == "MD3E029"],
+            [],
+        )
+
+        # 2. Dialog A11y (redundant role/aria-modal), root scroll-lock, and overscroll-behavior: contain
+        bad_dialog_html = """<!doctype html>
+<html lang="en">
+<head>
+<style>
+  html:has(dialog[open]) { overflow: hidden; }
+  body.dialog-open { overflow: hidden; }
+  .md3e-dialog { padding: var(--md-sys-spacing-6); }
+</style>
+</head>
+<body>
+  <dialog id="dlg" role="dialog" aria-modal="true">
+    <button type="button">OK</button>
+  </dialog>
+</body>
+</html>"""
+        d_default = [f for f in audit_md3e.Checker(pathlib.Path("dlg.html"), mode="default").run(bad_dialog_html) if f.code == "MD3E029"]
+        self.assertEqual(len(d_default), 5)  # role, aria-modal, 2x scroll-lock, missing dialog:modal overscroll
+        self.assertTrue(all(f.severity == "warning" for f in d_default))
+
+        d_studio = [f for f in audit_md3e.Checker(pathlib.Path("dlg.html"), mode="personal-studio").run(bad_dialog_html) if f.code == "MD3E202"]
+        self.assertEqual(len(d_studio), 5)
+        self.assertTrue(all(f.severity == "custom" for f in d_studio))
+
+        good_dialog_html = """<!doctype html>
+<html lang="en">
+<head>
+<style>
+  body { overflow: hidden; }
+  dialog:modal { overscroll-behavior: contain; }
+  dialog::backdrop { overflow: hidden; overscroll-behavior: contain; }
+</style>
+</head>
+<body>
+  <dialog id="dlg" aria-labelledby="t">
+    <h2 id="t">Confirm</h2>
+    <button type="button">OK</button>
+  </dialog>
+</body>
+</html>"""
+        self.assertEqual(
+            [f for f in audit_md3e.Checker(pathlib.Path("good_dlg.html"), mode="default").run(good_dialog_html) if f.code == "MD3E029"],
+            [],
+        )
+
+        # 3. Custom listbox/menu/grid keyboard-focus & active-state contract
+        bad_widget_html = """<!doctype html>
+<html lang="en">
+<head>
+<style>
+  .btn:hover { background: var(--md-sys-color-surface-container); }
+  .btn:focus-visible { outline: 3px solid var(--md-sys-color-secondary); }
+</style>
+</head>
+<body>
+  <div class="custom-select" role="listbox" aria-label="Region">
+    <div role="option">US</div>
+  </div>
+  <div class="custom-cal" role="grid" aria-label="Calendar">
+    <button type="button">1</button>
+  </div>
+</body>
+</html>"""
+        w_f = [f for f in audit_md3e.Checker(pathlib.Path("w.html"), mode="default").run(bad_widget_html) if f.code == "MD3E029"]
+        self.assertEqual(len(w_f), 2)
+
+        good_widget_html = """<!doctype html>
+<html lang="en">
+<head>
+<style>
+  .custom-select [data-highlighted],
+  .custom-select [data-selected] { background: var(--md-sys-color-secondary-container); }
+  .custom-cal [data-range-start],
+  .custom-cal [data-in-range],
+  .custom-cal button:focus-visible { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
+</style>
+</head>
+<body>
+  <div class="custom-select" role="listbox" aria-label="Region">
+    <div role="option">US</div>
+  </div>
+  <div class="custom-cal" role="grid" aria-label="Calendar">
+    <button type="button">1</button>
+  </div>
+</body>
+</html>"""
+        self.assertEqual(
+            [f for f in audit_md3e.Checker(pathlib.Path("wg.html"), mode="default").run(good_widget_html) if f.code == "MD3E029"],
             [],
         )
 
@@ -1751,6 +1955,64 @@ resumeCb(nowVal);
 const valOnResumeFrame = visAnim.value;
 visAnim.stop();
 
+// 4. Mid-flight reversal velocity continuity + cancelled stale onRest + jump/getters
+rafQueue.clear();
+nowVal = 3000;
+let staleRestCount = 0;
+const finalRestValues = [];
+const revAnim = createSpringAnimator({
+  initialValue: 0,
+  stiffness: 340,
+  damping: 0.76,
+  precision: 0.01,
+});
+revAnim.setTarget(100, {
+  onRest() { staleRestCount += 1; },
+});
+for (let i = 0; i < 4; i++) {
+  const id = [...rafQueue.keys()][0];
+  const cb = rafQueue.get(id);
+  rafQueue.delete(id);
+  nowVal += 16.6667;
+  cb(nowVal);
+}
+const valAtReversal = revAnim.getValue();
+const velAtReversal = revAnim.getVelocity();
+const animBeforeReversal = revAnim.isAnimating();
+
+revAnim.setTarget(0, {
+  onRest(v) { finalRestValues.push(v); },
+});
+const targetAfterReversal = revAnim.getTarget();
+const valImmediatelyAfter = revAnim.getValue();
+const velImmediatelyAfter = revAnim.getVelocity();
+
+// Step first frame after reversal: positive inertia prevents discontinuous snap
+const firstRevId = [...rafQueue.keys()][0];
+const firstRevCb = rafQueue.get(firstRevId);
+rafQueue.delete(firstRevId);
+nowVal += 16.6667;
+firstRevCb(nowVal);
+const valOneFrameAfterReversal = revAnim.getValue();
+
+// Settle to completion
+for (let guard = 0; guard < 600 && rafQueue.size > 0; guard++) {
+  nowVal += 16.6667;
+  const id = [...rafQueue.keys()][0];
+  const cb = rafQueue.get(id);
+  rafQueue.delete(id);
+  cb(nowVal);
+}
+const animAfterSettle = revAnim.isAnimating();
+const settledValue = revAnim.getValue();
+revAnim.jump(42);
+const jumpedState = {
+  value: revAnim.getValue(),
+  target: revAnim.getTarget(),
+  velocity: revAnim.getVelocity(),
+  animating: revAnim.isAnimating(),
+};
+
 console.log(JSON.stringify({
   s340,
   sCritical,
@@ -1763,6 +2025,20 @@ console.log(JSON.stringify({
   pausedAfterShow,
   queueSizeAfterShow,
   valOnResumeFrame,
+  reversal: {
+    valAtReversal,
+    velAtReversal,
+    animBeforeReversal,
+    targetAfterReversal,
+    valImmediatelyAfter,
+    velImmediatelyAfter,
+    valOneFrameAfterReversal,
+    staleRestCount,
+    finalRestValues,
+    animAfterSettle,
+    settledValue,
+    jumpedState,
+  },
 }));
 """
         raw = subprocess.check_output(
@@ -1796,6 +2072,20 @@ console.log(JSON.stringify({
         self.assertGreater(out["valOnResumeFrame"], out["valBeforeHide"])
         self.assertLess(out["valOnResumeFrame"], 60.0)
 
+        rev = out["reversal"]
+        self.assertTrue(rev["animBeforeReversal"])
+        self.assertGreater(rev["valAtReversal"], 5.0)
+        self.assertGreater(rev["velAtReversal"], 50.0)
+        self.assertEqual(rev["targetAfterReversal"], 0)
+        self.assertEqual(rev["valImmediatelyAfter"], rev["valAtReversal"])
+        self.assertEqual(rev["velImmediatelyAfter"], rev["velAtReversal"])
+        self.assertGreater(rev["valOneFrameAfterReversal"], rev["valAtReversal"] * 0.8)
+        self.assertEqual(rev["staleRestCount"], 0)
+        self.assertEqual(rev["finalRestValues"], [0])
+        self.assertFalse(rev["animAfterSettle"])
+        self.assertEqual(rev["settledValue"], 0)
+        self.assertEqual(rev["jumpedState"], {"value": 42, "target": 42, "velocity": 0, "animating": False})
+
     def test_studio_js_schema_intent_harmonize_and_css_patch(self) -> None:
         node_bin = shutil.which("node")
         if not node_bin:
@@ -1807,7 +2097,11 @@ import {
   inferHumanIntent,
   computeHarmonizedParams,
   formatStudioCssPatch,
+  detectHdrCapabilities,
+  initPersonalStudio,
 } from './assets/tokens/md3e-studio.js';
+
+const bareNodeCaps = detectHdrCapabilities();
 
 const schemaKeys = Object.keys(STUDIO_PARAM_SCHEMA);
 const defaultIntent = inferHumanIntent({});
@@ -1829,14 +2123,90 @@ const tactileIntent = inferHumanIntent({
 });
 
 const humanState = {
-  values: { glassAlpha: 40, springStiffness: 250 },
-  sources: { glassAlpha: 'human', springStiffness: 'human' },
+  values: { glassAlpha: 40, springStiffness: 250, hdrBoost: 60 },
+  sources: { glassAlpha: 'human', springStiffness: 'human', hdrBoost: 'human' },
 };
 const harmonized = computeHarmonizedParams(humanState);
 const harmonizedAgain = computeHarmonizedParams(harmonized);
 const cssPatch = formatStudioCssPatch(harmonized);
+const cssPatchHdrOff = formatStudioCssPatch(harmonized, { hdrEnabled: false });
+
+// Mock DOM + HDR browser capabilities to test __MD3E_TUNER__, __MD3E_STUDIO__, and fallbacks
+const mediaState = {
+  '(dynamic-range: high)': true,
+  '(color-gamut: p3)': true,
+  '(prefers-reduced-transparency: reduce)': false,
+  '(prefers-contrast: more)': false,
+  '(forced-colors: active)': false,
+};
+globalThis.window = {
+  matchMedia: (q) => ({ matches: Boolean(mediaState[q]), addEventListener() {}, removeEventListener() {} }),
+  location: { search: '', hash: '' },
+};
+globalThis.CSS = { supports: (p, v) => (p === 'color' && v.includes('display-p3')) || p === 'dynamic-range-limit' };
+const makeStyle = () => {
+  const map = new Map();
+  return {
+    setProperty: (k, v) => map.set(k, v),
+    removeProperty: (k) => map.delete(k),
+    getPropertyValue: (k) => map.get(k) || '',
+    toObject: () => Object.fromEntries(map.entries()),
+  };
+};
+const makeEl = () => {
+  const attrs = new Map();
+  const listeners = new Map();
+  return {
+    dataset: {},
+    style: makeStyle(),
+    textContent: '',
+    setAttribute: (k, v) => attrs.set(k, String(v)),
+    getAttribute: (k) => attrs.get(k) ?? null,
+    addEventListener: (t, fn) => listeners.set(t, fn),
+    removeEventListener: (t) => listeners.delete(t),
+    click: () => listeners.get('click')?.(),
+  };
+};
+const rootEl = makeEl();
+rootEl.dataset.studioProfile = 'personal-studio';
+const telemetryEl = makeEl();
+const cssOutputEl = makeEl();
+const hdrBadgeEl = makeEl();
+const hdrToggleBtnEl = makeEl();
+
+const ctrl = initPersonalStudio({
+  rootEl,
+  telemetryEl,
+  cssOutputEl,
+  hdrBadgeEl,
+  hdrToggleBtnEl,
+  persistStorage: false,
+});
+const aliasEqual = globalThis.window.__MD3E_TUNER__ === ctrl && globalThis.window.__MD3E_STUDIO__ === globalThis.window.__MD3E_TUNER__;
+const initialHdrCaps = ctrl.getHdrCapabilities();
+const initialHdrEnabled = ctrl.isHdrEnabled();
+const initialBadge = hdrBadgeEl.textContent;
+const initialChecked = hdrToggleBtnEl.getAttribute('aria-checked');
+const initialCssVar = rootEl.style.getPropertyValue('--md-studio-hdr-boost');
+
+ctrl.setHdrEnabled(false);
+const disabledHdrEnabled = ctrl.isHdrEnabled();
+const disabledAttr = rootEl.dataset.studioHdr;
+const disabledCssVar = rootEl.style.getPropertyValue('--md-studio-hdr-boost');
+const disabledBadge = hdrBadgeEl.textContent;
+const disabledChecked = hdrToggleBtnEl.getAttribute('aria-checked');
+
+ctrl.setHdrEnabled(true);
+rootEl.dataset.reducedTransparency = 'true';
+const rtSnap = ctrl.setParam('hdrBoost', 72);
+const rtHdrEnabled = ctrl.isHdrEnabled();
+const rtAttr = rootEl.dataset.studioHdr;
+const rtBadge = hdrBadgeEl.textContent;
+
+ctrl.destroy();
 
 console.log(JSON.stringify({
+  bareNodeCaps,
   schemaKeys,
   schema: STUDIO_PARAM_SCHEMA,
   defaultIntent,
@@ -1847,6 +2217,24 @@ console.log(JSON.stringify({
   harmonized,
   harmonizedAgain,
   cssPatch,
+  cssPatchHdrOff,
+  dom: {
+    aliasEqual,
+    initialHdrCaps,
+    initialHdrEnabled,
+    initialBadge,
+    initialChecked,
+    initialCssVar,
+    disabledHdrEnabled,
+    disabledAttr,
+    disabledCssVar,
+    disabledBadge,
+    disabledChecked,
+    rtHdrEnabled,
+    rtAttr,
+    rtBadge,
+    rtTelemetryHdr: rtSnap.hdr,
+  },
 }));
 """
         raw = subprocess.check_output(
@@ -1856,8 +2244,18 @@ console.log(JSON.stringify({
         )
         out = json.loads(raw)
 
+        self.assertEqual(
+            out["bareNodeCaps"],
+            {
+                "dynamicRangeHigh": False,
+                "colorGamutP3": False,
+                "cssDisplayP3": False,
+                "cssDynamicRangeLimit": False,
+                "effectiveHdr": False,
+            },
+        )
         expected_keys = [
-            "blurPx", "glassAlpha", "glassSaturate", "specularAlpha",
+            "blurPx", "glassAlpha", "glassSaturate", "specularAlpha", "hdrBoost",
             "springStiffness", "springDamping", "staggerMs",
             "spotlightPx", "spotlightAlpha", "splitRatio",
         ]
@@ -1871,10 +2269,12 @@ console.log(JSON.stringify({
         self.assertEqual(out["tactileIntent"], "tactile-focus")
 
         h = out["harmonized"]
-        self.assertEqual(h["humanModifiedKeys"], ["glassAlpha", "springStiffness"])
+        self.assertEqual(h["humanModifiedKeys"], ["glassAlpha", "hdrBoost", "springStiffness"])
         self.assertEqual(h["values"]["glassAlpha"], 40)
+        self.assertEqual(h["values"]["hdrBoost"], 60)
         self.assertEqual(h["values"]["springStiffness"], 250)
         self.assertEqual(h["sources"]["glassAlpha"], "human")
+        self.assertEqual(h["sources"]["hdrBoost"], "human")
         self.assertEqual(h["sources"]["springStiffness"], "human")
         self.assertGreaterEqual(len(h["aiHarmonizedKeys"]), 4)
         for ai_key in h["aiHarmonizedKeys"]:
@@ -1890,13 +2290,35 @@ console.log(JSON.stringify({
             "--md-studio-glass-alpha:",
             "--md-studio-glass-saturate:",
             "--md-studio-specular-alpha:",
+            "--md-studio-hdr-boost:",
             "--md-studio-glass-brightness:",
             "--md-studio-glass-contrast:",
             "--md-bento-motion-default-spatial-duration:",
             "--md-bento-motion-default-spatial-easing:",
             "--md-bento-motion-default-spatial:",
+            '[data-studio-hdr="on"]',
         ):
             self.assertIn(token, patch)
+        self.assertIn('[data-studio-hdr="off"]', out["cssPatchHdrOff"])
+        self.assertIn("--md-studio-hdr-boost: 0%", out["cssPatchHdrOff"])
+
+        dom = out["dom"]
+        self.assertTrue(dom["aliasEqual"])
+        self.assertTrue(dom["initialHdrCaps"]["effectiveHdr"])
+        self.assertTrue(dom["initialHdrEnabled"])
+        self.assertEqual(dom["initialBadge"], "HDR Ready")
+        self.assertEqual(dom["initialChecked"], "true")
+        self.assertEqual(dom["initialCssVar"], "35%")
+        self.assertFalse(dom["disabledHdrEnabled"])
+        self.assertEqual(dom["disabledAttr"], "off")
+        self.assertEqual(dom["disabledCssVar"], "0%")
+        self.assertEqual(dom["disabledBadge"], "HDR Off")
+        self.assertEqual(dom["disabledChecked"], "false")
+        self.assertFalse(dom["rtHdrEnabled"])
+        self.assertEqual(dom["rtAttr"], "off")
+        self.assertEqual(dom["rtBadge"], "RT Fallback")
+        self.assertFalse(dom["rtTelemetryHdr"]["enabled"])
+        self.assertEqual(dom["rtTelemetryHdr"]["boostPct"], 72)
 
     def test_root_cause_fixes_and_layer4_dom_in_starter_and_bento_html(self) -> None:
         index_html = STARTER_HTML.read_text(encoding="utf-8")
@@ -1965,26 +2387,54 @@ console.log(JSON.stringify({
             "index.html .md3e-snackbar--action must use var(--md-sys-shape-corner-large)",
         )
 
-        # 4. desktop-bento.html VT modal scrim z-index layering + ::view-transition-old(root) suppression + plush springs
+        # 4. Zero .studio-caustic-field + Live DOM FLIP interruptible modal + HDR tuner controls
+        studio_css = STUDIO_CSS.read_text(encoding="utf-8")
+        studio_js = STUDIO_JS.read_text(encoding="utf-8")
+        self.assertNotIn("studio-caustic-field", studio_css)
+        self.assertNotIn("studio-caustic-field", bento_html)
+        self.assertNotIn("bento-vt-scrim", bento_html)
+        self.assertNotIn("bento-vt-panel", bento_html)
+        self.assertNotIn('html[data-vt-kind="modal"]', bento_html)
+
+        vt_modal_slice_m = re.search(
+            r"function openVtModal[\s\S]*?function closeVtModal[\s\S]*?(?=\n\s*(?:vtExpandBtn|function switchBentoView))",
+            bento_html,
+        )
+        self.assertIsNotNone(vt_modal_slice_m, "Missing openVtModal / closeVtModal functions in desktop-bento.html")
+        self.assertNotIn("startViewTransition", vt_modal_slice_m.group(0))
+        self.assertIn("getVtSourceRect", vt_modal_slice_m.group(0))
+        self.assertIn("measureVtTargetRect", vt_modal_slice_m.group(0))
+        self.assertIn("modalSpring.setTarget", vt_modal_slice_m.group(0))
+        self.assertIn("scrimSpring.setTarget", vt_modal_slice_m.group(0))
+        self.assertIn("getBoundingClientRect", bento_html)
+
         for snippet in (
-            "bento-vt-scrim",
-            'html[data-vt-kind="modal"]::view-transition-old(root)',
-            'html[data-vt-kind="modal"]::view-transition-new(root)',
-            "::view-transition-group(bento-vt-scrim)",
             "synthesizeSpringLinearCss",
             'data-studio-profile="personal-studio"',
             "md3e-studio.css",
             "md3e-studio.js",
-            "studio-caustic-field",
+            'id="bento-vt-modal"',
+            'id="bento-vt-backdrop"',
             'id="titlebar-status-pill"',
             'id="md3e-studio-telemetry"',
             'id="studio-tuner-panel"',
             'id="studio-cmd-dialog"',
+            'id="studio-hdr-badge"',
+            'id="btn-studio-hdr"',
             'id="bento-split-handle"',
             'id="btn-studio-harmonize"',
             'id="studio-css-output"',
         ):
             self.assertIn(snippet, bento_html)
+
+        for js_token in (
+            "__MD3E_TUNER__",
+            "__MD3E_STUDIO__",
+            "getHdrCapabilities",
+            "isHdrEnabled",
+            "setHdrEnabled",
+        ):
+            self.assertIn(js_token, studio_js)
 
         self.assertNotIn("240ms", bento_html, "Stale 240ms spring copy/tokens must be replaced in desktop-bento.html")
         self.assertNotRegex(
@@ -1993,11 +2443,99 @@ console.log(JSON.stringify({
             "Native <dialog id='studio-cmd-dialog'> must not carry redundant role='dialog'",
         )
         for key in (
-            "blurPx", "glassAlpha", "glassSaturate", "specularAlpha",
+            "blurPx", "glassAlpha", "glassSaturate", "specularAlpha", "hdrBoost",
             "springStiffness", "springDamping", "staggerMs",
             "spotlightPx", "spotlightAlpha", "splitRatio",
         ):
             self.assertIn(f'data-scrubber-key="{key}"', bento_html)
+
+    def test_five_complex_components_in_starter_and_docs(self) -> None:
+        index_html = STARTER_HTML.read_text(encoding="utf-8")
+
+        # 1. Native <dialog id="prim-dialog"> (no redundant role/aria-modal, dialog:modal overscroll-behavior: contain)
+        self.assertIn('id="prim-dialog"', index_html)
+        self.assertNotRegex(index_html, r"<dialog\b[^>]*\brole\s*=\s*[\"']dialog[\"']")
+        self.assertNotRegex(index_html, r"<dialog\b[^>]*\baria-modal\s*=")
+        self.assertRegex(index_html, r"dialog:modal[\s\S]*?overscroll-behavior\s*:\s*contain")
+
+        # 2. Outlined Text Field with transparent <fieldset><legend> notch
+        for snippet in (
+            'id="prim-outlined-field"',
+            'id="prim-outlined-input"',
+            "<fieldset",
+            "<legend",
+            'id="prim-text-prefix"',
+            'id="prim-outlined-clear"',
+            'id="prim-text-counter"',
+            'id="prim-text-error"',
+            'id="prim-text-error-toggle"',
+        ):
+            self.assertIn(snippet, index_html)
+
+        # 3. Top-layer [popover="auto"] Menu inside overflow: hidden card
+        for snippet in (
+            'id="prim-menu-trigger"',
+            'id="prim-menu"',
+            'popover="auto"',
+            "md3e-menu-trap-card",
+            'id="prim-submenu-trigger"',
+            'id="prim-submenu"',
+            "position-area:",
+            "transition-behavior: allow-discrete",
+            "@starting-style",
+        ):
+            self.assertIn(snippet, index_html)
+
+        # 4. Select Skin Contract + Top-Layer Listbox + progressive base-select
+        for snippet in (
+            'id="prim-select-trigger"',
+            'id="prim-select-listbox"',
+            'data-state="closed"',
+            "data-highlighted",
+            "data-selected",
+            "data-disabled",
+            "appearance: base-select",
+        ):
+            self.assertIn(snippet, index_html)
+
+        # 5. Date Picker Single <-> Range mode + continuous range track
+        for snippet in (
+            'id="prim-datepicker"',
+            'id="prim-dp-mode-single"',
+            'id="prim-dp-mode-range"',
+            'role="grid"',
+            "data-range-start",
+            "data-in-range",
+            "data-range-end",
+            "data-today",
+        ):
+            self.assertIn(snippet, index_html)
+
+        # Verify all 5 complex components and HDR/FLIP choreography are documented in references/
+        text_input_md = (REFERENCES_DIR / "components" / "text-input.md").read_text(encoding="utf-8")
+        containment_md = (REFERENCES_DIR / "components" / "containment.md").read_text(encoding="utf-8")
+        selection_md = (REFERENCES_DIR / "components" / "selection.md").read_text(encoding="utf-8")
+        components_md = (REFERENCES_DIR / "components.md").read_text(encoding="utf-8")
+        studio_md = (REFERENCES_DIR / "personal-studio.md").read_text(encoding="utf-8")
+
+        self.assertIn("<fieldset", text_input_md)
+        self.assertIn("<legend", text_input_md)
+        self.assertIn("data-range-start", text_input_md)
+        self.assertIn("data-in-range", text_input_md)
+        self.assertIn("overscroll-behavior: contain", containment_md)
+        self.assertIn('popover="auto"', containment_md)
+        self.assertIn("data-highlighted", selection_md)
+        self.assertIn("appearance: base-select", selection_md)
+        self.assertIn("Complex Component Architecture Matrix", components_md)
+        self.assertEqual(
+            audit_md3e.audit_markdown(REFERENCES_DIR / "personal-studio.md", studio_md, mode="personal-studio"),
+            [],
+        )
+        for fence_m in re.finditer(r"```(?:html|css)\s*\n([\s\S]*?)```", studio_md):
+            self.assertNotIn("studio-caustic-field", fence_m.group(1))
+        self.assertIn("__MD3E_TUNER__", studio_md)
+        self.assertIn("hdrBoost", studio_md)
+        self.assertIn("Live DOM FLIP", studio_md)
 
     def test_personal_studio_cli_exit_zero_and_json_contract(self) -> None:
         import contextlib
@@ -2012,6 +2550,160 @@ console.log(JSON.stringify({
         self.assertTrue(payload["custom_extensions"]["active"])
         self.assertEqual(payload["official_compliance"]["score"], 100)
         self.assertEqual(payload["summary"], {"error": 0, "warning": 0, "info": 0, "custom": 0})
+
+
+class SwarmBugHuntRegressionTests(unittest.TestCase):
+    def test_auditor_catches_rt_specificity_keyframe_cascade_and_allow_discrete_drops(self) -> None:
+        # 1. MD3E022: higher-specificity blur rule must NOT silently beat lower-specificity RT fallback
+        bad_rt_css = """
+        :where(.glass):not([class*="md3e-shape"]) {
+          backdrop-filter: blur(20px);
+          background-color: color-mix(in oklab, var(--md-sys-color-surface) 70%, transparent);
+        }
+        @media (prefers-reduced-transparency: reduce) {
+          :where(.glass) {
+            backdrop-filter: none;
+            background-color: var(--md-sys-color-surface-container-high);
+          }
+        }
+        """
+        m022_bad = [f for f in audit_md3e.Checker(pathlib.Path("rt.css"), mode="strict").run(bad_rt_css) if f.code == "MD3E022"]
+        self.assertEqual(len(m022_bad), 1)
+        self.assertEqual(m022_bad[0].severity, "error")
+
+        good_rt_css = bad_rt_css.replace(
+            ':where(.glass):not([class*="md3e-shape"])',
+            ':where(.glass):where(:not([class*="md3e-shape"]))',
+        )
+        m022_good = [f for f in audit_md3e.Checker(pathlib.Path("rt_ok.css"), mode="strict").run(good_rt_css) if f.code == "MD3E022"]
+        self.assertEqual(m022_good, [])
+
+        # 2. MD3E019: @keyframes transform/opacity + fill-mode: both alongside transition without animationend cleanup
+        bad_kf_html = """<!doctype html><html lang="en"><head><style>
+        @keyframes bento-card-stagger-in { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: none; } }
+        .bento-card { transition: transform var(--md-sys-motion-fast-spatial); }
+        .bento-card.is-stagger-enter { animation-name: bento-card-stagger-in; animation-duration: var(--md-sys-motion-default-spatial-duration); animation-timing-function: var(--md-sys-motion-default-spatial-easing); animation-fill-mode: both; }
+        </style></head><body><main><div class="bento-card is-stagger-enter">Card</div></main></body></html>"""
+        m019_bad = [f for f in audit_md3e.Checker(pathlib.Path("kf.html"), mode="strict").run(bad_kf_html) if f.code == "MD3E019"]
+        self.assertGreaterEqual(len(m019_bad), 1)
+        self.assertEqual(m019_bad[0].severity, "warning")
+
+        # 3. MD3E029: allow-discrete popover placing flex-direction/gap only on :popover-open
+        bad_discrete_css = """
+        .md3e-select__listbox {
+          display: none;
+          opacity: 0;
+          transition: opacity var(--md-sys-motion-fast-effects), display var(--md-sys-motion-fast-effects);
+          transition-behavior: allow-discrete;
+        }
+        .md3e-select__listbox:popover-open {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          opacity: 1;
+        }
+        """
+        m029_bad = [f for f in audit_md3e.Checker(pathlib.Path("sel.css"), mode="strict").run(bad_discrete_css) if f.code == "MD3E029"]
+        self.assertEqual(len(m029_bad), 1)
+        self.assertEqual(m029_bad[0].severity, "warning")
+
+        good_discrete_css = bad_discrete_css.replace(
+            "  opacity: 0;",
+            "  flex-direction: column;\n  gap: 2px;\n  opacity: 0;",
+        ).replace("  flex-direction: column;\n  gap: 2px;\n  opacity: 1;", "  opacity: 1;")
+        m029_good = [f for f in audit_md3e.Checker(pathlib.Path("sel_ok.css"), mode="strict").run(good_discrete_css) if f.code == "MD3E029"]
+        self.assertEqual(m029_good, [])
+
+    def test_starter_and_bento_regression_guards(self) -> None:
+        bento_html = BENTO_HTML.read_text(encoding="utf-8")
+        index_html = STARTER_HTML.read_text(encoding="utf-8")
+
+        # Bento user-bug & critical swarm regression markers
+        self.assertIn("grid-template-columns: minmax(0, 1fr) 180px 636px;", bento_html)
+        self.assertNotIn("const geomP = vtTarget === 0 ? Math.max(0, p) : p;", bento_html)
+        self.assertIn('data-vt-landing', bento_html)
+        self.assertIn('id="bento-vt-modal-logs" aria-label="Expanded cluster event diagnostics" tabindex="0"', bento_html)
+        self.assertIn("animationcancel", bento_html)
+        self.assertIn("cmdDialog?.open", bento_html)
+        self.assertIn("md3e-shared-variant", bento_html)
+
+        # Index showcase regression markers
+        self.assertIn(".app-frame:has(#inspector-sheet.is-open) .shell", index_html)
+        self.assertIn("max(0px, calc((100% - var(--md3e-dp-cap-size)) / 2))", index_html)
+        self.assertIn("addMonthsClamped", index_html)
+        self.assertIn("minSelectableDate", index_html)
+
+    def test_runtime_spring_morph_and_studio_regressions(self) -> None:
+        node_bin = shutil.which("node")
+        if not node_bin:
+            self.skipTest("Node.js not installed")
+
+        js_driver = r"""
+import { createSpringAnimator } from './assets/tokens/md3e-spring.js';
+import { createShapeMorpher } from './assets/tokens/md3e-morph.js';
+
+// 1. stop() inside onUpdate must cancel immediately with 0 trailing frames
+let postStopCalls = 0;
+let stopped = false;
+let spring;
+spring = createSpringAnimator({
+  initialValue: 1,
+  stiffness: 1100,
+  damping: 1,
+  precision: 0.001,
+  onUpdate(v) {
+    if (stopped) {
+      postStopCalls += 1;
+      return;
+    }
+    if (v < 0.7) {
+      stopped = true;
+      spring.stop();
+    }
+  },
+  onComplete() {
+    if (stopped) postStopCalls += 100;
+  },
+});
+spring.setTarget(0);
+
+// 2. morphTo() mid-flight return-reversal & pointercancel cleanup + destroy()
+let dUpdates = 0;
+const attrs = { 'aria-pressed': 'false' };
+const listeners = new Map();
+const pathEl = { setAttribute(k, v) { if (k === 'd') dUpdates += 1; } };
+const btnEl = {
+  getAttribute(k) { return attrs[k] ?? null; },
+  setAttribute(k, v) { attrs[k] = String(v); },
+  addEventListener(type, fn) { listeners.set(type, fn); },
+  removeEventListener(type, fn) { if (listeners.get(type) === fn) listeners.delete(type); },
+};
+const morpher = createShapeMorpher(pathEl, { initialShape: 'square' });
+const unbind = morpher.bindPressMorph(btnEl, {
+  restShape: 'square',
+  pressedShape: 'cookie-9-sided',
+  toggleShape: 'sunny',
+});
+listeners.get('pointerdown')?.({ button: 0 });
+listeners.get('pointerleave')?.({});
+listeners.get('click')?.({});
+const pressedAfterKeyboardClick = attrs['aria-pressed'];
+morpher.destroy();
+const remainingListeners = listeners.size;
+
+await new Promise((r) => setTimeout(r, 120));
+console.log(JSON.stringify({ postStopCalls, pressedAfterKeyboardClick, remainingListeners, dUpdates }));
+"""
+        raw = subprocess.check_output(
+            [node_bin, "--input-type=module", "-e", js_driver],
+            cwd=str(ROOT_DIR),
+            text=True,
+        )
+        out = json.loads(raw)
+        self.assertEqual(out["postStopCalls"], 0)
+        self.assertEqual(out["pressedAfterKeyboardClick"], "true")
+        self.assertEqual(out["remainingListeners"], 0)
+        self.assertGreater(out["dUpdates"], 0)
 
 
 if __name__ == "__main__":

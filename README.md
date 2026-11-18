@@ -47,11 +47,11 @@ md3e-frontend/
 │       ├── md3e-shapes.css                  # 35 AndroidX MaterialShapes CSS mask definitions
 │       ├── md3e-motion.css                  # Sampled linear() physical spring motion tokens
 │       ├── md3e-blur.css                    # Translucent scrims & prefers-reduced-transparency fallbacks
-│       ├── md3e-spring.js                   # Real-time damped harmonic oscillator spring runtime + synthesizeSpringLinearCss
+│       ├── md3e-spring.js                   # Real-time interruptible damped harmonic oscillator spring runtime + synthesizeSpringLinearCss
 │       ├── md3e-morph.js                    # Cubic Bezier contour-aligned shape morph interpolator
 │       ├── md3e-dynamic-color.js            # Browser HCT QuantizerCelebi + Score + SPEC_2025 engine
-│       ├── md3e-studio.css                  # Dormant Layer 4 (Opt-In Only): Optical glass, caustics & co-tuner styling
-│       └── md3e-studio.js                   # Dormant Layer 4 (Opt-In Only): Drag scrubbers & Human-AI Co-Tuning runtime
+│       ├── md3e-studio.css                  # Dormant Layer 4 (Opt-In Only): Pure dark canvas, optical glass, Adaptive HDR & co-tuner CSS
+│       └── md3e-studio.js                   # Dormant Layer 4 (Opt-In Only): Scrubbers, HDR capability & Human-AI Co-Tuning (`__MD3E_TUNER__`)
 ├── references/
 │   ├── tailwind.md                          # Tailwind CSS integration guide
 │   ├── color.md                             # Layer 1 & 2: 47 color roles, HCT variants & Web mixing rules
@@ -61,16 +61,16 @@ md3e-frontend/
 │   ├── layout.md                            # Layer 1 & 2: Breakpoints & adaptive canonical layouts
 │   ├── accessibility.md                     # Layer 1 & 2: WCAG 2.2 AA 24px floor vs 48px M3 target
 │   ├── desktop-bento.md                     # Layer 3 (Opt-In): Desktop Bento telemetry extension
-│   ├── personal-studio.md                   # Layer 4 (Strictly Dormant Opt-In): Personal Studio & Co-Tuning protocol
+│   ├── personal-studio.md                   # Layer 4 (Strictly Dormant Opt-In): Adaptive HDR, Live DOM FLIP modal & Co-Tuning protocol
 │   ├── expressive-tactics.md                # Layer 3 (Opt-In): 7 editorial tactics for expressive UI
-│   ├── components.md                        # Shared rules & component index
+│   ├── components.md                        # Shared rules, component index & Complex Component Architecture Matrix
 │   └── components/
 │       ├── action.md                        # Buttons, FABs, Split Buttons, Button Groups
 │       ├── communication.md                 # Badges, Progress, Loading Indicator, Snackbars
-│       ├── containment.md                   # Cards, Dialogs, Sheets, Lists, Carousels
+│       ├── containment.md                   # Cards, Native Dialogs, Sheets, Lists, Carousels, Anchored Popover Menus
 │       ├── navigation.md                    # Toolbars, App Bars, Rails, Drawers, Tabs, Search
-│       ├── selection.md                     # Checkbox, Switch, Sliders, Chips
-│       ├── text-input.md                    # Text Fields, Selects, Date & Time Pickers
+│       ├── selection.md                     # Checkbox, Chips, Radio, Select (Skin Contract + base-select), Switch, Sliders
+│       ├── text-input.md                    # Text Fields (<fieldset><legend> notch), Date Pickers (Single/Range), Time Pickers
 │       └── expressive-recipes.md            # Production recipes (sliders, switch/checkbox, loader, wavy progress, toolbars)
 └── scripts/
     ├── audit_md3e.py                        # 4-tier deterministic auditor (ERROR/WARNING/INFO/CUSTOM)
@@ -148,7 +148,7 @@ Style native semantic HTML controls directly with MD3E CSS classes (`md3e-btn`, 
 </dialog>
 ```
 
-For React, Vue, or Svelte composite widgets (menus, popovers, comboboxes, roving tabs), drop unstyled primitives (**Radix UI**, **Base UI**, **React Aria**) underneath your MD3E stylesheets and map `[data-state="open|checked"]`, `[data-highlighted]`, and `:focus-visible` to `--md-sys-*` tokens.
+For React, Vue, or Svelte composite widgets (Selects, Date Pickers, nested menus, popovers, roving tabs), drop unstyled primitives (**Radix UI**, **Base UI**, **React Aria**, **Ark UI**) underneath your MD3E stylesheets and map the unified Visual Skin Contract (`[data-state="open|closed"]`, `[data-highlighted]`, `[data-selected]`, `[data-disabled]`, plus calendar `[data-today]`/`[data-in-range]`/`[data-range-start]`/`[data-range-end]`) directly to `--md-sys-*` tokens — while Pure Native widgets use `<fieldset><legend>` outlined text field notches, `<dialog>` (`overscroll-behavior: contain` + interruptible `createSpringAnimator`), and top-layer `[popover="auto"]` anchored menus.
 
 ---
 
@@ -232,9 +232,10 @@ Add `data-md3e-exempt="data-view"` on specialized workspaces (or rely on automat
 | `MD3E008` | `WARNING` | WCAG/M3 | Motion declarations missing `@media (prefers-reduced-motion: reduce)` path |
 | `MD3E011`, `013`, `016`, `019`, `023`, `026` | `WARNING` | L2 Web | `border-radius: 50%` on pills, `transition: all`, deprecated 40dp small FAB, `9999px` spring overshoot snap, `box-shadow` on masked shape, or unbound `md3e-*` modifier class |
 | `MD3E027` | `WARNING` | L2 Web / Input | OS-native `accent-color` range slider missing `appearance: none` (grey border/OS thumb bug) or `position: fixed` floating/FAB menu wrapper missing `pointer-events: none` (hit-trap) |
+| `MD3E029` | `WARNING` | L2 Complex UI | Floating `<label>` opaque background bleed vs `<fieldset><legend>`, `<dialog>` redundant `role="dialog"`/`aria-modal` or `html`/`body` scroll-lock or missing `dialog:modal { overscroll-behavior: contain; }`, or custom `[role="listbox\|menu\|grid"]` missing active/focus-state CSS |
 | `MD3E001`–`003`, `007`, `010`, `012`, `015`, `025` | `INFO` | Project Prefs | Hardcoded hex/rgb/radii/type scale, shadow elevation, uppercase labels, bottom app bar, or multiple primary filled buttons in one view |
 | `MD3E101`–`104` | `CUSTOM` | L3 Opt-In | Desktop Bento (`--mode=desktop-bento` / `--mode=personal-studio` only, excluded from Official Score): borderless tonal panels, `4+` surface tiers, concentric radii, Hero motifs (auto-exempts analytical data views) |
-| `MD3E201`–`202` | `CUSTOM` | L4 Dormant | Personal Studio (`--mode=personal-studio` only, strictly dormant unless requested, excluded from Official Score): optical glass/caustic + reduced-transparency hygiene and `<dialog>` modal `overscroll-behavior` / native ARIA hygiene |
+| `MD3E201`–`202` | `CUSTOM` | L4 Dormant | Personal Studio (`--mode=personal-studio` only, strictly dormant unless requested, excluded from Official Score): bans `.studio-caustic-field` global light-bleed blobs, verifies optical glass + micro-scoped Adaptive HDR (no `body`/`p` boost) + SDR/RT/HC fallbacks, and `<dialog>` modal `overscroll-behavior` / native ARIA / focusable controls |
 
 ---
 

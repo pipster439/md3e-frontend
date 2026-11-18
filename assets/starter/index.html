@@ -85,6 +85,8 @@
 
   /* --- Top App Bar --- */
   .app-bar {
+    --md3e-control-h: 40px;
+    --md3e-control-hit-inset: -4px;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -189,7 +191,8 @@
     background: var(--md-sys-color-secondary-container);
     color: var(--md-sys-color-on-secondary-container);
     border-radius: var(--md-sys-shape-corner-medium);
-    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+    outline: 1px solid color-mix(in oklab, var(--md-sys-color-secondary) 45%, transparent);
+    outline-offset: -1px;
     --md-sys-icon-fill: 1;
   }
 
@@ -210,6 +213,17 @@
     .header-chip__label-secondary {
       display: none;
     }
+  }
+
+  #theme-label {
+    display: inline-block;
+    min-inline-size: 54px;
+    text-align: center;
+  }
+  #density-label {
+    display: inline-block;
+    min-inline-size: 66px;
+    text-align: center;
   }
 
   .kbd-hint {
@@ -272,6 +286,17 @@
     font-weight: var(--md-sys-typescale-label-small-weight);
   }
 
+  @media (max-width: 399px) {
+    .nav-bar {
+      padding-inline: 2px;
+    }
+    .nav-bar__item {
+      padding-inline: 1px;
+      letter-spacing: 0.01em;
+      font-size: clamp(0.625rem, 2.7vw, var(--md-sys-typescale-label-small-size));
+    }
+  }
+
   .nav-bar__pill {
     display: grid;
     place-items: center;
@@ -314,6 +339,7 @@
   /* Navigation Rail (Medium 600px+ Collapsed / Desktop 840px+ Expandable 80px <-> 220px) */
   .nav-rail {
     display: none;
+    --md3e-rail-t: 0;
     width: var(--md3e-rail-collapsed-width);
     flex-shrink: 0;
     position: sticky;
@@ -328,8 +354,7 @@
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
-    transition: width var(--md-sys-motion-default-spatial),
-                padding var(--md-sys-motion-default-spatial);
+    transition: none;
   }
 
   .nav-rail__compose {
@@ -354,8 +379,7 @@
     font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
     box-shadow: var(--md-sys-elevation-level1);
     cursor: pointer;
-    transition: width var(--md-sys-motion-default-spatial),
-                border-radius var(--md-sys-motion-fast-spatial),
+    transition: border-radius var(--md-sys-motion-fast-spatial),
                 background-color var(--md-sys-motion-fast-effects);
   }
 
@@ -383,11 +407,10 @@
     z-index: 1;
     white-space: nowrap;
     overflow: hidden;
-    opacity: 0;
-    transform: translateX(-6px);
+    opacity: clamp(0, calc((var(--md3e-rail-t, 0) - 0.14) / 0.6), 1);
+    transform: translateX(calc((1 - clamp(0, var(--md3e-rail-t, 0), 1)) * -6px));
     pointer-events: none;
-    transition: opacity 90ms var(--md-sys-motion-easing-emphasized-accelerate),
-                transform 90ms var(--md-sys-motion-easing-emphasized-accelerate);
+    transition: none;
   }
 
   .nav-rail__items {
@@ -430,8 +453,7 @@
     opacity: 0;
     pointer-events: none;
     z-index: 0;
-    transition: width var(--md-sys-motion-default-spatial),
-                opacity var(--md-sys-motion-fast-effects);
+    transition: opacity var(--md-sys-motion-fast-effects);
   }
 
   .nav-rail__pill {
@@ -482,7 +504,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: var(--md-sys-spacing-2);
+    gap: calc(var(--md-sys-spacing-2) * clamp(0, var(--md3e-rail-t, 0), 1));
     width: 100%;
     min-height: var(--md-sys-touch-target-min);
     padding: 0 var(--md-sys-spacing-2);
@@ -495,6 +517,9 @@
     overflow: hidden;
     transition: background-color var(--md-sys-motion-fast-effects);
   }
+  #rail-collapse-label {
+    max-width: calc(140px * clamp(0, var(--md3e-rail-t, 0), 1));
+  }
   .nav-rail__collapse-btn:hover {
     background: color-mix(in oklab, currentColor 8%, transparent);
   }
@@ -504,27 +529,27 @@
   }
 
   @media (min-width: 840px) {
-    .nav-rail[data-rail-expanded="true"] {
-      width: var(--md3e-rail-expanded-width);
-      padding-inline: var(--md-sys-spacing-3);
+    .nav-rail {
+      width: calc(var(--md3e-rail-collapsed-width) + (var(--md3e-rail-expanded-width) - var(--md3e-rail-collapsed-width)) * max(0, var(--md3e-rail-t, 0)));
+      padding-inline: calc(var(--md-sys-spacing-2) + 4px * clamp(0, var(--md3e-rail-t, 0), 1));
     }
 
-    .nav-rail[data-rail-expanded="true"] .nav-rail__compose {
-      width: 100%;
-      margin-inline: 0;
+    .nav-rail[data-rail-expanded="true"] {
+      --md3e-rail-t: 1;
+    }
+
+    .nav-rail__compose {
+      width: min(100%, calc(56px + (100% - 56px) * max(0, var(--md3e-rail-t, 0))));
+      margin-inline: auto;
     }
 
     .nav-rail[data-rail-expanded="true"] .nav-rail__compose-label,
     .nav-rail[data-rail-expanded="true"] .nav-rail__label {
-      opacity: 1;
-      transform: translateX(0);
       pointer-events: auto;
-      transition: opacity var(--md-sys-motion-fast-effects) 65ms,
-                  transform var(--md-sys-motion-fast-spatial) 65ms;
     }
 
-    .nav-rail[data-rail-expanded="true"] .nav-rail__item[aria-current="page"] .nav-rail__indicator {
-      width: calc(100% - 8px);
+    .nav-rail__item[aria-current="page"] .nav-rail__indicator {
+      width: min(calc(100% - 8px), calc(56px + (100% - 64px) * max(0, var(--md3e-rail-t, 0))));
     }
 
     .nav-rail[data-rail-expanded="true"] .nav-rail__item:hover {
@@ -548,14 +573,15 @@
   .nav-sheet-scrim {
     position: fixed;
     inset: 0;
+    --md3e-nav-sheet-t: 0;
     background: var(--md-sys-color-scrim);
-    opacity: 0;
+    opacity: calc(0.32 * clamp(0, var(--md3e-nav-sheet-t, 0), 1));
     pointer-events: none;
-    transition: opacity var(--md-sys-motion-default-effects);
+    transition: none;
     z-index: 200;
   }
   .nav-sheet-scrim.is-open {
-    opacity: 0.32;
+    --md3e-nav-sheet-t: 1;
     pointer-events: auto;
   }
 
@@ -563,6 +589,7 @@
     position: fixed;
     inset-block: 0;
     inset-inline-start: 0;
+    --md3e-nav-sheet-t: 0;
     width: 280px;
     max-width: calc(100vw - 56px);
     padding: var(--md-sys-spacing-4);
@@ -571,8 +598,8 @@
     border-start-end-radius: var(--md-sys-shape-corner-large);
     border-end-end-radius: var(--md-sys-shape-corner-large);
     box-shadow: var(--md-sys-elevation-level3);
-    transform: translateX(-100%);
-    transition: transform var(--md-sys-motion-default-spatial);
+    transform: translateX(calc((clamp(0, var(--md3e-nav-sheet-t, 0), 1.03) - 1) * 100%));
+    transition: none;
     z-index: 210;
     display: flex;
     flex-direction: column;
@@ -584,7 +611,7 @@
     pointer-events: none;
   }
   .nav-sheet.is-open {
-    transform: translateX(0);
+    --md3e-nav-sheet-t: 1;
   }
 
   .nav-sheet__header {
@@ -629,6 +656,8 @@
   .shell {
     flex: 1;
     min-width: 0;
+    container-type: inline-size;
+    container-name: shell;
     max-width: 1360px;
     margin-inline: auto;
     padding: var(--md-sys-layout-margin-compact);
@@ -662,6 +691,12 @@
     }
   }
 
+  @media (min-width: 840px) and (max-width: 1199px) {
+    .app-frame:has(#inspector-sheet.is-open) .shell {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
   @media (min-width: 1200px) {
     .shell {
       padding: var(--md-sys-spacing-8);
@@ -673,14 +708,15 @@
   .side-sheet-scrim {
     position: fixed;
     inset: 0;
+    --md3e-inspector-t: 0;
     background: var(--md-sys-color-scrim);
-    opacity: 0;
+    opacity: calc(0.32 * clamp(0, var(--md3e-inspector-t, 0), 1));
     pointer-events: none;
-    transition: opacity var(--md-sys-motion-default-effects);
+    transition: none;
     z-index: 205;
   }
   .side-sheet-scrim.is-open {
-    opacity: 0.32;
+    --md3e-inspector-t: 1;
     pointer-events: auto;
   }
   @media (min-width: 840px) {
@@ -693,6 +729,7 @@
     position: fixed;
     inset-block-end: 0;
     inset-inline: 0;
+    --md3e-inspector-t: 0;
     max-height: 75dvh;
     background: var(--md-sys-color-surface-container-low);
     color: var(--md-sys-color-on-surface);
@@ -705,15 +742,15 @@
     gap: var(--md-sys-spacing-3);
     overflow-y: auto;
     overscroll-behavior: contain;
-    transform: translateY(100%);
-    transition: transform var(--md-sys-motion-default-spatial);
+    transform: translateY(calc((1 - clamp(0, var(--md3e-inspector-t, 0), 1.03)) * 100%));
+    transition: none;
     z-index: 215;
   }
   .side-sheet:not(.is-open) {
     pointer-events: none;
   }
   .side-sheet.is-open {
-    transform: translateY(0);
+    --md3e-inspector-t: 1;
   }
 
   @media (min-width: 840px) {
@@ -724,21 +761,23 @@
       inset-inline: auto;
       height: calc(100dvh - 64px);
       max-height: calc(100dvh - 64px);
-      width: 0;
-      padding: 0;
+      width: calc(380px * max(0, var(--md3e-inspector-t, 0)));
+      padding-block-start: calc(var(--md-sys-spacing-5) * clamp(0, var(--md3e-inspector-t, 0), 1));
+      padding-block-end: calc(104px * clamp(0, var(--md3e-inspector-t, 0), 1));
+      padding-inline: calc(var(--md-sys-spacing-5) * clamp(0, var(--md3e-inspector-t, 0), 1));
       border-radius: var(--md-sys-shape-corner-extra-large) 0 0 var(--md-sys-shape-corner-extra-large);
       box-shadow: none;
       overflow-x: hidden;
       flex-shrink: 0;
       transform: none;
       z-index: 40;
-      transition: width var(--md-sys-motion-default-spatial),
-                  padding var(--md-sys-motion-default-spatial);
+      transition: none;
+    }
+    .side-sheet > * {
+      min-width: 340px;
     }
     .side-sheet.is-open {
-      width: 380px;
-      padding: var(--md-sys-spacing-5);
-      padding-block-end: 104px;
+      --md3e-inspector-t: 1;
     }
   }
 
@@ -793,15 +832,6 @@
 
   .shell {
     transform-origin: center top;
-    transition: opacity var(--md-sys-motion-fast-effects),
-                transform var(--md-sys-motion-fast-spatial);
-  }
-
-  .shell.is-view-exiting {
-    opacity: 0;
-    transform: scale(0.985);
-    transition: opacity 90ms var(--md-sys-motion-easing-emphasized-accelerate),
-                transform 90ms var(--md-sys-motion-easing-emphasized-accelerate);
   }
 
   .view-filter-banner {
@@ -844,14 +874,19 @@
     }
   }
 
+  @container shell (max-width: 560px) {
+    .section-card {
+      padding: var(--md-sys-spacing-4);
+    }
+  }
+
   @media (prefers-reduced-motion: no-preference) {
-    .section-card,
     .section-card.is-stagger-enter {
       animation-name: md3e-card-enter;
       animation-duration: var(--md-sys-motion-default-spatial-duration);
       animation-timing-function: var(--md-sys-motion-default-spatial-easing);
       animation-delay: calc(var(--md3e-stagger-idx, 0) * 30ms);
-      animation-fill-mode: both;
+      animation-fill-mode: backwards;
     }
   }
 
@@ -1154,9 +1189,11 @@
     --md3e-blur-tint: var(--md-sys-color-surface-container-high);
     --md3e-blur-fallback: var(--md-sys-color-surface-container-high);
     --md3e-blur-alpha: var(--md-sys-blur-elevated-alpha);
+    gap: var(--md-sys-spacing-3);
     width: min(344px, calc(100vw - var(--md-sys-spacing-6)));
     max-block-size: calc(100dvh - var(--md-sys-spacing-8));
     overflow-y: auto;
+    pointer-events: none;
     padding: var(--md-sys-spacing-4);
     border: none;
     border-radius: var(--md-sys-shape-corner-extra-large);
@@ -1171,7 +1208,7 @@
   }
   .seed-popover:is(:popover-open, .\:popover-open) {
     display: grid;
-    gap: var(--md-sys-spacing-3);
+    pointer-events: auto;
     opacity: 1;
   }
   @starting-style {
@@ -1277,6 +1314,15 @@
     background: var(--md-sys-color-surface-container-lowest);
     cursor: crosshair;
     touch-action: none;
+  }
+  @media (max-width: 519px), (max-height: 760px) {
+    .seed-popover {
+      padding: var(--md-sys-spacing-3);
+      gap: var(--md-sys-spacing-2);
+    }
+    .hct-plane-wrap {
+      block-size: 96px;
+    }
   }
   .hct-plane-wrap:focus-visible {
     outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
@@ -1975,7 +2021,7 @@
     --md-sys-icon-size: 22px;
     --md-sys-icon-opsz: 20;
     transform: translateX(-1px);
-    transition: transform var(--md-sys-motion-fast-spatial);
+    transition: none;
   }
   .split-btn__trigger[aria-expanded="true"] .split-btn__chevron {
     transform: translateX(0) rotate(180deg);
@@ -2002,14 +2048,8 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    transition: opacity var(--md-sys-motion-fast-effects),
-                transform var(--md-sys-motion-fast-spatial);
-  }
-  @starting-style {
-    .split-menu:not([hidden]) {
-      opacity: 0;
-      transform: translateY(-6px) scale(0.96);
-    }
+    transform-origin: top left;
+    transition: none;
   }
   .split-menu[hidden] { display: none; }
   .split-menu__item {
@@ -2685,20 +2725,22 @@
   .fab-scrim {
     position: fixed;
     inset: 0;
+    --md3e-fab-t: 0;
     background: var(--md-sys-color-scrim);
-    opacity: 0;
+    opacity: calc(0.32 * clamp(0, var(--md3e-fab-t, 0), 1));
     pointer-events: none;
-    transition: opacity var(--md-sys-motion-default-effects);
+    transition: none;
     z-index: 890;
   }
   .fab-scrim.is-open {
-    opacity: 0.32;
+    --md3e-fab-t: 1;
     pointer-events: auto;
   }
   .fab-menu-container {
     position: fixed;
     inset-block-end: calc(84px + env(safe-area-inset-bottom, 0px));
     inset-inline-end: var(--md-sys-spacing-3);
+    --md3e-fab-t: 0;
     display: flex;
     flex-direction: column-reverse;
     align-items: flex-end;
@@ -2706,8 +2748,12 @@
     pointer-events: none;
     z-index: 130;
   }
-  .fab-menu-container.is-open {
+  .fab-menu-container.is-open,
+  .fab-menu-container.is-animating {
     z-index: 900;
+  }
+  .fab-menu-container.is-open {
+    --md3e-fab-t: 1;
   }
   @media (min-width: 600px) {
     .fab-menu-container {
@@ -2731,8 +2777,7 @@
     display: grid;
     place-items: center;
     box-shadow: var(--md-sys-elevation-level3);
-    transition: transform var(--md-sys-motion-default-spatial),
-                border-radius var(--md-sys-motion-default-spatial),
+    transition: border-radius var(--md-sys-motion-default-spatial),
                 background-color var(--md-sys-motion-fast-effects),
                 color var(--md-sys-motion-fast-effects);
   }
@@ -2759,10 +2804,8 @@
     color: var(--md-sys-color-on-primary);
   }
   .fab-trigger__icon {
-    transition: transform var(--md-sys-motion-default-spatial);
-  }
-  .fab-trigger[aria-expanded="true"] .fab-trigger__icon {
-    transform: rotate(45deg);
+    transform: rotate(calc(45deg * clamp(0, var(--md3e-fab-t, 0), 1.08)));
+    transition: none;
   }
   .fab-trigger:focus-visible,
   .fab-menu__item:focus-visible {
@@ -2777,20 +2820,20 @@
     align-items: flex-end;
     gap: var(--md-sys-spacing-1);
     margin-block-end: var(--md-sys-spacing-1);
-    opacity: 0;
+    opacity: clamp(0, var(--md3e-fab-t, 0), 1);
     pointer-events: none;
-    transform: translateY(12px) scale(0.95);
+    transform: translateY(calc((1 - var(--md3e-fab-t, 0)) * 12px))
+               scale(calc(0.95 + 0.05 * clamp(0, var(--md3e-fab-t, 0), 1.04)));
     transform-origin: bottom right;
-    transition: opacity var(--md-sys-motion-fast-effects),
-                transform var(--md-sys-motion-default-spatial);
+    transition: none;
   }
   .fab-menu[aria-hidden="false"] {
-    opacity: 1;
     pointer-events: auto;
-    transform: translateY(0) scale(1);
   }
   .fab-menu__item {
     position: relative;
+    --md3e-fab-idx: 0;
+    --md3e-fab-local: clamp(0, calc((var(--md3e-fab-t, 0) - var(--md3e-fab-idx) * 0.08) / (1 - var(--md3e-fab-idx) * 0.08)), 1);
     display: inline-flex;
     align-items: center;
     gap: var(--md-sys-spacing-2);
@@ -2808,20 +2851,16 @@
     --md-sys-icon-opsz: 24;
     box-shadow: var(--md-sys-elevation-level2);
     cursor: pointer;
-    opacity: 0;
-    transform: translateY(8px) scale(0.96);
-    transition: opacity var(--md-sys-motion-fast-effects),
-                transform var(--md-sys-motion-default-spatial);
+    opacity: var(--md3e-fab-local);
+    transform: translateY(calc((1 - var(--md3e-fab-local)) * 10px))
+               scale(calc(0.95 + 0.05 * var(--md3e-fab-local)));
+    transition: none;
   }
-  .fab-menu[aria-hidden="false"] .fab-menu__item {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+  .fab-menu__item:nth-last-child(2) {
+    --md3e-fab-idx: 1;
   }
-  .fab-menu[aria-hidden="false"] .fab-menu__item:nth-last-child(2) {
-    transition-delay: calc(var(--md-sys-motion-fast-effects-duration) * 0.2);
-  }
-  .fab-menu[aria-hidden="false"] .fab-menu__item:nth-last-child(3) {
-    transition-delay: calc(var(--md-sys-motion-fast-effects-duration) * 0.4);
+  .fab-menu__item:nth-last-child(3) {
+    --md3e-fab-idx: 2;
   }
 
   /* --- Native Semantic Controls (.md3e-fab--medium, .md3e-switch, .md3e-checkbox, .md3e-text-field, .md3e-range, .md3e-dialog) --- */
@@ -3087,7 +3126,287 @@
     transform: scaleX(0.6);
   }
 
+  /* --- Section 6 Complex Components (A: Outlined Notch, B: Dialog, C: Popover Menu, D: Select, E: Date Picker) --- */
+  .prim-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--md-sys-spacing-4);
+    margin-block-start: var(--md-sys-spacing-4);
+  }
+  @container shell (min-width: 680px) {
+    .prim-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+    }
+  }
+  .prim-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-sys-spacing-3);
+    padding: var(--md-sys-spacing-4);
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-surface-container-low);
+    min-width: 0;
+  }
+  .prim-card--wide {
+    grid-column: 1 / -1;
+  }
+  .prim-card__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--md-sys-spacing-2);
+  }
+  .prim-card__title {
+    margin: 0;
+    font-family: var(--md-sys-typescale-brand-font);
+    font-size: var(--md-sys-typescale-title-medium-size);
+    line-height: var(--md-sys-typescale-title-medium-line-height);
+    font-weight: var(--md-sys-typescale-title-medium-emphasized-weight);
+    color: var(--md-sys-color-on-surface);
+  }
+  .prim-card__desc {
+    margin: 0;
+    font-size: var(--md-sys-typescale-body-small-size);
+    line-height: var(--md-sys-typescale-body-small-line-height);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  /* (A) Pure Native Outlined Text Field (Transparent <fieldset><legend> Notch on Gradient Surface) */
+  .md3e-field-showcase {
+    padding: var(--md-sys-spacing-4);
+    border-radius: var(--md-sys-shape-corner-large);
+    background: linear-gradient(
+      135deg,
+      var(--md-sys-color-surface-container-low) 0%,
+      color-mix(in oklab, var(--md-sys-color-primary-container) 45%, var(--md-sys-color-surface-container-low)) 100%
+    );
+  }
+  .md3e-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-sys-spacing-1);
+    width: 100%;
+    min-width: 0;
+  }
+  .md3e-field__box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+    min-height: 56px;
+    padding-inline: var(--md-sys-spacing-3) var(--md-sys-spacing-2);
+    border-radius: var(--md-sys-shape-corner-extra-small);
+  }
+  .md3e-field__outline {
+    position: absolute;
+    inset: -6px 0 0 0;
+    margin: 0;
+    padding: 0 11px;
+    border: 1px solid var(--md-sys-color-outline);
+    border-radius: var(--md-sys-shape-corner-extra-small);
+    pointer-events: none;
+    background: transparent;
+    transition: border-color var(--md-sys-motion-fast-effects);
+  }
+  .md3e-field:hover .md3e-field__outline {
+    border-color: var(--md-sys-color-on-surface);
+  }
+  .md3e-field:focus-within .md3e-field__outline {
+    inset: -7px 0 0 0;
+    padding: 0 10px;
+    border-width: 2px;
+    border-color: var(--md-sys-color-primary);
+  }
+  .md3e-field[data-invalid="true"] .md3e-field__outline {
+    border-color: var(--md-sys-color-error);
+  }
+  .md3e-field[data-invalid="true"]:focus-within .md3e-field__outline {
+    border-width: 2px;
+    border-color: var(--md-sys-color-error);
+  }
+  .md3e-field__notch {
+    float: none;
+    width: auto;
+    max-width: 0.01px;
+    height: 12px;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    visibility: hidden;
+    white-space: nowrap;
+    font-size: var(--md-sys-typescale-body-small-size);
+    line-height: 1;
+    transition: max-width var(--md-sys-motion-fast-spatial);
+  }
+  .md3e-field__notch > span {
+    display: inline-block;
+    padding-inline: var(--md-sys-spacing-1);
+    opacity: 0;
+  }
+  .md3e-field:focus-within .md3e-field__notch,
+  .md3e-field[data-populated="true"] .md3e-field__notch {
+    max-width: 100%;
+  }
+  .md3e-field__leading {
+    position: relative;
+    z-index: 1;
+    color: var(--md-sys-color-on-surface-variant);
+    --md-sys-icon-size: 24px;
+    --md-sys-icon-opsz: 24;
+    flex-shrink: 0;
+  }
+  .md3e-field__prefix {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: var(--md-sys-typescale-body-large-size);
+    line-height: var(--md-sys-typescale-body-large-line-height);
+    transition: max-width var(--md-sys-motion-fast-spatial),
+                opacity var(--md-sys-motion-fast-effects);
+  }
+  .md3e-field:focus-within:not([data-populated="true"]) .md3e-field__prefix {
+    transition-delay: var(--md-sys-motion-duration-short2);
+  }
+  .md3e-field:focus-within .md3e-field__prefix,
+  .md3e-field[data-populated="true"] .md3e-field__prefix {
+    max-width: 88px;
+    opacity: 1;
+  }
+  .md3e-field__label {
+    position: absolute;
+    inset-block-start: 28px;
+    inset-inline-start: 16px;
+    z-index: 1;
+    background: transparent;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: var(--md-sys-typescale-body-large-size);
+    line-height: var(--md-sys-typescale-body-large-line-height);
+    pointer-events: none;
+    transform-origin: left center;
+    transform: translate(30px, -50%) scale(1);
+    transition: transform var(--md-sys-motion-fast-spatial),
+                inset-block-start var(--md-sys-motion-fast-spatial),
+                color var(--md-sys-motion-fast-effects);
+  }
+  .md3e-field:focus-within .md3e-field__label,
+  .md3e-field[data-populated="true"] .md3e-field__label {
+    inset-block-start: 0;
+    transform: translate(0, -50%) scale(0.75);
+  }
+  .md3e-field:focus-within .md3e-field__label {
+    color: var(--md-sys-color-primary);
+  }
+  .md3e-field[data-invalid="true"] .md3e-field__label {
+    color: var(--md-sys-color-error);
+  }
+  .md3e-field__input {
+    position: relative;
+    z-index: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: var(--md-sys-touch-target-min);
+    border: none;
+    background: transparent;
+    color: var(--md-sys-color-on-surface);
+    font-family: var(--md-sys-typescale-plain-font);
+    font-size: var(--md-sys-typescale-body-large-size);
+    line-height: var(--md-sys-typescale-body-large-line-height);
+    padding: 0;
+    outline: 2px solid transparent;
+    caret-color: var(--md-sys-color-primary);
+  }
+  .md3e-field[data-invalid="true"] .md3e-field__input {
+    caret-color: var(--md-sys-color-error);
+  }
+  .md3e-field__clear {
+    position: relative;
+    z-index: 1;
+    --md3e-clear-t: 0;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+    border-radius: var(--md-sys-shape-corner-full);
+    background: transparent;
+    color: var(--md-sys-color-on-surface-variant);
+    --md-sys-icon-size: 20px;
+    --md-sys-icon-opsz: 20;
+    cursor: pointer;
+    opacity: clamp(0, var(--md3e-clear-t, 0), 1);
+    transform: scale(calc(0.6 + 0.4 * var(--md3e-clear-t, 0)));
+    transition: background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects);
+  }
+  .md3e-field__clear[data-empty="true"] {
+    pointer-events: none;
+  }
+  .md3e-field__clear::before {
+    content: "";
+    position: absolute;
+    inset: -8px;
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+  }
+  .md3e-field__clear:hover {
+    background: color-mix(in oklab, currentColor calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), transparent);
+  }
+  .md3e-field__clear:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+  .md3e-field__supporting {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--md-sys-spacing-4);
+    padding-inline: var(--md-sys-spacing-4);
+    font-size: var(--md-sys-typescale-body-small-size);
+    line-height: var(--md-sys-typescale-body-small-line-height);
+  }
+  .md3e-field__helper {
+    color: var(--md-sys-color-on-surface-variant);
+  }
+  .md3e-field__error {
+    color: var(--md-sys-color-error);
+    font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
+  }
+  .md3e-field__helper[hidden],
+  .md3e-field__error[hidden] {
+    display: none;
+  }
+  .md3e-field__counter {
+    margin-inline-start: auto;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+    color: var(--md-sys-color-on-surface-variant);
+  }
+  .md3e-field[data-invalid="true"] .md3e-field__counter {
+    color: var(--md-sys-color-error);
+  }
+
+  /* (B) Pure Native Top-Layer <dialog> + Scroll Containment + Interruptible Spring */
+  dialog:modal,
+  .md3e-dialog:modal {
+    overscroll-behavior: contain;
+  }
+  dialog::backdrop,
+  .md3e-dialog::backdrop {
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
   .md3e-dialog {
+    --md3e-dialog-t: 0;
+    --md3e-dialog-blur: 0px;
     border: none;
     border-radius: var(--md-sys-shape-corner-extra-large);
     background: var(--md-sys-color-surface-container-high);
@@ -3095,9 +3414,16 @@
     padding: var(--md-sys-spacing-6);
     width: min(420px, calc(100vw - var(--md-sys-spacing-8)));
     box-shadow: var(--md-sys-elevation-level3);
+    opacity: clamp(0, var(--md3e-dialog-t, 0), 1);
+    transform: translateY(calc((1 - var(--md3e-dialog-t, 0)) * 18px))
+               scale(calc(0.88 + 0.12 * var(--md3e-dialog-t, 0)));
+    will-change: transform, opacity;
   }
   .md3e-dialog::backdrop {
-    background: color-mix(in oklab, var(--md-sys-color-scrim) 32%, transparent);
+    background: color-mix(in oklab, var(--md-sys-color-scrim) 36%, transparent);
+    backdrop-filter: blur(var(--md3e-dialog-blur, 0px));
+    -webkit-backdrop-filter: blur(var(--md3e-dialog-blur, 0px));
+    opacity: clamp(0, var(--md3e-dialog-t, 0), 1);
   }
   .md3e-dialog__title {
     margin: 0 0 var(--md-sys-spacing-4);
@@ -3116,12 +3442,656 @@
     justify-content: flex-end;
     gap: var(--md-sys-spacing-2);
   }
+
+  /* (C) Top-Layer [popover="auto"] Menu Inside overflow:hidden Card */
+  .md3e-menu-trap-card {
+    overflow: hidden;
+    max-height: 152px;
+    padding: var(--md-sys-spacing-4);
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-surface-container);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--md-sys-spacing-2);
+  }
+  #prim-menu-trigger {
+    anchor-name: --prim-menu-trigger;
+  }
+  #prim-submenu-trigger {
+    anchor-name: --prim-submenu-trigger;
+  }
+  .md3e-menu {
+    position: fixed;
+    margin: 0;
+    padding: var(--md-sys-spacing-1);
+    min-width: 224px;
+    max-width: calc(100vw - var(--md-sys-spacing-4));
+    border: none;
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-surface-container-low);
+    color: var(--md-sys-color-on-surface);
+    box-shadow: var(--md-sys-elevation-level2);
+    overflow: visible;
+    overscroll-behavior: contain;
+    pointer-events: none;
+  }
+  .md3e-menu:is(:popover-open, .\:popover-open) {
+    display: block;
+    pointer-events: auto;
+  }
+  @supports (position-area: block-end) {
+    #prim-menu {
+      position-anchor: --prim-menu-trigger;
+      inset: auto;
+      margin: 0;
+      margin-block-start: var(--md-sys-spacing-1);
+      position-area: block-end span-inline-end;
+      position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+    }
+    #prim-submenu {
+      position-anchor: --prim-submenu-trigger;
+      inset: auto;
+      margin: 0;
+      margin-inline: var(--md-sys-spacing-1);
+      position-area: inline-end span-block-end;
+      position-try-fallbacks: flip-inline, flip-block, flip-block flip-inline;
+    }
+    @media (max-width: 599px) {
+      #prim-submenu {
+        min-width: 200px;
+        max-width: calc(100vw - var(--md-sys-spacing-8));
+        margin: var(--md-sys-spacing-1) 0;
+        position-area: block-end span-inline-end;
+        position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+      }
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .md3e-menu {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.96);
+      transform-origin: top left;
+      transition: opacity var(--md-sys-motion-fast-effects),
+                  transform var(--md-sys-motion-fast-spatial),
+                  display var(--md-sys-motion-fast-effects),
+                  overlay var(--md-sys-motion-fast-effects);
+      transition-behavior: allow-discrete;
+    }
+    .md3e-menu:is(:popover-open, .\:popover-open) {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    @starting-style {
+      .md3e-menu:is(:popover-open, .\:popover-open) {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.96);
+      }
+    }
+  }
+  .md3e-menu__list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-block-size: min(360px, calc(100dvh - var(--md-sys-spacing-8)));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .md3e-menu__divider {
+    width: 100%;
+    height: 1px;
+    margin: var(--md-sys-spacing-1) 0;
+    border: none;
+    background: var(--md-sys-color-outline-variant);
+  }
+  .md3e-menu__item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-3);
+    width: 100%;
+    min-height: var(--md-sys-touch-target-min);
+    padding-inline: var(--md-sys-spacing-3);
+    border: none;
+    border-radius: var(--md-sys-shape-corner-medium);
+    background: transparent;
+    color: var(--md-sys-color-on-surface);
+    font-family: var(--md-sys-typescale-plain-font);
+    font-size: var(--md-sys-typescale-label-large-size);
+    line-height: var(--md-sys-typescale-label-large-line-height);
+    font-weight: var(--md-sys-typescale-label-large-weight);
+    --md-sys-icon-size: 20px;
+    --md-sys-icon-opsz: 20;
+    text-align: start;
+    cursor: pointer;
+    transition: background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects);
+  }
+  .md3e-menu__item[aria-checked="true"] {
+    background: var(--md-sys-color-tertiary-container);
+    color: var(--md-sys-color-on-tertiary-container);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+  }
+  .md3e-menu__item[aria-checked="false"] .md3e-menu__check {
+    opacity: 0;
+  }
+  .md3e-menu__item:hover,
+  .md3e-menu__item[data-highlighted="true"] {
+    background: color-mix(in oklab, var(--md-sys-color-on-surface) calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), transparent);
+  }
+  .md3e-menu__item[aria-checked="true"]:hover,
+  .md3e-menu__item[aria-checked="true"][data-highlighted="true"] {
+    background: color-mix(in oklab, var(--md-sys-color-on-tertiary-container) calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), var(--md-sys-color-tertiary-container));
+  }
+  .md3e-menu__item:active {
+    background: color-mix(in oklab, var(--md-sys-color-on-surface) calc(var(--md-sys-state-pressed-state-layer-opacity) * 100%), transparent);
+  }
+  .md3e-menu__item:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: -3px;
+  }
+  .md3e-menu__trailing {
+    margin-inline-start: auto;
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  /* (D) Select Skin Contract + Top-Layer Interactive Listbox + Progressive base-select */
+  .md3e-select {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-sys-spacing-1);
+    width: 100%;
+  }
+  .md3e-select__label {
+    font-size: var(--md-sys-typescale-label-medium-size);
+    line-height: var(--md-sys-typescale-label-medium-line-height);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+  .md3e-select__trigger {
+    anchor-name: --prim-select-trigger;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--md-sys-spacing-3);
+    width: 100%;
+    min-height: 56px;
+    padding-inline: var(--md-sys-spacing-4) var(--md-sys-spacing-3);
+    border: 1px solid var(--md-sys-color-outline);
+    border-radius: var(--md-sys-shape-corner-extra-small);
+    background: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    font-family: var(--md-sys-typescale-plain-font);
+    font-size: var(--md-sys-typescale-body-large-size);
+    line-height: var(--md-sys-typescale-body-large-line-height);
+    text-align: start;
+    cursor: pointer;
+    transition: border-color var(--md-sys-motion-fast-effects),
+                background-color var(--md-sys-motion-fast-effects);
+  }
+  .md3e-select__trigger:hover {
+    border-color: var(--md-sys-color-on-surface);
+  }
+  .md3e-select__trigger[data-state="open"] {
+    border-color: var(--md-sys-color-primary);
+    box-shadow: inset 0 0 0 1px var(--md-sys-color-primary);
+  }
+  .md3e-select__trigger:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+  .md3e-select__chevron {
+    --md-sys-icon-size: 24px;
+    --md-sys-icon-opsz: 24;
+    color: var(--md-sys-color-on-surface-variant);
+    transform: rotate(calc(180deg * clamp(0, var(--md3e-select-t, 0), 1)));
+  }
+  .md3e-select__trigger[data-state="open"] .md3e-select__chevron {
+    color: var(--md-sys-color-primary);
+  }
+  .md3e-select__listbox {
+    --md3e-select-t: 0;
+    position: fixed;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: var(--md-sys-spacing-1);
+    min-width: 240px;
+    max-width: calc(100vw - var(--md-sys-spacing-4));
+    max-block-size: min(320px, calc(100dvh - var(--md-sys-spacing-6)));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    pointer-events: none;
+    border: none;
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-surface-container-low);
+    color: var(--md-sys-color-on-surface);
+    box-shadow: var(--md-sys-elevation-level2);
+    outline: 2px solid transparent;
+  }
+  .md3e-select__listbox:is(:popover-open, .\:popover-open) {
+    display: flex;
+    pointer-events: auto;
+  }
+  .md3e-select__listbox:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+  @supports (position-area: block-end) {
+    .md3e-select__listbox {
+      position-anchor: --prim-select-trigger;
+      inset: auto;
+      margin: 0;
+      margin-block-start: var(--md-sys-spacing-1);
+      min-width: anchor-size(width);
+      position-area: block-end span-inline-end;
+      position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .md3e-select__listbox {
+      opacity: clamp(0, var(--md3e-select-t, 0), 1);
+      transform: translateY(calc((1 - clamp(0, var(--md3e-select-t, 0), 1)) * -6px))
+                 scaleY(calc(0.92 + 0.08 * clamp(0, var(--md3e-select-t, 0), 1)));
+      transform-origin: top center;
+      transition: opacity var(--md-sys-motion-fast-effects),
+                  display var(--md-sys-motion-fast-effects),
+                  overlay var(--md-sys-motion-fast-effects);
+      transition-behavior: allow-discrete;
+    }
+    .md3e-select__listbox:is(:popover-open, .\:popover-open) {
+      opacity: 1;
+    }
+    @starting-style {
+      .md3e-select__listbox:is(:popover-open, .\:popover-open) {
+        opacity: 0;
+      }
+    }
+  }
+  .md3e-select__option {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--md-sys-spacing-2);
+    width: 100%;
+    flex-shrink: 0;
+    min-height: var(--md-sys-touch-target-min);
+    padding-inline: var(--md-sys-spacing-3);
+    border-radius: var(--md-sys-shape-corner-medium);
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: var(--md-sys-typescale-body-medium-line-height);
+    font-weight: var(--md-sys-typescale-body-medium-weight);
+    cursor: pointer;
+    transition: background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects);
+  }
+  .md3e-select__option[data-highlighted="true"] {
+    background: color-mix(in oklab, var(--md-sys-color-on-surface) calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), transparent);
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: -3px;
+  }
+  .md3e-select__option[data-selected="true"] {
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+  }
+  .md3e-select__option[data-selected="true"][data-highlighted="true"] {
+    background: color-mix(in oklab, var(--md-sys-color-on-secondary-container) calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), var(--md-sys-color-secondary-container));
+  }
+  .md3e-select__option[data-disabled="true"] {
+    opacity: 0.38;
+    cursor: not-allowed;
+  }
+  .md3e-select__option:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: -3px;
+  }
+  .md3e-select__check {
+    --md-sys-icon-size: 20px;
+    --md-sys-icon-opsz: 20;
+    opacity: 0;
+    transform: scale(0.75);
+    transition: opacity var(--md-sys-motion-fast-effects),
+                transform var(--md-sys-motion-fast-spatial);
+  }
+  .md3e-select__option[data-selected="true"] .md3e-select__check {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .md3e-base-select {
+    width: 100%;
+    min-height: 56px;
+    padding-block: 0;
+    padding-inline: var(--md-sys-spacing-4) var(--md-sys-spacing-3);
+    border: 1px solid var(--md-sys-color-outline);
+    border-radius: var(--md-sys-shape-corner-extra-small);
+    background: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    font-family: var(--md-sys-typescale-plain-font);
+    font-size: var(--md-sys-typescale-body-large-size);
+    line-height: var(--md-sys-typescale-body-large-line-height);
+    cursor: pointer;
+  }
+  .md3e-base-select:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+  @supports (appearance: base-select) {
+    .md3e-base-select,
+    .md3e-base-select::picker(select) {
+      appearance: base-select;
+      interpolate-size: allow-keywords;
+    }
+    .md3e-base-select {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 56px;
+      padding-block: 0;
+      padding-inline: var(--md-sys-spacing-4) var(--md-sys-spacing-3);
+      font-size: var(--md-sys-typescale-body-large-size);
+      line-height: var(--md-sys-typescale-body-large-line-height);
+      cursor: pointer;
+    }
+    .md3e-base-select::picker(select) {
+      margin-block-start: var(--md-sys-spacing-1);
+      padding: var(--md-sys-spacing-1);
+      border: none;
+      border-radius: var(--md-sys-shape-corner-large);
+      background: var(--md-sys-color-surface-container-low);
+      color: var(--md-sys-color-on-surface);
+      box-shadow: var(--md-sys-elevation-level2);
+      overscroll-behavior: contain;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .md3e-base-select::picker(select) {
+        opacity: 0;
+        transform: translateY(-6px) scaleY(0.92);
+        transform-origin: top center;
+        transition: opacity var(--md-sys-motion-fast-effects),
+                    transform var(--md-sys-motion-fast-spatial),
+                    display var(--md-sys-motion-fast-effects),
+                    overlay var(--md-sys-motion-fast-effects);
+        transition-behavior: allow-discrete;
+      }
+      .md3e-base-select:open::picker(select) {
+        opacity: 1;
+        transform: translateY(0) scaleY(1);
+      }
+      @starting-style {
+        .md3e-base-select:open::picker(select) {
+          opacity: 0;
+          transform: translateY(-6px) scaleY(0.92);
+        }
+      }
+    }
+    .md3e-base-select::picker-icon {
+      color: var(--md-sys-color-on-surface-variant);
+      transition: transform var(--md-sys-motion-fast-spatial);
+    }
+    .md3e-base-select:open::picker-icon {
+      transform: rotate(180deg);
+    }
+    .md3e-base-select option {
+      display: flex;
+      align-items: center;
+      gap: var(--md-sys-spacing-2);
+      min-height: var(--md-sys-touch-target-min);
+      padding-inline: var(--md-sys-spacing-3);
+      border-radius: var(--md-sys-shape-corner-medium);
+    }
+    .md3e-base-select option:checked {
+      background: var(--md-sys-color-secondary-container);
+      color: var(--md-sys-color-on-secondary-container);
+      font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+    }
+    .md3e-base-select option:checked::checkmark {
+      color: var(--md-sys-color-on-secondary-container);
+    }
+  }
+
+  /* (E) MD3E Date Picker (Single <-> Range Mode + Continuous Range Track) */
+  .md3e-datepicker {
+    --md3e-dp-cap-size: min(38px, 100%);
+    --md3e-dp-edge-inset: max(0px, calc((100% - var(--md3e-dp-cap-size)) / 2));
+    width: 100%;
+    max-width: 368px;
+    padding: var(--md-sys-spacing-4);
+    border-radius: var(--md-sys-shape-corner-extra-large);
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface);
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-sys-spacing-3);
+  }
+  .md3e-dp__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--md-sys-spacing-2);
+  }
+  .md3e-dp__summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding-inline: var(--md-sys-spacing-3);
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    font-size: var(--md-sys-typescale-label-medium-size);
+    line-height: var(--md-sys-typescale-label-medium-line-height);
+    font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
+    font-variant-numeric: tabular-nums;
+  }
+  .md3e-dp__month-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--md-sys-spacing-2);
+  }
+  .md3e-dp__month-label {
+    font-family: var(--md-sys-typescale-brand-font);
+    font-size: var(--md-sys-typescale-title-small-size);
+    line-height: var(--md-sys-typescale-title-small-line-height);
+    font-weight: var(--md-sys-typescale-title-small-emphasized-weight);
+    color: var(--md-sys-color-on-surface);
+  }
+  .md3e-dp__nav-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-1);
+  }
+  .md3e-dp__nav-btn {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    border-radius: var(--md-sys-shape-corner-full);
+    background: transparent;
+    color: var(--md-sys-color-on-surface-variant);
+    --md-sys-icon-size: 20px;
+    --md-sys-icon-opsz: 20;
+    cursor: pointer;
+    transition: background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects);
+  }
+  .md3e-dp__nav-btn::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+  }
+  .md3e-dp__nav-btn:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--md-sys-color-on-surface) calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), transparent);
+    color: var(--md-sys-color-on-surface);
+  }
+  .md3e-dp__nav-btn:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+  }
+  .md3e-dp__nav-btn:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+  .md3e-dp__grid {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .md3e-dp__weekdays,
+  .md3e-dp__row {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    column-gap: 0;
+  }
+  .md3e-dp__weekday {
+    display: grid;
+    place-items: center;
+    height: 32px;
+    font-size: var(--md-sys-typescale-label-medium-size);
+    line-height: var(--md-sys-typescale-label-medium-line-height);
+    font-weight: var(--md-sys-typescale-label-medium-weight);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+  .md3e-dp__day {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: var(--md-sys-touch-target-min);
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--md-sys-color-on-surface);
+    font-family: var(--md-sys-typescale-plain-font);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: var(--md-sys-typescale-body-medium-line-height);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    isolation: isolate;
+  }
+  .md3e-dp__day::before {
+    content: "";
+    position: absolute;
+    inset-block: 4px;
+    inset-inline: 0;
+    background: transparent;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .md3e-dp__cap {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: var(--md3e-dp-cap-size);
+    height: auto;
+    aspect-ratio: 1;
+    border-radius: var(--md-sys-shape-corner-full);
+    transition: background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects),
+                transform var(--md-sys-motion-fast-spatial);
+  }
+  @media (min-width: 480px) {
+    .md3e-datepicker {
+      --md3e-dp-cap-size: min(40px, 100%);
+    }
+  }
+  .md3e-dp__day:hover:not([data-disabled="true"]) .md3e-dp__cap {
+    background: color-mix(in oklab, var(--md-sys-color-on-surface) calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), transparent);
+  }
+  .md3e-dp__day[data-outside-month="true"] {
+    color: color-mix(in oklab, var(--md-sys-color-on-surface-variant) 55%, transparent);
+  }
+  .md3e-dp__day[data-disabled="true"] {
+    opacity: 0.38;
+    cursor: not-allowed;
+  }
+  .md3e-dp__day[data-today="true"] .md3e-dp__cap {
+    border: 1px solid var(--md-sys-color-primary);
+    color: var(--md-sys-color-primary);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+  }
+  .md3e-dp__day[data-in-range="true"]:not([data-range-start="true"]):not([data-range-end="true"])::before {
+    background: var(--md-sys-color-secondary-container);
+    inset-inline: 0;
+    border-radius: 0;
+  }
+  .md3e-dp__day[data-in-range="true"] {
+    color: var(--md-sys-color-on-secondary-container);
+  }
+  .md3e-dp__day[data-in-range="true"]:not([data-range-start="true"]):not([data-range-end="true"]):first-child::before {
+    inset-inline-start: var(--md3e-dp-edge-inset);
+    border-start-start-radius: var(--md-sys-shape-corner-full);
+    border-end-start-radius: var(--md-sys-shape-corner-full);
+  }
+  .md3e-dp__day[data-in-range="true"]:not([data-range-start="true"]):not([data-range-end="true"]):last-child::before {
+    inset-inline-end: var(--md3e-dp-edge-inset);
+    border-start-end-radius: var(--md-sys-shape-corner-full);
+    border-end-end-radius: var(--md-sys-shape-corner-full);
+  }
+  .md3e-dp__day[data-range-start="true"][data-has-range-end="true"]:not(:last-child)::before {
+    inset-inline: 50% 0;
+    border-radius: 0;
+    background: var(--md-sys-color-secondary-container);
+  }
+  .md3e-dp__day[data-range-start="true"][data-has-range-end="true"]:last-child::before {
+    background: transparent;
+  }
+  .md3e-dp__day[data-range-end="true"][data-has-range-start="true"]:not(:first-child)::before {
+    inset-inline: 0 50%;
+    border-radius: 0;
+    background: var(--md-sys-color-secondary-container);
+  }
+  .md3e-dp__day[data-range-end="true"][data-has-range-start="true"]:first-child::before {
+    background: transparent;
+  }
+  .md3e-dp__day[data-selected="true"] .md3e-dp__cap,
+  .md3e-dp__day[data-range-start="true"] .md3e-dp__cap,
+  .md3e-dp__day[data-range-end="true"] .md3e-dp__cap {
+    border: none;
+    background: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+  }
+  .md3e-dp__day[data-selected="true"]:hover .md3e-dp__cap,
+  .md3e-dp__day[data-range-start="true"]:hover .md3e-dp__cap,
+  .md3e-dp__day[data-range-end="true"]:hover .md3e-dp__cap {
+    background: color-mix(in oklab, var(--md-sys-color-on-primary) calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), var(--md-sys-color-primary));
+  }
+  .md3e-dp__day:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: -3px;
+    border-radius: var(--md-sys-shape-corner-medium);
+    z-index: 2;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .md3e-fab--medium,
     .md3e-fab--medium::after,
     .md3e-switch,
     .md3e-switch::after,
-    .md3e-checkbox {
+    .md3e-checkbox,
+    .md3e-field__outline,
+    .md3e-field__notch,
+    .md3e-field__prefix,
+    .md3e-field__label,
+    .md3e-field__clear,
+    .md3e-menu,
+    .md3e-menu__item,
+    .md3e-select__trigger,
+    .md3e-select__listbox,
+    .md3e-select__option,
+    .md3e-select__check,
+    .md3e-dp__nav-btn,
+    .md3e-dp__cap {
       transition: none;
     }
     .wavy-slider::-webkit-slider-thumb,
@@ -3174,7 +4144,6 @@
       scroll-behavior: auto;
     }
     .shell,
-    .shell.is-view-exiting,
     .nav-rail,
     .nav-rail__compose,
     .nav-rail__compose-label,
@@ -3191,6 +4160,11 @@
   @media (prefers-reduced-transparency: reduce) {
     .toolbar-floating.md3e-frosted-surface {
       background: var(--md-sys-color-surface-container-high);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+    dialog::backdrop,
+    .md3e-dialog::backdrop {
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
     }
@@ -3238,17 +4212,41 @@
     .side-sheet,
     .nav-sheet,
     .md3e-switch,
-    .md3e-checkbox {
+    .md3e-checkbox,
+    .md3e-dialog,
+    .md3e-menu,
+    .md3e-select__trigger,
+    .md3e-select__listbox,
+    .md3e-base-select,
+    .md3e-datepicker {
       border: 1px solid CanvasText;
     }
     .md3e-switch:checked,
     .md3e-checkbox:checked,
     .md3e-icon-btn[aria-pressed="true"],
     .var-icon-btn[aria-pressed="true"],
-    .toolbar-btn[aria-pressed="true"] {
+    .toolbar-btn[aria-pressed="true"],
+    .md3e-menu__item[aria-checked="true"],
+    .md3e-menu__item[data-highlighted="true"],
+    .md3e-select__option[data-selected="true"],
+    .md3e-dp__day[data-selected="true"] .md3e-dp__cap,
+    .md3e-dp__day[data-range-start="true"] .md3e-dp__cap,
+    .md3e-dp__day[data-range-end="true"] .md3e-dp__cap {
       forced-color-adjust: none;
       background: Highlight;
       color: HighlightText;
+    }
+    .md3e-dp__day[data-in-range="true"]:not([data-range-start="true"]):not([data-range-end="true"])::before,
+    .md3e-dp__day[data-range-start="true"][data-has-range-end="true"]:not(:last-child)::before,
+    .md3e-dp__day[data-range-end="true"][data-has-range-start="true"]:not(:first-child)::before {
+      forced-color-adjust: none;
+      background: Canvas;
+      border-block: 1px solid Highlight;
+    }
+    .md3e-dp__day[data-range-start="true"][data-has-range-end="true"]:last-child::before,
+    .md3e-dp__day[data-range-end="true"][data-has-range-start="true"]:first-child::before {
+      background: transparent;
+      border: none;
     }
     .md3e-switch::after {
       forced-color-adjust: none;
@@ -4074,9 +5072,214 @@
         </div>
       </div>
 
+      <div class="prim-grid">
+        <!-- (A) Outlined Text Field with Transparent <fieldset><legend> Notch on Gradient Surface -->
+        <div class="prim-card prim-card--wide">
+          <div class="prim-card__head">
+            <h3 class="prim-card__title">Outlined Text Field (Transparent Notch on Gradient Surface)</h3>
+            <button type="button" class="md3e-btn md3e-btn--outlined md3e-btn--xs" id="prim-text-error-toggle" aria-pressed="false">
+              <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+              Simulate Error
+            </button>
+          </div>
+          <p class="prim-card__desc">Uses <code>&lt;fieldset&gt;&lt;legend&gt;</code> geometry for a true transparent outline cutout over tonal gradients—no opaque background patch on <code>&lt;label&gt;</code>.</p>
+          <div class="md3e-field-showcase">
+            <div class="md3e-field" id="prim-outlined-field" data-populated="true" data-invalid="false">
+              <div class="md3e-field__box">
+                <fieldset class="md3e-field__outline" aria-hidden="true">
+                  <legend class="md3e-field__notch"><span>Workspace URI</span></legend>
+                </fieldset>
+                <span class="material-symbols-outlined md3e-field__leading" aria-hidden="true">language</span>
+                <span class="md3e-field__prefix" id="prim-text-prefix">https://</span>
+                <label class="md3e-field__label" for="prim-outlined-input">Workspace URI</label>
+                <input
+                  type="text"
+                  class="md3e-field__input"
+                  id="prim-outlined-input"
+                  value="studio.md3e.dev/app"
+                  maxlength="60"
+                  placeholder=" "
+                  aria-invalid="false"
+                  aria-describedby="prim-text-helper"
+                >
+                <button type="button" class="md3e-field__clear" id="prim-outlined-clear" aria-label="Clear input" data-empty="false">
+                  <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                </button>
+              </div>
+              <div class="md3e-field__supporting">
+                <span class="md3e-field__helper" id="prim-text-helper">Enter host and path without scheme</span>
+                <span class="md3e-field__error" id="prim-text-error" role="alert" hidden>Invalid URI: remove spaces or scheme prefix (e.g. studio.md3e.dev/app)</span>
+                <span class="md3e-field__counter" id="prim-text-counter">19 / 60</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- (C) Pure Native Top-Layer [popover="auto"] Menu Inside overflow:hidden Card -->
+        <div class="prim-card">
+          <h3 class="prim-card__title">Top-Layer <code>[popover="auto"]</code> Menu</h3>
+          <div class="md3e-menu-trap-card">
+            <p class="prim-card__desc">Clipped card (<code>overflow: hidden; max-height: 152px</code>). Popover menu + nested submenu escape cleanly into the Top Layer.</p>
+            <button
+              type="button"
+              class="md3e-btn md3e-btn--tonal md3e-btn--s"
+              id="prim-menu-trigger"
+              popovertarget="prim-menu"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-controls="prim-menu"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">menu</span>
+              Workspace Menu
+              <span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_down</span>
+            </button>
+            <div id="prim-menu" class="md3e-menu" popover="auto" aria-label="Workspace actions">
+              <div class="md3e-menu__list" role="menu" focusgroup="menu nomemory">
+                <button type="button" class="md3e-menu__item" role="menuitem" data-menu-action="Duplicate Preset">
+                  <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
+                  <span>Duplicate Preset</span>
+                </button>
+                <button type="button" class="md3e-menu__item" role="menuitem" data-menu-action="Inspect Tokens">
+                  <span class="material-symbols-outlined" aria-hidden="true">tune</span>
+                  <span>Inspect Tokens</span>
+                </button>
+                <hr class="md3e-menu__divider">
+                <button type="button" class="md3e-menu__item" id="prim-menu-check-auto" role="menuitemcheckbox" aria-checked="true">
+                  <span class="material-symbols-outlined md3e-menu__check" aria-hidden="true">check</span>
+                  <span>Auto-sync Surface</span>
+                </button>
+                <button
+                  type="button"
+                  class="md3e-menu__item"
+                  id="prim-submenu-trigger"
+                  role="menuitem"
+                  popovertarget="prim-submenu"
+                  aria-haspopup="menu"
+                  aria-expanded="false"
+                  aria-controls="prim-submenu"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">palette</span>
+                  <span>Export Format</span>
+                  <span class="material-symbols-outlined md3e-menu__trailing" aria-hidden="true">chevron_right</span>
+                </button>
+                <div id="prim-submenu" class="md3e-menu md3e-menu--sub" popover="auto" aria-label="Export format">
+                  <div class="md3e-menu__list" role="menu" focusgroup="menu nomemory">
+                    <button type="button" class="md3e-menu__item" role="menuitem" data-menu-action="Export CSS Custom Properties">
+                      <span>CSS Custom Properties</span>
+                    </button>
+                    <button type="button" class="md3e-menu__item" role="menuitem" data-menu-action="Export Tailwind Theme">
+                      <span>Tailwind Theme</span>
+                    </button>
+                    <button type="button" class="md3e-menu__item" role="menuitem" data-menu-action="Export Design Tokens JSON">
+                      <span>Design Tokens JSON</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- (D) Select Skin Contract + Top-Layer Interactive Listbox + Progressive base-select -->
+          <h3 class="prim-card__title">Select (Skin Contract + Top-Layer Listbox)</h3>
+          <div class="md3e-select" id="prim-select" data-state="closed">
+            <span class="md3e-select__label" id="prim-select-label">Motion Profile</span>
+            <button
+              type="button"
+              class="md3e-select__trigger"
+              id="prim-select-trigger"
+              role="combobox"
+              aria-labelledby="prim-select-label prim-select-value"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+              aria-controls="prim-select-listbox"
+              data-state="closed"
+            >
+              <span class="md3e-select__value" id="prim-select-value">Expressive Spatial</span>
+              <span class="material-symbols-outlined md3e-select__chevron" aria-hidden="true">keyboard_arrow_down</span>
+            </button>
+            <div
+              id="prim-select-listbox"
+              class="md3e-select__listbox"
+              popover="auto"
+              role="listbox"
+              tabindex="-1"
+              aria-labelledby="prim-select-label"
+              aria-activedescendant="prim-select-opt-expressive"
+              data-state="closed"
+            >
+              <div class="md3e-select__option" id="prim-select-opt-expressive" role="option" tabindex="-1" data-value="expressive" aria-selected="true" data-selected="true" data-highlighted="true">
+                <span>Expressive Spatial</span>
+                <span class="material-symbols-outlined md3e-select__check" aria-hidden="true">check</span>
+              </div>
+              <div class="md3e-select__option" id="prim-select-opt-standard" role="option" tabindex="-1" data-value="standard" aria-selected="false" data-selected="false" data-highlighted="false">
+                <span>Standard Spatial</span>
+                <span class="material-symbols-outlined md3e-select__check" aria-hidden="true">check</span>
+              </div>
+              <div class="md3e-select__option" id="prim-select-opt-effects" role="option" tabindex="-1" data-value="effects" aria-selected="false" data-selected="false" data-highlighted="false">
+                <span>Effects Crisp</span>
+                <span class="material-symbols-outlined md3e-select__check" aria-hidden="true">check</span>
+              </div>
+              <div class="md3e-select__option" id="prim-select-opt-reduced" role="option" tabindex="-1" data-value="reduced" aria-selected="false" data-selected="false" data-highlighted="false" aria-disabled="true" data-disabled="true">
+                <span>Reduced Linear (Locked)</span>
+                <span class="material-symbols-outlined md3e-select__check" aria-hidden="true">check</span>
+              </div>
+              <div class="md3e-select__option" id="prim-select-opt-custom" role="option" tabindex="-1" data-value="custom" aria-selected="false" data-selected="false" data-highlighted="false">
+                <span>Custom Spring</span>
+                <span class="material-symbols-outlined md3e-select__check" aria-hidden="true">check</span>
+              </div>
+            </div>
+          </div>
+          <label class="md3e-select__label" for="prim-base-select">Progressive Native <code>appearance: base-select</code></label>
+          <select class="md3e-base-select" id="prim-base-select">
+            <option value="expressive" selected>Expressive Spatial</option>
+            <option value="standard">Standard Spatial</option>
+            <option value="effects">Effects Crisp</option>
+            <option value="reduced" disabled>Reduced Linear (Locked)</option>
+            <option value="custom">Custom Spring</option>
+          </select>
+        </div>
+
+        <!-- (E) MD3E Date Picker (Single <-> Range Mode + Continuous Range Track) -->
+        <div class="prim-card">
+          <h3 class="prim-card__title">Date Picker (Single &harr; Range Track)</h3>
+          <div class="md3e-datepicker" id="prim-datepicker">
+            <div class="md3e-dp__header">
+              <span class="md3e-dp__summary" id="prim-dp-summary" aria-live="polite">Single: Nov 18, 2026</span>
+              <div class="btn-group" id="prim-dp-mode-group" role="group" aria-label="Date picker mode" data-group-mode="single">
+                <span class="md3e-seg-indicator" id="prim-dp-mode-indicator" aria-hidden="true"></span>
+                <button type="button" class="btn-group__item" id="prim-dp-mode-single" aria-pressed="true" data-dp-mode="single">Single</button>
+                <button type="button" class="btn-group__item" id="prim-dp-mode-range" aria-pressed="false" data-dp-mode="range">Range</button>
+              </div>
+            </div>
+            <div class="md3e-dp__month-row">
+              <span class="md3e-dp__month-label" id="prim-dp-month-label" aria-live="polite">November 2026</span>
+              <div class="md3e-dp__nav-actions">
+                <button type="button" class="md3e-dp__nav-btn" id="prim-dp-prev" aria-label="Previous month">
+                  <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+                </button>
+                <button type="button" class="md3e-dp__nav-btn" id="prim-dp-next" aria-label="Next month">
+                  <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+                </button>
+              </div>
+            </div>
+            <div class="md3e-dp__grid" id="prim-dp-grid" role="grid" aria-labelledby="prim-dp-month-label">
+              <div class="md3e-dp__weekdays" role="row">
+                <span class="md3e-dp__weekday" role="columnheader" aria-label="Monday">M</span>
+                <span class="md3e-dp__weekday" role="columnheader" aria-label="Tuesday">T</span>
+                <span class="md3e-dp__weekday" role="columnheader" aria-label="Wednesday">W</span>
+                <span class="md3e-dp__weekday" role="columnheader" aria-label="Thursday">T</span>
+                <span class="md3e-dp__weekday" role="columnheader" aria-label="Friday">F</span>
+                <span class="md3e-dp__weekday" role="columnheader" aria-label="Saturday">S</span>
+                <span class="md3e-dp__weekday" role="columnheader" aria-label="Sunday">S</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <dialog class="md3e-dialog" id="prim-dialog" aria-labelledby="prim-dialog-title">
         <h3 class="md3e-dialog__title" id="prim-dialog-title">Native <code>&lt;dialog&gt;</code> &amp; Headless Token Pattern</h3>
-        <p class="md3e-dialog__body">Built on native top-layer focus trapping and <code>Escape</code> dismissal. In React/Vue/Svelte apps, drop unstyled Radix UI or Base UI primitives underneath and bind <code>[data-state="open"]</code> to <code>--md-sys-color-surface-container-high</code> and <code>--md-sys-motion-default-spatial</code>.</p>
+        <p class="md3e-dialog__body">Built on native top-layer focus trapping, <code>overscroll-behavior: contain</code>, and interruptible spring enter/exit with <code>Escape</code> reversal. In React/Vue/Svelte apps, bind Radix UI or Base UI <code>[data-state="open"]</code> to <code>--md-sys-color-surface-container-high</code> and <code>--md-sys-motion-default-spatial</code>.</p>
         <div class="md3e-dialog__actions">
           <button type="button" class="md3e-btn md3e-btn--text md3e-btn--s" id="prim-dialog-cancel">Cancel</button>
           <button type="button" class="md3e-btn md3e-btn--filled md3e-btn--s" id="prim-dialog-confirm">Got it</button>
@@ -4235,6 +5438,13 @@
 
   const STORAGE_THEME_KEY = 'md3e-shared-theme';
   const STORAGE_SEED_KEY = 'md3e-shared-seed';
+  const STORAGE_VARIANT_KEY = 'md3e-shared-variant';
+  const VALID_COLOR_VARIANTS = new Set(['', 'tonal-spot', 'expressive', 'vibrant', 'neutral', 'monochrome']);
+
+  function normalizeSharedVariant(raw) {
+    if (!raw || raw === 'baseline') return '';
+    return VALID_COLOR_VARIANTS.has(raw) ? raw : '';
+  }
 
   function saveSharedPref(key, value) {
     try { localStorage.setItem(key, value); } catch {}
@@ -4288,9 +5498,9 @@
 
   let snackbarTimer = null;
   function showToast(msg, { actionable = false } = {}) {
-    statusEl.textContent = msg;
-    snackbarEl.textContent = msg;
-    snackbarEl.classList.toggle('md3e-snackbar--action', Boolean(actionable || String(msg).includes('\n')));
+    const nextMsg = String(msg ?? '');
+    snackbarEl.textContent = snackbarEl.textContent === nextMsg ? `${nextMsg}\u00A0` : nextMsg;
+    snackbarEl.classList.toggle('md3e-snackbar--action', Boolean(actionable || nextMsg.includes('\n')));
     snackbarEl.classList.add('is-visible');
     clearTimeout(snackbarTimer);
     snackbarTimer = setTimeout(() => {
@@ -4417,8 +5627,8 @@
 
   // --- Bidirectional Variant Sync ---
   const topVariantBtn = document.getElementById('btn-color-variant');
-  function applyVariant(variant) {
-    const v = variant || '';
+  function applyVariant(variant, { persist = true } = {}) {
+    const v = normalizeSharedVariant(variant);
     if (!v) {
       delete root.dataset.colorVariant;
     } else {
@@ -4428,6 +5638,7 @@
     document.querySelectorAll('[data-variant-choice]').forEach((btn) => {
       btn.setAttribute('aria-pressed', String(btn.dataset.variantChoice === v));
     });
+    if (persist) saveSharedPref(STORAGE_VARIANT_KEY, v || 'baseline');
     refreshSwatches();
   }
 
@@ -4659,16 +5870,42 @@
     btnSeedPopoverDone.addEventListener('click', () => colorPopover.hidePopover?.());
   }
 
+  function syncColorPopoverMaxSize() {
+    if (!isColorPopoverOpen()) return;
+    const tRect = pickerTriggerBtn.getBoundingClientRect();
+    const vh = window.innerHeight || 800;
+    const margin = 16;
+    const spaceBelow = Math.floor(vh - tRect.bottom - margin);
+    const spaceAbove = Math.floor(tRect.top - margin);
+    colorPopover.style.removeProperty('max-block-size');
+    const naturalH = Math.min(colorPopover.scrollHeight || 420, vh - 32);
+    let maxBlock;
+    if (spaceBelow >= naturalH) {
+      maxBlock = spaceBelow;
+    } else if (spaceAbove >= naturalH) {
+      maxBlock = spaceAbove;
+    } else {
+      maxBlock = Math.max(180, Math.max(spaceBelow, spaceAbove));
+    }
+    colorPopover.style.maxBlockSize = `${maxBlock}px`;
+  }
+
   colorPopover.addEventListener('toggle', (e) => {
     const open = e.newState === 'open';
     pickerTriggerBtn.setAttribute('aria-expanded', String(open));
     if (open) {
       syncPickerFromHex(getActiveSeedHex(), pickerHct);
       renderHctPlane(pickerHct.hue, true);
-    } else if (colorPopover.contains(document.activeElement)) {
-      pickerTriggerBtn.focus();
+      syncColorPopoverMaxSize();
+    } else {
+      colorPopover.style.removeProperty('max-block-size');
+      if (colorPopover.contains(document.activeElement)) {
+        pickerTriggerBtn.focus();
+      }
     }
   });
+  window.addEventListener('scroll', syncColorPopoverMaxSize, { passive: true });
+  window.addEventListener('resize', syncColorPopoverMaxSize);
   btnSeedPopoverDone.addEventListener('click', () => {
     requestAnimationFrame(() => {
       if (!isColorPopoverOpen()) pickerTriggerBtn.focus();
@@ -4964,11 +6201,17 @@
   const btnLoaderPause = document.getElementById('btn-loader-pause');
   const loaderPauseIcon = document.getElementById('loader-pause-icon');
   const loaderPauseLabel = document.getElementById('loader-pause-label');
-  const loaders = [document.getElementById('loader-default'), document.getElementById('loader-contained')];
+  const loaders = [
+    document.getElementById('loader-default'),
+    document.getElementById('loader-contained'),
+    document.getElementById('js-morph-loader'),
+  ].filter(Boolean);
   let loadersPaused = false;
+  let setJsMorphLoaderPaused = null;
   btnLoaderPause.addEventListener('click', () => {
     loadersPaused = !loadersPaused;
     loaders.forEach((el) => el.classList.toggle('is-paused', loadersPaused));
+    setJsMorphLoaderPaused?.(loadersPaused);
     loaderPauseIcon.textContent = loadersPaused ? 'play_arrow' : 'pause';
     loaderPauseLabel.textContent = loadersPaused ? 'Resume loaders' : 'Pause loaders';
     statusEl.textContent = loadersPaused ? 'Loading indicators paused' : '7-Polygon Loading Indicator active';
@@ -5098,19 +6341,66 @@
 
   const railCollapseBtn = document.getElementById('rail-collapse-btn');
   const railCollapseLabel = document.getElementById('rail-collapse-label');
+  let prevDesktopRailMode = window.innerWidth >= 840;
+  let prevWideRailMode = window.innerWidth >= 1200;
+
+  const railSpring = createSpringAnimator({
+    initialValue: prevDesktopRailMode && railExpandedDesktop ? 1 : 0,
+    ...resolveSpringPreset('default', 'spatial', root),
+    precision: 0.001,
+    onUpdate(t, vel) {
+      if (window.innerWidth < 840) {
+        navRail.style.removeProperty('--md3e-rail-t');
+        return;
+      }
+      if (vel === 0 && (t === 0 || t === 1)) {
+        navRail.style.removeProperty('--md3e-rail-t');
+      } else {
+        navRail.style.setProperty('--md3e-rail-t', t.toFixed(4));
+      }
+    },
+  });
+
+  const navSheetSpring = createSpringAnimator({
+    initialValue: 0,
+    ...resolveSpringPreset('default', 'spatial', root),
+    precision: 0.001,
+    onUpdate(t, vel) {
+      if (vel === 0 && (t === 0 || t === 1)) {
+        navSheet.style.removeProperty('--md3e-nav-sheet-t');
+        navSheetScrim.style.removeProperty('--md3e-nav-sheet-t');
+      } else {
+        const val = t.toFixed(4);
+        navSheet.style.setProperty('--md3e-nav-sheet-t', val);
+        navSheetScrim.style.setProperty('--md3e-nav-sheet-t', val);
+      }
+    },
+  });
 
   function syncResponsiveNavMode() {
     const isDesktop = window.innerWidth >= 840;
+    const isWideDesktop = window.innerWidth >= 1200;
+    const crossedBreakpoint = isDesktop !== prevDesktopRailMode;
+    const crossedWideBreakpoint = isWideDesktop !== prevWideRailMode;
+    prevDesktopRailMode = isDesktop;
+    prevWideRailMode = isWideDesktop;
     if (isDesktop) {
       if (!navSheet.inert) setNavSheetOpen(false);
+      if (crossedWideBreakpoint && !isWideDesktop && railExpandedDesktop) {
+        railExpandedDesktop = false;
+      }
       navRail.dataset.railExpanded = String(railExpandedDesktop);
       navMenuBtn.setAttribute('aria-controls', 'nav-rail');
       navMenuBtn.setAttribute('aria-expanded', String(railExpandedDesktop));
       navMenuIcon.textContent = railExpandedDesktop ? 'menu_open' : 'menu';
       railCollapseBtn?.setAttribute('aria-expanded', String(railExpandedDesktop));
       if (railCollapseLabel) railCollapseLabel.textContent = railExpandedDesktop ? 'Collapse rail' : 'Expand rail';
+      if (crossedBreakpoint || (crossedWideBreakpoint && !isWideDesktop)) {
+        railSpring.jump(railExpandedDesktop ? 1 : 0);
+      }
     } else {
       navRail.dataset.railExpanded = 'false';
+      railSpring.jump(0);
       navMenuBtn.setAttribute('aria-controls', 'nav-sheet');
       const sheetOpen = !navSheet.inert;
       navMenuBtn.setAttribute('aria-expanded', String(sheetOpen));
@@ -5131,6 +6421,9 @@
       closeFabIfExpanded();
       if (!inspectorSheet.inert) setInspectorOpen(false);
     }
+    const preT = navSheetSpring.value.toFixed(4);
+    navSheet.style.setProperty('--md3e-nav-sheet-t', preT);
+    navSheetScrim.style.setProperty('--md3e-nav-sheet-t', preT);
     navMenuBtn.setAttribute('aria-expanded', String(open));
     navMenuIcon.textContent = open ? 'menu_open' : 'menu';
     navSheet.setAttribute('aria-hidden', String(!open));
@@ -5138,6 +6431,8 @@
     navSheet.classList.toggle('is-open', open);
     navSheetScrim.classList.toggle('is-open', open);
     syncModalInert();
+    navSheetSpring.configure(resolveSpringPreset('default', 'spatial', root));
+    navSheetSpring.setTarget(open ? 1 : 0);
     if (open) {
       navSheetClose.focus();
     } else if (restoreFocus) {
@@ -5147,8 +6442,14 @@
 
   function toggleNavigationChrome() {
     if (window.innerWidth >= 840) {
+      navRail.style.setProperty('--md3e-rail-t', railSpring.value.toFixed(4));
       railExpandedDesktop = !railExpandedDesktop;
+      if (railExpandedDesktop && window.innerWidth < 1100 && !inspectorSheet.inert) {
+        setInspectorOpen(false);
+      }
       syncResponsiveNavMode();
+      railSpring.configure(resolveSpringPreset('default', 'spatial', root));
+      railSpring.setTarget(railExpandedDesktop ? 1 : 0);
     } else {
       setNavSheetOpen(navSheet.inert);
     }
@@ -5169,7 +6470,7 @@
     showToast('Rail Compose action triggered');
   });
 
-  // View-Switch Fade Through + 30ms Staggered Section Entrance & Active Page Indicator
+  // View-Switch Fade Through + 30ms Staggered Section Entrance & Active Page Indicator (100% Interruptible)
   const allNavLinks = document.querySelectorAll('.nav-rail__item, .nav-bar__item, .nav-sheet__link');
   const sectionCards = [...document.querySelectorAll('main > section[id]')];
   const viewFilterBanner = document.getElementById('view-filter-banner');
@@ -5177,7 +6478,19 @@
   const btnShowAllSections = document.getElementById('btn-show-all-sections');
   const rmMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   let activeSectionView = 'all';
-  let viewFadeTimer = null;
+  let currentRenderedView = 'all';
+  let pendingSectionView = null;
+  let viewAnimPhase = 'idle';
+
+  sectionCards.forEach((sec) => {
+    const clearStagger = (e) => {
+      if (e.target !== sec || e.animationName !== 'md3e-card-enter') return;
+      sec.classList.remove('is-stagger-enter');
+      sec.style.removeProperty('--md3e-stagger-idx');
+    };
+    sec.addEventListener('animationend', clearStagger);
+    sec.addEventListener('animationcancel', clearStagger);
+  });
 
   function setActiveSection(viewTarget) {
     allNavLinks.forEach((link) => {
@@ -5190,50 +6503,88 @@
     });
   }
 
+  function applyViewSections(normalized) {
+    currentRenderedView = normalized;
+    let idx = 0;
+    let matchedTitle = '';
+    sectionCards.forEach((sec) => {
+      const show = normalized === 'all' || `#${sec.id}` === normalized;
+      sec.hidden = !show;
+      sec.classList.remove('is-stagger-enter');
+      sec.style.removeProperty('--md3e-stagger-idx');
+      if (show) {
+        sec.style.setProperty('--md3e-stagger-idx', String(idx));
+        idx += 1;
+        matchedTitle = sec.querySelector('h2')?.textContent || sec.id;
+      }
+    });
+    if (viewFilterBanner) {
+      viewFilterBanner.hidden = normalized === 'all';
+      if (viewFilterLabel && normalized !== 'all') {
+        viewFilterLabel.textContent = `Viewing: ${matchedTitle}`;
+      }
+    }
+    if (!rmMotionQuery.matches) {
+      void mainEl.offsetWidth;
+      sectionCards.forEach((sec) => {
+        if (!sec.hidden) sec.classList.add('is-stagger-enter');
+      });
+    }
+    syncAllSegIndicators(true);
+  }
+
+  const viewFadeSpring = createSpringAnimator({
+    initialValue: 1,
+    ...resolveSpringPreset('fast', 'effects', root),
+    precision: 0.002,
+    onUpdate(val, vel) {
+      const clamped = Math.max(0, Math.min(1, val));
+      mainEl.style.opacity = clamped.toFixed(3);
+      mainEl.style.transform = `scale(${(0.985 + 0.015 * clamped).toFixed(4)})`;
+      if (viewAnimPhase === 'exiting' && val <= 0.05 && pendingSectionView) {
+        const nextView = pendingSectionView;
+        pendingSectionView = null;
+        viewAnimPhase = 'entering';
+        applyViewSections(nextView);
+        viewFadeSpring.configure(resolveSpringPreset('default', 'effects', root));
+        viewFadeSpring.setTarget(1);
+      } else if (viewAnimPhase === 'entering' && vel === 0 && Math.abs(val - 1) <= 0.003) {
+        viewAnimPhase = 'idle';
+        mainEl.style.opacity = '';
+        mainEl.style.transform = '';
+      }
+    },
+  });
+
   function switchSectionView(viewTarget, { animate = true } = {}) {
     const normalized = !viewTarget || viewTarget === '#main-content' ? 'all' : viewTarget;
     activeSectionView = normalized;
     setActiveSection(normalized);
-    clearTimeout(viewFadeTimer);
 
-    const applyView = () => {
-      let idx = 0;
-      let matchedTitle = '';
-      sectionCards.forEach((sec) => {
-        const show = normalized === 'all' || `#${sec.id}` === normalized;
-        sec.hidden = !show;
-        sec.classList.remove('is-stagger-enter');
-        sec.style.removeProperty('--md3e-stagger-idx');
-        if (show) {
-          sec.style.setProperty('--md3e-stagger-idx', String(idx));
-          idx += 1;
-          matchedTitle = sec.querySelector('h2')?.textContent || sec.id;
-        }
-      });
-      if (viewFilterBanner) {
-        viewFilterBanner.hidden = normalized === 'all';
-        if (viewFilterLabel && normalized !== 'all') {
-          viewFilterLabel.textContent = `Viewing: ${matchedTitle}`;
-        }
-      }
-      if (!rmMotionQuery.matches) {
-        void mainEl.offsetWidth;
-        sectionCards.forEach((sec) => {
-          if (!sec.hidden) sec.classList.add('is-stagger-enter');
-        });
-      }
-      syncAllSegIndicators(true);
-    };
-
-    if (!animate || rmMotionQuery.matches) {
-      applyView();
+    if (!animate || rmMotionQuery.matches || document.hidden) {
+      pendingSectionView = null;
+      viewAnimPhase = 'idle';
+      applyViewSections(normalized);
+      viewFadeSpring.snap(1);
+      mainEl.style.opacity = '';
+      mainEl.style.transform = '';
       return;
     }
-    mainEl.classList.add('is-view-exiting');
-    viewFadeTimer = setTimeout(() => {
-      mainEl.classList.remove('is-view-exiting');
-      applyView();
-    }, 90);
+
+    if (normalized === currentRenderedView) {
+      pendingSectionView = null;
+      if (viewAnimPhase === 'exiting' || viewFadeSpring.value < 0.998) {
+        viewAnimPhase = 'entering';
+        viewFadeSpring.configure(resolveSpringPreset('fast', 'effects', root));
+        viewFadeSpring.setTarget(1);
+      }
+      return;
+    }
+
+    pendingSectionView = normalized;
+    viewAnimPhase = 'exiting';
+    viewFadeSpring.configure(resolveSpringPreset('fast', 'effects', root));
+    viewFadeSpring.setTarget(0);
   }
 
   allNavLinks.forEach((link) => {
@@ -5262,6 +6613,11 @@
     }, { rootMargin: '-25% 0px -65% 0px' });
     sectionCards.forEach((sec) => sectionObserver.observe(sec));
   }
+  window.addEventListener('scroll', () => {
+    if (activeSectionView === 'all' && window.scrollY < 48) {
+      setActiveSection('all');
+    }
+  }, { passive: true });
 
   function syncSliderPct(el) {
     if (!el) return;
@@ -5273,16 +6629,44 @@
   }
 
   // --- Side Sheet Inspector (#inspector-sheet) ---
+  const inspectorSpring = createSpringAnimator({
+    initialValue: 0,
+    ...resolveSpringPreset('default', 'spatial', root),
+    precision: 0.001,
+    onUpdate(t, vel) {
+      if (vel === 0 && (t === 0 || t === 1)) {
+        inspectorSheet.style.removeProperty('--md3e-inspector-t');
+        sideSheetScrim.style.removeProperty('--md3e-inspector-t');
+      } else {
+        const val = t.toFixed(4);
+        inspectorSheet.style.setProperty('--md3e-inspector-t', val);
+        sideSheetScrim.style.setProperty('--md3e-inspector-t', val);
+      }
+    },
+  });
+
   function setInspectorOpen(open, { restoreFocus = false } = {}) {
     if (open && window.innerWidth < 840) {
       closeFabIfExpanded();
+      if (!navSheet.inert) setNavSheetOpen(false);
+    } else if (open && window.innerWidth >= 840 && window.innerWidth < 1100 && railExpandedDesktop) {
+      navRail.style.setProperty('--md3e-rail-t', railSpring.value.toFixed(4));
+      railExpandedDesktop = false;
+      syncResponsiveNavMode();
+      railSpring.configure(resolveSpringPreset('default', 'spatial', root));
+      railSpring.setTarget(0);
     }
+    const preT = inspectorSpring.value.toFixed(4);
+    inspectorSheet.style.setProperty('--md3e-inspector-t', preT);
+    sideSheetScrim.style.setProperty('--md3e-inspector-t', preT);
     inspectorToggleBtn.setAttribute('aria-expanded', String(open));
     inspectorSheet.setAttribute('aria-hidden', String(!open));
     inspectorSheet.inert = !open;
     inspectorSheet.classList.toggle('is-open', open);
     sideSheetScrim.classList.toggle('is-open', open);
     syncModalInert();
+    inspectorSpring.configure(resolveSpringPreset('default', 'spatial', root));
+    inspectorSpring.setTarget(open ? 1 : 0);
     if (open) {
       refreshSwatches();
       if (window.innerWidth < 840) inspectorCloseBtn.focus();
@@ -5305,8 +6689,15 @@
     applyVariant('');
     applyContrast('');
     applyDensity('standard');
-    syncSliderPct(volumeSlider);
-    syncSliderPct(wavySlider);
+    if (volumeSlider) {
+      volumeSlider.value = '75';
+      if (volumeReadout) volumeReadout.textContent = '75';
+      syncSliderPct(volumeSlider);
+    }
+    if (wavySlider) {
+      wavySlider.value = '68';
+      wavySlider.dispatchEvent(new Event('change'));
+    }
     showToast('Reset studio tokens to defaults');
   });
 
@@ -5330,8 +6721,8 @@
   // --- Section 5 Interactions: Split Button, Connected Groups, Toggle, Cards, Toolbars ---
   const expressiveStatus = document.getElementById('expressive-status');
   function updateGroupSummary() {
-    const alignBtn = document.querySelector('[data-group-mode="single"] [aria-pressed="true"]');
-    const formatBtns = [...document.querySelectorAll('[data-group-mode="multi"] [aria-pressed="true"]')];
+    const alignBtn = document.querySelector('#align-seg-group [aria-pressed="true"]');
+    const formatBtns = [...document.querySelectorAll('#section-expressive [data-group-mode="multi"] [aria-pressed="true"]')];
     const align = alignBtn ? alignBtn.dataset.groupVal : 'Left';
     const formats = formatBtns.length ? formatBtns.map((b) => b.dataset.groupVal).join(', ') : 'None';
     expressiveStatus.textContent = `Align: ${align} | Format: ${formats}`;
@@ -5356,24 +6747,33 @@
       initialValue: 0,
       stiffness: 1400,
       damping: 0.86,
+      precision: 0.1,
       onUpdate: (v) => { curX = v; render(); },
     });
     const wSpring = createSpringAnimator({
       initialValue: 0,
       stiffness: 1400,
       damping: 0.86,
+      precision: 0.1,
       onUpdate: (v) => { curW = v; render(); },
     });
     const sync = (immediate = false) => {
       const active = items.find((b) => b.getAttribute('aria-pressed') === 'true') || items[0];
       if (!active || active.offsetWidth === 0) return;
+      const nextX = active.offsetLeft;
+      const nextW = active.offsetWidth;
       if (immediate) {
-        xSpring.snap(active.offsetLeft);
-        wSpring.snap(active.offsetWidth);
-      } else {
-        xSpring.setTarget(active.offsetLeft);
-        wSpring.setTarget(active.offsetWidth);
+        xSpring.snap(nextX);
+        wSpring.snap(nextW);
+        return;
       }
+      if (xSpring.target === nextX && wSpring.target === nextW) return;
+      const preset = resolveSpringPreset('fast', 'spatial', root);
+      const safePreset = { stiffness: preset.stiffness, damping: Math.max(0.78, preset.damping) };
+      xSpring.configure(safePreset);
+      wSpring.configure(safePreset);
+      xSpring.setTarget(nextX);
+      wSpring.setTarget(nextW);
     };
     segSyncHandlers.push(sync);
     if ('ResizeObserver' in window) {
@@ -5395,8 +6795,13 @@
     '.squeeze-btn',
     document.getElementById('squeeze-seg-indicator'),
   );
+  attachSpringSegmentedIndicator(
+    document.getElementById('prim-dp-mode-group'),
+    '.btn-group__item',
+    document.getElementById('prim-dp-mode-indicator'),
+  );
 
-  document.querySelectorAll('.btn-group').forEach((group) => {
+  document.querySelectorAll('#section-expressive .btn-group').forEach((group) => {
     const mode = group.dataset.groupMode || 'single';
     group.querySelectorAll('.btn-group__item').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -5442,28 +6847,63 @@
     });
   });
 
-  // Split button menu with full keyboard arrow navigation
+  // Split button menu with full keyboard arrow navigation + 100% interruptible spring
   const splitTrigger = document.getElementById('split-trigger');
+  const splitChevron = splitTrigger.querySelector('.split-btn__chevron');
   const splitMenu = document.getElementById('split-menu');
   const splitItems = [...splitMenu.querySelectorAll('.split-menu__item')];
+  let splitMenuOpen = false;
+
+  const splitSpring = createSpringAnimator({
+    initialValue: 0,
+    ...resolveSpringPreset('fast', 'spatial', root),
+    precision: 0.004,
+    onUpdate(t, vel) {
+      const op = Math.max(0, Math.min(1, t));
+      splitMenu.style.opacity = op.toFixed(3);
+      splitMenu.style.transform = `translateY(${((1 - t) * -8).toFixed(2)}px) scale(${(0.95 + 0.05 * t).toFixed(4)})`;
+      if (splitChevron) {
+        if (vel === 0 && (t === 0 || t === 1)) {
+          splitChevron.style.transform = '';
+        } else {
+          splitChevron.style.transform = `translateX(${((1 - op) * -1).toFixed(2)}px) rotate(${(180 * t).toFixed(1)}deg)`;
+        }
+      }
+      if (!splitMenuOpen && vel === 0 && t <= 0.005) {
+        splitMenu.hidden = true;
+        splitMenu.style.opacity = '';
+        splitMenu.style.transform = '';
+        if (splitChevron) splitChevron.style.transform = '';
+      }
+    },
+  });
 
   function setSplitMenuOpen(open, { restoreFocus = false } = {}) {
+    splitMenuOpen = open;
     splitTrigger.setAttribute('aria-expanded', String(open));
-    splitMenu.hidden = !open;
+    splitSpring.configure(resolveSpringPreset('fast', 'spatial', root));
     if (open) {
+      splitMenu.hidden = false;
+      splitMenu.inert = false;
+      splitSpring.setTarget(1);
       splitItems[0]?.focus();
-    } else if (restoreFocus) {
-      splitTrigger.focus();
+    } else {
+      splitMenu.inert = true;
+      if (restoreFocus) {
+        splitTrigger.focus();
+      }
+      splitSpring.setTarget(0);
     }
   }
   splitTrigger.addEventListener('click', (e) => {
     e.stopPropagation();
-    setSplitMenuOpen(splitMenu.hidden);
+    setSplitMenuOpen(!splitMenuOpen);
   });
   splitMenu.addEventListener('keydown', (e) => {
     const i = splitItems.indexOf(document.activeElement);
     if (e.key === 'Escape') {
       e.preventDefault();
+      e.stopPropagation();
       setSplitMenuOpen(false, { restoreFocus: true });
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -5489,23 +6929,56 @@
     showToast('Published immediately');
   });
   document.addEventListener('click', (e) => {
-    if (!splitMenu.hidden && !e.target.closest('.split-btn-wrap')) {
+    if (splitMenuOpen && !e.target.closest('.split-btn-wrap')) {
       setSplitMenuOpen(false);
     }
   });
 
-  // --- FAB Menu ---
+  // --- FAB Menu (100% Interruptible Spring) ---
   const fabMenu = document.getElementById('fab-menu');
   const fabScrim = document.getElementById('fab-scrim');
   const fabItems = [...fabMenu.querySelectorAll('[role="menuitem"]')];
+  let fabMenuOpen = false;
+
+  const fabSpring = createSpringAnimator({
+    initialValue: 0,
+    ...resolveSpringPreset('fast', 'spatial', root),
+    precision: 0.001,
+    onUpdate(t, vel) {
+      if (vel === 0 && (t === 0 || t === 1)) {
+        fabContainer?.style.removeProperty('--md3e-fab-t');
+        fabScrim.style.removeProperty('--md3e-fab-t');
+        if (!fabMenuOpen && t === 0) {
+          fabContainer?.classList.remove('is-animating');
+        }
+      } else {
+        const val = t.toFixed(4);
+        fabContainer?.style.setProperty('--md3e-fab-t', val);
+        fabScrim.style.setProperty('--md3e-fab-t', val);
+      }
+    },
+  });
 
   function setFabMenuOpen(open, { focusFirst = false, restoreFocus = false } = {}) {
+    fabMenuOpen = open;
+    const preT = fabSpring.value.toFixed(4);
+    fabContainer?.style.setProperty('--md3e-fab-t', preT);
+    fabScrim.style.setProperty('--md3e-fab-t', preT);
     fabTrigger.setAttribute('aria-expanded', String(open));
     fabTrigger.setAttribute('aria-label', open ? 'Close actions menu' : 'Open actions menu');
     fabMenu.setAttribute('aria-hidden', String(!open));
     fabMenu.inert = !open;
     fabScrim.classList.toggle('is-open', open);
     fabContainer?.classList.toggle('is-open', open);
+    if (open) {
+      fabContainer?.classList.add('is-animating');
+    } else if (fabSpring.value > 0.002) {
+      fabContainer?.classList.add('is-animating');
+    } else {
+      fabContainer?.classList.remove('is-animating');
+    }
+    fabSpring.configure(resolveSpringPreset('fast', 'spatial', root));
+    fabSpring.setTarget(open ? 1 : 0);
     if (open && focusFirst && fabItems[0]) {
       fabItems[0].focus();
     } else if (!open && restoreFocus) {
@@ -5513,8 +6986,7 @@
     }
   }
   fabTrigger.addEventListener('click', (e) => {
-    const isOpen = fabTrigger.getAttribute('aria-expanded') === 'true';
-    setFabMenuOpen(!isOpen, { focusFirst: e.detail === 0 && !isOpen });
+    setFabMenuOpen(!fabMenuOpen, { focusFirst: e.detail === 0 && !fabMenuOpen });
   });
   fabScrim.addEventListener('click', () => setFabMenuOpen(false));
   fabMenu.addEventListener('keydown', (e) => {
@@ -5525,7 +6997,7 @@
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       fabItems[(i - 1 + fabItems.length) % fabItems.length]?.focus();
-    } else if (e.key === 'Tab' && i === fabItems.length - 1 && !e.shiftKey) {
+    } else if (e.key === 'Tab' && ((i === fabItems.length - 1 && !e.shiftKey) || (i === 0 && e.shiftKey))) {
       setFabMenuOpen(false);
     }
   });
@@ -5553,12 +7025,15 @@
     const target = e.composedPath()[0];
     const inEditable = target instanceof Element && target.matches(':read-write, select, input, textarea');
     if (e.key === 'Escape') {
-      if (fabTrigger.getAttribute('aria-expanded') === 'true') {
+      const topPopoverOpen = Boolean(document.querySelector('[popover]:popover-open'));
+      const modalDialogOpen = Boolean(document.getElementById('prim-dialog')?.open);
+      if (topPopoverOpen || modalDialogOpen) return;
+      if (fabMenuOpen) {
         e.preventDefault();
         setFabMenuOpen(false, { restoreFocus: true });
         return;
       }
-      if (!splitMenu.hidden) {
+      if (splitMenuOpen) {
         e.preventDefault();
         setSplitMenuOpen(false, { restoreFocus: true });
         return;
@@ -5579,7 +7054,7 @@
     }
   });
 
-  // --- Section 6: Native Semantic HTML & Headless Primitives Wiring ---
+  // --- Section 6: Native Semantic HTML & Complex Components Wiring ---
   const primStatus = document.getElementById('prim-status');
   const primSwitch = document.getElementById('prim-switch');
   const primCheckbox = document.getElementById('prim-checkbox');
@@ -5619,32 +7094,969 @@
   document.querySelectorAll('#prim-tonal-btn, #prim-elevated-btn, #prim-outlined-btn, #prim-fab').forEach((btn) => {
     btn.addEventListener('click', () => showToast(`${btn.getAttribute('aria-label') || btn.textContent.trim()} clicked`));
   });
-  if (primDialog && primDialogOpen) {
-    primDialogOpen.addEventListener('click', () => {
-      if (typeof primDialog.showModal === 'function') {
-        primDialog.showModal();
-      } else {
-        primDialog.setAttribute('open', '');
+
+  // Shared CSS Anchor Positioning fallback helper (4-edge auto-flip)
+  const supportsAnchorArea = typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('position-area', 'block-end');
+  function positionAnchoredPopover(triggerEl, popoverEl, { placement = 'bottom-start', matchWidth = false, gap = 4 } = {}) {
+    if (!triggerEl || !popoverEl || supportsAnchorArea) return;
+    const tRect = triggerEl.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const margin = 8;
+    if (matchWidth) {
+      popoverEl.style.minWidth = `${Math.round(tRect.width)}px`;
+    }
+    const pRect = popoverEl.getBoundingClientRect();
+    let left;
+    let top;
+    if (placement === 'inline-end') {
+      left = tRect.right + gap;
+      if (left + pRect.width > vw - margin) {
+        left = Math.max(margin, tRect.left - pRect.width - gap);
       }
-      primStatus && (primStatus.textContent = 'Native <dialog> modal open');
+      top = tRect.top;
+      if (top + pRect.height > vh - margin) {
+        top = Math.max(margin, vh - pRect.height - margin);
+      }
+    } else {
+      top = tRect.bottom + gap;
+      if (top + pRect.height > vh - margin && tRect.top - pRect.height - gap >= margin) {
+        top = tRect.top - pRect.height - gap;
+      } else {
+        top = Math.max(margin, Math.min(top, vh - pRect.height - margin));
+      }
+      left = tRect.left;
+      if (left + pRect.width > vw - margin) {
+        left = Math.max(margin, tRect.right - pRect.width);
+      }
+      left = Math.max(margin, left);
+    }
+    popoverEl.style.left = `${Math.round(left)}px`;
+    popoverEl.style.top = `${Math.round(top)}px`;
+    popoverEl.style.right = 'auto';
+    popoverEl.style.bottom = 'auto';
+  }
+
+  // (A) Outlined Text Field (Transparent <fieldset><legend> Notch + Spring Clear + Dynamic aria-describedby)
+  const outlinedField = document.getElementById('prim-outlined-field');
+  const outlinedInput = document.getElementById('prim-outlined-input');
+  const outlinedClear = document.getElementById('prim-outlined-clear');
+  const outlinedCounter = document.getElementById('prim-text-counter');
+  const outlinedHelper = document.getElementById('prim-text-helper');
+  const outlinedError = document.getElementById('prim-text-error');
+  const outlinedErrorToggle = document.getElementById('prim-text-error-toggle');
+
+  if (outlinedField && outlinedInput && outlinedClear && outlinedCounter) {
+    let forcedInvalid = false;
+    const clearBtnSpring = createSpringAnimator({
+      initialValue: outlinedInput.value.length > 0 ? 1 : 0,
+      ...resolveSpringPreset('fast', 'spatial', root),
+      precision: 0.001,
+      onUpdate(t) {
+        outlinedClear.style.setProperty('--md3e-clear-t', t.toFixed(4));
+      },
     });
-    const closePrimDialog = (msg) => {
-      if (typeof primDialog.close === 'function' && primDialog.open) {
-        primDialog.close();
+
+    const syncOutlinedField = ({ announce = false } = {}) => {
+      const val = outlinedInput.value;
+      const len = val.length;
+      const populated = len > 0;
+      const maxLen = Number(outlinedInput.getAttribute('maxlength') || 60);
+      outlinedField.dataset.populated = String(populated);
+      outlinedCounter.textContent = `${len} / ${maxLen}`;
+      outlinedClear.dataset.empty = String(!populated);
+      outlinedClear.tabIndex = populated ? 0 : -1;
+      outlinedClear.setAttribute('aria-hidden', String(!populated));
+      clearBtnSpring.configure(resolveSpringPreset('fast', 'spatial', root));
+      clearBtnSpring.setTarget(populated ? 1 : 0);
+
+      const hasSyntaxError = /\s|^https?:\/\//i.test(val);
+      const isInvalid = forcedInvalid || hasSyntaxError;
+      outlinedField.dataset.invalid = String(isInvalid);
+      outlinedInput.setAttribute('aria-invalid', String(isInvalid));
+      if (outlinedError && outlinedHelper) {
+        if (isInvalid) {
+          outlinedError.hidden = false;
+          outlinedHelper.hidden = true;
+          outlinedInput.setAttribute('aria-describedby', 'prim-text-error');
+        } else {
+          outlinedError.hidden = true;
+          outlinedHelper.hidden = false;
+          outlinedInput.setAttribute('aria-describedby', 'prim-text-helper');
+        }
+      }
+      if (announce && primStatus) {
+        primStatus.textContent = isInvalid
+          ? 'Workspace URI invalid'
+          : `Workspace URI: ${populated ? `https://${val}` : '(empty)'}`;
+      }
+    };
+
+    outlinedInput.addEventListener('input', () => syncOutlinedField({ announce: true }));
+    outlinedClear.addEventListener('click', () => {
+      outlinedInput.value = '';
+      syncOutlinedField({ announce: true });
+      outlinedInput.focus();
+    });
+    outlinedErrorToggle?.addEventListener('click', () => {
+      forcedInvalid = !forcedInvalid;
+      outlinedErrorToggle.setAttribute('aria-pressed', String(forcedInvalid));
+      syncOutlinedField({ announce: true });
+    });
+    syncOutlinedField();
+  }
+
+  // (B) Pure Native Top-Layer <dialog> + Interruptible Spring State Machine
+  if (primDialog && primDialogOpen) {
+    let dialogTarget = 0;
+    let pendingDialogReturnMsg = '';
+    let pendingDialogReturnVal = 'dismissed';
+    let dialogPointerDownOutside = false;
+    let lastDialogInvoker = primDialogOpen;
+
+    const finalizeDialogClose = () => {
+      if (primDialog.open && typeof primDialog.close === 'function') {
+        primDialog.close(pendingDialogReturnVal || 'dismissed');
       } else {
         primDialog.removeAttribute('open');
       }
-      if (msg && primStatus) primStatus.textContent = msg;
-      primDialogOpen.focus();
+      primDialog.returnValue = '';
+      primDialog.inert = false;
+      primDialog.dataset.state = 'closed';
+      if (pendingDialogReturnMsg && primStatus) {
+        primStatus.textContent = pendingDialogReturnMsg;
+      }
+      pendingDialogReturnMsg = '';
+      const restoreTarget = (lastDialogInvoker && lastDialogInvoker.isConnected)
+        ? lastDialogInvoker
+        : primDialogOpen;
+      restoreTarget.focus({ preventScroll: true });
     };
-    primDialogCancel?.addEventListener('click', () => closePrimDialog('Dialog dismissed'));
+
+    const dialogSpring = createSpringAnimator({
+      initialValue: 0,
+      ...resolveSpringPreset('default', 'spatial', root),
+      precision: 0.01,
+      onUpdate(val, vel) {
+        if (dialogTarget === 0 && val <= 0.02) {
+          dialogSpring.stop();
+          primDialog.style.setProperty('--md3e-dialog-t', '0');
+          primDialog.style.setProperty('--md3e-dialog-blur', '0px');
+          if (primDialog.open) finalizeDialogClose();
+          return;
+        }
+        const clamped = Math.max(0, Math.min(1, val));
+        primDialog.style.setProperty('--md3e-dialog-t', val.toFixed(4));
+        primDialog.style.setProperty('--md3e-dialog-blur', `${(clamped * 6).toFixed(2)}px`);
+      },
+    });
+
+    const openPrimDialogAnimated = () => {
+      if (!primDialog.open) {
+        lastDialogInvoker = (document.activeElement instanceof HTMLElement && document.activeElement !== document.body)
+          ? document.activeElement
+          : primDialogOpen;
+      }
+      dialogTarget = 1;
+      pendingDialogReturnMsg = '';
+      primDialog.returnValue = '';
+      primDialog.inert = false;
+      primDialog.dataset.state = 'open';
+      if (!primDialog.open) {
+        if (typeof primDialog.showModal === 'function') {
+          primDialog.showModal();
+        } else {
+          primDialog.setAttribute('open', '');
+        }
+      }
+      dialogSpring.configure({ ...resolveSpringPreset('default', 'spatial', root), precision: 0.01 });
+      dialogSpring.setTarget(1);
+      if (primStatus) primStatus.textContent = 'Native <dialog> modal open';
+    };
+
+    const closePrimDialogAnimated = (msg, returnVal = 'dismissed') => {
+      pendingDialogReturnMsg = msg || '';
+      pendingDialogReturnVal = returnVal;
+      if (dialogTarget === 0 && !primDialog.open) return;
+      dialogTarget = 0;
+      primDialog.dataset.state = 'closed';
+      dialogSpring.configure({ stiffness: 1400, damping: 1.0, precision: 0.01 });
+      dialogSpring.setTarget(0);
+    };
+
+    const isPointInsideDialogBox = (e) => {
+      const r = primDialog.getBoundingClientRect();
+      return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    };
+
+    primDialogOpen.addEventListener('click', openPrimDialogAnimated);
+    primDialogCancel?.addEventListener('click', () => closePrimDialogAnimated('Dialog dismissed', 'cancel'));
     primDialogConfirm?.addEventListener('click', () => {
-      closePrimDialog('Dialog confirmed');
+      closePrimDialogAnimated('Dialog confirmed', 'confirm');
       showToast('Native <dialog> confirmed');
     });
-    primDialog.addEventListener('click', (e) => {
-      if (e.target === primDialog) closePrimDialog('Dialog dismissed');
+    primDialog.addEventListener('cancel', (e) => {
+      e.preventDefault();
+      closePrimDialogAnimated('Dialog dismissed', 'cancel');
     });
+    primDialog.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        closePrimDialogAnimated('Dialog dismissed', 'cancel');
+      }
+    });
+    primDialog.addEventListener('pointerdown', (e) => {
+      dialogPointerDownOutside = e.target === primDialog && !isPointInsideDialogBox(e);
+    });
+    primDialog.addEventListener('pointerup', (e) => {
+      if (dialogPointerDownOutside && e.target === primDialog && !isPointInsideDialogBox(e)) {
+        closePrimDialogAnimated('Dialog dismissed', 'backdrop');
+      }
+      dialogPointerDownOutside = false;
+    });
+    primDialog.addEventListener('close', () => {
+      if (dialogTarget !== 0) {
+        dialogTarget = 0;
+        dialogSpring.snap(0);
+        primDialog.returnValue = '';
+        primDialog.dataset.state = 'closed';
+      }
+    });
+  }
+
+  function getVisibleControlLabel(el) {
+    if (!el) return '';
+    let out = '';
+    for (const node of el.childNodes) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        out += node.textContent;
+      } else if (node.nodeType === Node.ELEMENT_NODE && node.getAttribute('aria-hidden') !== 'true') {
+        out += getVisibleControlLabel(node);
+      }
+    }
+    return out.replace(/\s+/g, ' ').trim().toLowerCase();
+  }
+
+  // (C) Top-Layer [popover="auto"] Menu + Nested Submenu + focusgroup fallback + Typeahead
+  const primMenuTrigger = document.getElementById('prim-menu-trigger');
+  const primMenu = document.getElementById('prim-menu');
+  const primSubmenuTrigger = document.getElementById('prim-submenu-trigger');
+  const primSubmenu = document.getElementById('prim-submenu');
+  const primMenuCheckAuto = document.getElementById('prim-menu-check-auto');
+
+  if (primMenuTrigger && primMenu) {
+    if (!('focusGroup' in HTMLElement.prototype)) {
+      primMenu.querySelectorAll('.md3e-menu__list').forEach((list) => {
+        if (!list.hasAttribute('role')) list.setAttribute('role', 'menu');
+      });
+      primMenu.querySelectorAll('.md3e-menu__item').forEach((item) => {
+        if (!item.hasAttribute('role')) item.setAttribute('role', 'menuitem');
+      });
+    }
+
+    let pendingMenuFocus = 'first';
+    let pendingSubmenuFocus = 'first';
+    let pendingSubmenuAutoFocus = true;
+    let submenuHoverTimer = null;
+
+    const getDirectMenuItems = (menuEl) => {
+      const list = menuEl.querySelector('.md3e-menu__list');
+      if (!list) return [];
+      return [...list.children].filter(
+        (el) => el.classList.contains('md3e-menu__item') && !el.disabled && el.getAttribute('aria-disabled') !== 'true',
+      );
+    };
+
+    const setHighlightedMenuItem = (menuEl, targetEl) => {
+      getDirectMenuItems(menuEl).forEach((el) => {
+        el.dataset.highlighted = String(el === targetEl);
+      });
+      targetEl?.focus();
+    };
+
+    const attachMenuTypeahead = () => {
+      let buffer = '';
+      let resetTimer = null;
+      return (menuEl, ch) => {
+        clearTimeout(resetTimer);
+        buffer += ch.toLowerCase();
+        resetTimer = setTimeout(() => { buffer = ''; }, 500);
+        const items = getDirectMenuItems(menuEl);
+        if (!items.length) return;
+        const curIdx = items.indexOf(document.activeElement);
+        const findMatch = (query, startIdx) => {
+          for (let offset = 1; offset <= items.length; offset += 1) {
+            const candidate = items[(startIdx + offset) % items.length];
+            const label = getVisibleControlLabel(candidate);
+            if (label.startsWith(query)) return candidate;
+          }
+          return null;
+        };
+        let match = findMatch(buffer, curIdx);
+        if (!match && buffer.length > 1) {
+          buffer = ch.toLowerCase();
+          match = findMatch(buffer, curIdx);
+        }
+        if (match) setHighlightedMenuItem(menuEl, match);
+      };
+    };
+    const handleMenuTypeahead = attachMenuTypeahead();
+
+    const bindMenuKeyboard = (menuEl, triggerEl, { isSubmenu = false } = {}) => {
+      menuEl.addEventListener('keydown', (e) => {
+        const items = getDirectMenuItems(menuEl);
+        if (!items.length) return;
+        const idx = Math.max(0, items.indexOf(document.activeElement));
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          e.stopPropagation();
+          setHighlightedMenuItem(menuEl, items[(idx + 1) % items.length]);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          e.stopPropagation();
+          setHighlightedMenuItem(menuEl, items[(idx - 1 + items.length) % items.length]);
+        } else if (e.key === 'Home') {
+          e.preventDefault();
+          e.stopPropagation();
+          setHighlightedMenuItem(menuEl, items[0]);
+        } else if (e.key === 'End') {
+          e.preventDefault();
+          e.stopPropagation();
+          setHighlightedMenuItem(menuEl, items[items.length - 1]);
+        } else if (e.key === 'ArrowRight' && !isSubmenu && document.activeElement === primSubmenuTrigger && primSubmenu) {
+          e.preventDefault();
+          e.stopPropagation();
+          pendingSubmenuFocus = 'first';
+          primSubmenu.showPopover?.();
+        } else if (e.key === 'Escape' || (isSubmenu && e.key === 'ArrowLeft')) {
+          e.preventDefault();
+          e.stopPropagation();
+          menuEl.hidePopover?.();
+          triggerEl?.focus();
+        } else if (e.key === 'Tab') {
+          if (isSubmenu) primSubmenu?.hidePopover?.();
+          primMenu.hidePopover?.();
+        } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleMenuTypeahead(menuEl, e.key);
+        }
+      });
+    };
+
+    primMenuTrigger.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        pendingMenuFocus = 'first';
+        primMenu.showPopover?.();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        pendingMenuFocus = 'last';
+        primMenu.showPopover?.();
+      }
+    });
+
+    primMenu.addEventListener('toggle', (e) => {
+      const open = e.newState === 'open';
+      primMenuTrigger.setAttribute('aria-expanded', String(open));
+      if (open) {
+        positionAnchoredPopover(primMenuTrigger, primMenu, { placement: 'bottom-start', gap: 4 });
+        const items = getDirectMenuItems(primMenu);
+        const target = pendingMenuFocus === 'last' ? items[items.length - 1] : items[0];
+        pendingMenuFocus = 'first';
+        setHighlightedMenuItem(primMenu, target);
+      } else {
+        clearTimeout(submenuHoverTimer);
+        primSubmenu?.hidePopover?.();
+        getDirectMenuItems(primMenu).forEach((el) => { el.dataset.highlighted = 'false'; });
+      }
+    });
+
+    if (primSubmenu && primSubmenuTrigger) {
+      const scheduleSubmenuClose = () => {
+        clearTimeout(submenuHoverTimer);
+        submenuHoverTimer = setTimeout(() => {
+          if (!primSubmenuTrigger.matches(':hover') && !primSubmenu.matches(':hover')) {
+            primSubmenu.hidePopover?.();
+          }
+        }, 140);
+      };
+      primSubmenuTrigger.addEventListener('pointerenter', (e) => {
+        if (e.pointerType === 'touch') return;
+        clearTimeout(submenuHoverTimer);
+        getDirectMenuItems(primMenu).forEach((el) => {
+          el.dataset.highlighted = String(el === primSubmenuTrigger);
+        });
+        if (!primSubmenu.matches?.(':popover-open')) {
+          pendingSubmenuAutoFocus = false;
+          primSubmenu.showPopover?.();
+        }
+      });
+      primSubmenuTrigger.addEventListener('pointerleave', (e) => {
+        if (e.pointerType === 'touch') return;
+        scheduleSubmenuClose();
+      });
+      primSubmenu.addEventListener('pointerenter', (e) => {
+        if (e.pointerType === 'touch') return;
+        clearTimeout(submenuHoverTimer);
+      });
+      primSubmenu.addEventListener('pointerleave', (e) => {
+        if (e.pointerType === 'touch') return;
+        scheduleSubmenuClose();
+      });
+      getDirectMenuItems(primMenu).forEach((item) => {
+        if (item === primSubmenuTrigger) return;
+        item.addEventListener('pointerenter', (e) => {
+          if (e.pointerType === 'touch') return;
+          clearTimeout(submenuHoverTimer);
+          if (primSubmenu.matches?.(':popover-open')) {
+            primSubmenu.hidePopover?.();
+          }
+        });
+      });
+      primSubmenu.addEventListener('toggle', (e) => {
+        const open = e.newState === 'open';
+        primSubmenuTrigger.setAttribute('aria-expanded', String(open));
+        if (open) {
+          positionAnchoredPopover(primSubmenuTrigger, primSubmenu, { placement: 'inline-end', gap: 4 });
+          const items = getDirectMenuItems(primSubmenu);
+          const target = pendingSubmenuFocus === 'last' ? items[items.length - 1] : items[0];
+          pendingSubmenuFocus = 'first';
+          const shouldFocus = pendingSubmenuAutoFocus;
+          pendingSubmenuAutoFocus = true;
+          if (shouldFocus) {
+            setHighlightedMenuItem(primSubmenu, target);
+          } else {
+            getDirectMenuItems(primSubmenu).forEach((el) => {
+              el.dataset.highlighted = 'false';
+            });
+          }
+        } else {
+          pendingSubmenuAutoFocus = true;
+          getDirectMenuItems(primSubmenu).forEach((el) => { el.dataset.highlighted = 'false'; });
+        }
+      });
+      bindMenuKeyboard(primSubmenu, primSubmenuTrigger, { isSubmenu: true });
+    }
+    bindMenuKeyboard(primMenu, primMenuTrigger, { isSubmenu: false });
+
+    primMenu.addEventListener('click', (e) => {
+      const item = e.target.closest('.md3e-menu__item');
+      if (!item || item === primSubmenuTrigger) return;
+      if (item === primMenuCheckAuto) {
+        const nextChecked = item.getAttribute('aria-checked') !== 'true';
+        item.setAttribute('aria-checked', String(nextChecked));
+        if (primStatus) primStatus.textContent = `Auto-sync Surface: ${nextChecked ? 'ON' : 'OFF'}`;
+        showToast(`Menu checkbox: ${nextChecked ? 'Checked' : 'Unchecked'}`);
+        return;
+      }
+      const action = item.dataset.menuAction || item.textContent.trim();
+      if (primStatus) primStatus.textContent = `Menu action: ${action}`;
+      showToast(action);
+      primSubmenu?.hidePopover?.();
+      primMenu.hidePopover?.();
+      primMenuTrigger.focus();
+    });
+
+    window.addEventListener('resize', () => {
+      if (primMenu.matches?.(':popover-open')) {
+        positionAnchoredPopover(primMenuTrigger, primMenu, { placement: 'bottom-start', gap: 4 });
+      }
+      if (primSubmenu?.matches?.(':popover-open')) {
+        positionAnchoredPopover(primSubmenuTrigger, primSubmenu, { placement: 'inline-end', gap: 4 });
+      }
+    });
+  }
+
+  // (D) Select Skin Contract ([data-state], [data-highlighted], [data-selected], [data-disabled])
+  const primSelect = document.getElementById('prim-select');
+  const primSelectTrigger = document.getElementById('prim-select-trigger');
+  const primSelectValue = document.getElementById('prim-select-value');
+  const primSelectListbox = document.getElementById('prim-select-listbox');
+  const primBaseSelect = document.getElementById('prim-base-select');
+
+  if (primSelect && primSelectTrigger && primSelectValue && primSelectListbox) {
+    const selectOptions = [...primSelectListbox.querySelectorAll('.md3e-select__option')];
+    const enabledSelectOptions = () => selectOptions.filter((o) => o.dataset.disabled !== 'true');
+    let selectOpen = false;
+    let selectOpenedAt = 0;
+    let suppressTriggerClickUntil = 0;
+    let selectTypeBuffer = '';
+    let selectTypeTimer = null;
+
+    const restoreTriggerFocusDeferred = () => {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        primSelectTrigger.focus({ preventScroll: true });
+      }));
+    };
+
+    const selectSpring = createSpringAnimator({
+      initialValue: 0,
+      ...resolveSpringPreset('fast', 'spatial', root),
+      precision: 0.004,
+      onUpdate(t) {
+        const val = Math.max(0, Math.min(1, t)).toFixed(4);
+        primSelectListbox.style.setProperty('--md3e-select-t', val);
+        primSelectTrigger.style.setProperty('--md3e-select-t', val);
+      },
+    });
+
+    const getHighlightedOption = () =>
+      enabledSelectOptions().find((o) => o.dataset.highlighted === 'true')
+      || enabledSelectOptions().find((o) => o.dataset.selected === 'true')
+      || enabledSelectOptions()[0];
+
+    const setHighlightedOption = (opt) => {
+      if (!opt || opt.dataset.disabled === 'true') return;
+      selectOptions.forEach((o) => {
+        o.dataset.highlighted = String(o === opt);
+      });
+      if (opt.id) {
+        primSelectListbox.setAttribute('aria-activedescendant', opt.id);
+      }
+      opt.scrollIntoView?.({ block: 'nearest' });
+    };
+
+    const commitSelectOption = (opt, { restoreFocus = true, syncBase = true, fromKeyboard = false } = {}) => {
+      if (!opt || opt.dataset.disabled === 'true') return;
+      selectOptions.forEach((o) => {
+        const isSel = o === opt;
+        o.dataset.selected = String(isSel);
+        o.setAttribute('aria-selected', String(isSel));
+      });
+      const label = opt.querySelector('span')?.textContent?.trim() || opt.textContent.trim();
+      primSelectValue.textContent = label;
+      if (syncBase && primBaseSelect && opt.dataset.value) {
+        const hasBaseOpt = [...primBaseSelect.options].some((o) => o.value === opt.dataset.value);
+        if (hasBaseOpt) primBaseSelect.value = opt.dataset.value;
+      }
+      if (primStatus) primStatus.textContent = `Select: ${label}`;
+      showToast(`Motion Profile -> ${label}`);
+      if (restoreFocus && fromKeyboard) {
+        suppressTriggerClickUntil = performance.now() + 120;
+      }
+      selectOpen = false;
+      primSelectListbox.hidePopover?.();
+      if (restoreFocus) {
+        if (fromKeyboard) {
+          restoreTriggerFocusDeferred();
+        } else {
+          primSelectTrigger.focus({ preventScroll: true });
+        }
+      }
+    };
+
+    const openSelect = (highlightMode = 'selected') => {
+      const enabled = enabledSelectOptions();
+      if (!enabled.length) return;
+      if (highlightMode === 'first') {
+        setHighlightedOption(enabled[0]);
+      } else if (highlightMode === 'last') {
+        setHighlightedOption(enabled[enabled.length - 1]);
+      } else {
+        setHighlightedOption(enabled.find((o) => o.dataset.selected === 'true') || enabled[0]);
+      }
+      if (!primSelectListbox.matches?.(':popover-open')) {
+        primSelectListbox.showPopover?.();
+      }
+    };
+
+    primSelectListbox.addEventListener('toggle', (e) => {
+      selectOpen = e.newState === 'open';
+      const stateStr = selectOpen ? 'open' : 'closed';
+      primSelect.dataset.state = stateStr;
+      primSelectTrigger.dataset.state = stateStr;
+      primSelectListbox.dataset.state = stateStr;
+      primSelectTrigger.setAttribute('aria-expanded', String(selectOpen));
+      if (selectOpen) {
+        selectSpring.configure(resolveSpringPreset('fast', 'spatial', root));
+        selectOpenedAt = Date.now();
+        positionAnchoredPopover(primSelectTrigger, primSelectListbox, { placement: 'bottom-start', matchWidth: true, gap: 4 });
+        selectSpring.snap(0);
+        selectSpring.setTarget(1);
+        primSelectListbox.focus({ preventScroll: true });
+      } else {
+        selectSpring.configure({ ...resolveSpringPreset('fast', 'effects', root), damping: 1.0 });
+        selectSpring.setTarget(0);
+      }
+    });
+
+    primSelectTrigger.addEventListener('click', (e) => {
+      if (performance.now() < suppressTriggerClickUntil) {
+        e.preventDefault();
+        return;
+      }
+      if (selectOpen) primSelectListbox.hidePopover?.();
+      else openSelect('selected');
+    });
+
+    primSelectTrigger.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        suppressTriggerClickUntil = performance.now() + 80;
+        openSelect('selected');
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        openSelect('first');
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        openSelect('last');
+      }
+    });
+
+    primSelectListbox.addEventListener('keydown', (e) => {
+      const enabled = enabledSelectOptions();
+      if (!enabled.length) return;
+      const cur = getHighlightedOption();
+      const idx = Math.max(0, enabled.indexOf(cur));
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        e.stopPropagation();
+        setHighlightedOption(enabled[(idx + 1) % enabled.length]);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopPropagation();
+        setHighlightedOption(enabled[(idx - 1 + enabled.length) % enabled.length]);
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        e.stopPropagation();
+        setHighlightedOption(enabled[0]);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        e.stopPropagation();
+        setHighlightedOption(enabled[enabled.length - 1]);
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        commitSelectOption(cur, { restoreFocus: true, fromKeyboard: true });
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        suppressTriggerClickUntil = performance.now() + 120;
+        selectOpen = false;
+        primSelectListbox.hidePopover?.();
+        restoreTriggerFocusDeferred();
+      } else if (e.key === 'Tab') {
+        selectOpen = false;
+        primSelectListbox.hidePopover?.();
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        clearTimeout(selectTypeTimer);
+        selectTypeBuffer += e.key.toLowerCase();
+        selectTypeTimer = setTimeout(() => { selectTypeBuffer = ''; }, 500);
+        const search = (q) => {
+          for (let offset = 1; offset <= enabled.length; offset += 1) {
+            const opt = enabled[(idx + offset) % enabled.length];
+            const txt = getVisibleControlLabel(opt);
+            if (txt.startsWith(q)) return opt;
+          }
+          return null;
+        };
+        let match = search(selectTypeBuffer);
+        if (!match && selectTypeBuffer.length > 1) {
+          selectTypeBuffer = e.key.toLowerCase();
+          match = search(selectTypeBuffer);
+        }
+        if (match) setHighlightedOption(match);
+      }
+    });
+
+    selectOptions.forEach((opt) => {
+      opt.addEventListener('pointermove', (e) => {
+        if (opt.dataset.disabled === 'true') return;
+        if (Date.now() - selectOpenedAt < 80 && !e.movementX && !e.movementY) return;
+        setHighlightedOption(opt);
+      });
+      opt.addEventListener('click', () => {
+        if (opt.dataset.disabled === 'true') return;
+        setHighlightedOption(opt);
+        commitSelectOption(opt, { restoreFocus: true });
+      });
+    });
+
+    primBaseSelect?.addEventListener('change', () => {
+      const targetOpt = selectOptions.find((o) => o.dataset.value === primBaseSelect.value && o.dataset.disabled !== 'true');
+      if (targetOpt) commitSelectOption(targetOpt, { restoreFocus: false, syncBase: false });
+    });
+
+    window.addEventListener('resize', () => {
+      if (selectOpen) {
+        positionAnchoredPopover(primSelectTrigger, primSelectListbox, { placement: 'bottom-start', matchWidth: true, gap: 4 });
+      }
+    });
+  }
+
+  // (E) MD3E Date Picker (Single <-> Range Mode + Continuous Track + Full Grid Keyboard Navigation)
+  const dpRoot = document.getElementById('prim-datepicker');
+  const dpGrid = document.getElementById('prim-dp-grid');
+  const dpMonthLabel = document.getElementById('prim-dp-month-label');
+  const dpSummary = document.getElementById('prim-dp-summary');
+  const dpPrevBtn = document.getElementById('prim-dp-prev');
+  const dpNextBtn = document.getElementById('prim-dp-next');
+  const dpModeSingle = document.getElementById('prim-dp-mode-single');
+  const dpModeRange = document.getElementById('prim-dp-mode-range');
+
+  if (dpRoot && dpGrid && dpMonthLabel && dpSummary) {
+    const todayRaw = new Date();
+    const todayDate = new Date(todayRaw.getFullYear(), todayRaw.getMonth(), todayRaw.getDate());
+    const minSelectableDate = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
+    const toIsoDate = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    const parseIsoDate = (iso) => {
+      const [y, m, d] = iso.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    };
+    const addDays = (d, delta) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + delta);
+    const addMonthsClamped = (d, deltaMonths) => {
+      const targetStart = new Date(d.getFullYear(), d.getMonth() + deltaMonths, 1);
+      const lastDay = new Date(targetStart.getFullYear(), targetStart.getMonth() + 1, 0).getDate();
+      return new Date(targetStart.getFullYear(), targetStart.getMonth(), Math.min(d.getDate(), lastDay));
+    };
+    const isAtMinMonth = () => (
+      viewYear < minSelectableDate.getFullYear()
+      || (viewYear === minSelectableDate.getFullYear() && viewMonth <= minSelectableDate.getMonth())
+    );
+    const clampToMinDate = (d) => (
+      d < minSelectableDate
+        ? new Date(minSelectableDate.getFullYear(), minSelectableDate.getMonth(), minSelectableDate.getDate())
+        : d
+    );
+    const fmtShort = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const fmtMonthYear = (y, m) => new Date(y, m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const todayIso = toIsoDate(todayDate);
+    let dpMode = 'single';
+    let viewYear = todayDate.getFullYear();
+    let viewMonth = todayDate.getMonth();
+    let singleIso = todayIso;
+    let rangeStartIso = todayIso;
+    let rangeEndIso = toIsoDate(addDays(todayDate, 5));
+    let focusedIso = todayIso;
+
+    const updateDpSummary = () => {
+      if (dpMode === 'single') {
+        const text = `Single: ${fmtShort(parseIsoDate(singleIso))}`;
+        dpSummary.textContent = text;
+        return text;
+      }
+      if (rangeStartIso && rangeEndIso) {
+        const s = parseIsoDate(rangeStartIso);
+        const e = parseIsoDate(rangeEndIso);
+        const days = Math.round((e - s) / 86400000) + 1;
+        const text = `Range: ${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} \u2013 ${fmtShort(e)} (${days}d)`;
+        dpSummary.textContent = text;
+        return text;
+      }
+      if (rangeStartIso) {
+        const text = `Start: ${fmtShort(parseIsoDate(rangeStartIso))} (pick end)`;
+        dpSummary.textContent = text;
+        return text;
+      }
+      dpSummary.textContent = 'Range: Pick start date';
+      return dpSummary.textContent;
+    };
+
+    const renderDatePickerGrid = ({ focusDateIso = null } = {}) => {
+      dpMonthLabel.textContent = fmtMonthYear(viewYear, viewMonth);
+      [...dpGrid.querySelectorAll('.md3e-dp__row')].forEach((row) => row.remove());
+
+      const firstOfMonth = new Date(viewYear, viewMonth, 1);
+      const monOffset = (firstOfMonth.getDay() + 6) % 7;
+      let cursor = addDays(firstOfMonth, -monOffset);
+
+      let focusTargetBtn = null;
+      const hasRangeSpan = dpMode === 'range' && Boolean(rangeStartIso && rangeEndIso && rangeStartIso !== rangeEndIso);
+
+      for (let w = 0; w < 6; w += 1) {
+        const row = document.createElement('div');
+        row.className = 'md3e-dp__row';
+        row.setAttribute('role', 'row');
+        for (let col = 0; col < 7; col += 1) {
+          const cellDate = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate());
+          const iso = toIsoDate(cellDate);
+          const outside = cellDate.getMonth() !== viewMonth;
+          const disabled = cellDate < minSelectableDate;
+          const isToday = iso === todayIso;
+          const isSingleSelected = dpMode === 'single' && iso === singleIso;
+          const isRangeStart = dpMode === 'range' && iso === rangeStartIso;
+          const isRangeEnd = dpMode === 'range' && iso === rangeEndIso;
+          const isInRange = hasRangeSpan && iso > rangeStartIso && iso < rangeEndIso;
+          const isSelected = isSingleSelected || isRangeStart || isRangeEnd;
+
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'md3e-dp__day';
+          btn.setAttribute('role', 'gridcell');
+          btn.dataset.date = iso;
+          btn.tabIndex = (!disabled && iso === focusedIso) ? 0 : -1;
+          btn.setAttribute('aria-label', cellDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }));
+          btn.setAttribute('aria-selected', String(isSelected));
+          if (isToday) btn.dataset.today = 'true';
+          if (isSelected) btn.dataset.selected = 'true';
+          if (isRangeStart) {
+            btn.dataset.rangeStart = 'true';
+            if (hasRangeSpan) btn.dataset.hasRangeEnd = 'true';
+          }
+          if (isRangeEnd) {
+            btn.dataset.rangeEnd = 'true';
+            if (hasRangeSpan) btn.dataset.hasRangeStart = 'true';
+          }
+          if (isInRange) btn.dataset.inRange = 'true';
+          if (outside) btn.dataset.outsideMonth = 'true';
+          if (disabled) {
+            btn.dataset.disabled = 'true';
+            btn.setAttribute('aria-disabled', 'true');
+          }
+
+          const cap = document.createElement('span');
+          cap.className = 'md3e-dp__cap';
+          cap.textContent = String(cellDate.getDate());
+          btn.appendChild(cap);
+
+          if (focusDateIso && iso === focusDateIso) {
+            focusTargetBtn = btn;
+          }
+          row.appendChild(btn);
+          cursor = addDays(cursor, 1);
+        }
+        dpGrid.appendChild(row);
+      }
+
+      if (!dpGrid.querySelector('.md3e-dp__day[tabindex="0"]')) {
+        const fallbackBtn = dpGrid.querySelector(`.md3e-dp__day[data-date="${toIsoDate(firstOfMonth)}"]:not([data-disabled="true"])`)
+          || dpGrid.querySelector('.md3e-dp__day:not([data-disabled="true"]):not([data-outside-month="true"])')
+          || dpGrid.querySelector('.md3e-dp__day:not([data-disabled="true"])');
+        if (fallbackBtn) {
+          fallbackBtn.tabIndex = 0;
+          focusedIso = fallbackBtn.dataset.date;
+        }
+      }
+      if (dpPrevBtn) {
+        const atMin = isAtMinMonth();
+        dpPrevBtn.disabled = atMin;
+        dpPrevBtn.setAttribute('aria-disabled', String(atMin));
+      }
+      updateDpSummary();
+      focusTargetBtn?.focus();
+    };
+
+    const selectDateIso = (iso, { focusCell = true } = {}) => {
+      const picked = parseIsoDate(iso);
+      if (picked < minSelectableDate) return;
+      focusedIso = iso;
+      if (picked.getFullYear() !== viewYear || picked.getMonth() !== viewMonth) {
+        viewYear = picked.getFullYear();
+        viewMonth = picked.getMonth();
+      }
+      if (dpMode === 'single') {
+        singleIso = iso;
+      } else {
+        if (!rangeStartIso || (rangeStartIso && rangeEndIso)) {
+          rangeStartIso = iso;
+          rangeEndIso = '';
+        } else if (iso < rangeStartIso) {
+          rangeEndIso = rangeStartIso;
+          rangeStartIso = iso;
+        } else {
+          rangeEndIso = iso;
+        }
+      }
+      renderDatePickerGrid({ focusDateIso: focusCell ? iso : null });
+      const summaryText = updateDpSummary();
+      if (primStatus) primStatus.textContent = `Date Picker: ${summaryText}`;
+    };
+
+    const setDatePickerMode = (nextMode) => {
+      if (dpMode === nextMode) return;
+      dpMode = nextMode;
+      dpModeSingle?.setAttribute('aria-pressed', String(dpMode === 'single'));
+      dpModeRange?.setAttribute('aria-pressed', String(dpMode === 'range'));
+      if (dpMode === 'range') {
+        if (!rangeStartIso || !rangeEndIso || rangeStartIso !== singleIso) {
+          const base = clampToMinDate(parseIsoDate(singleIso || todayIso));
+          rangeStartIso = toIsoDate(base);
+          rangeEndIso = toIsoDate(addDays(base, 5));
+        }
+        const synced = parseIsoDate(rangeStartIso);
+        viewYear = synced.getFullYear();
+        viewMonth = synced.getMonth();
+        focusedIso = rangeStartIso;
+      } else {
+        const synced = clampToMinDate(parseIsoDate(rangeStartIso || singleIso || todayIso));
+        singleIso = toIsoDate(synced);
+        viewYear = synced.getFullYear();
+        viewMonth = synced.getMonth();
+        focusedIso = singleIso;
+      }
+      syncAllSegIndicators(false);
+      renderDatePickerGrid();
+      const summaryText = updateDpSummary();
+      if (primStatus) primStatus.textContent = `Date Picker mode -> ${summaryText}`;
+    };
+
+    dpModeSingle?.addEventListener('click', () => setDatePickerMode('single'));
+    dpModeRange?.addEventListener('click', () => setDatePickerMode('range'));
+
+    dpPrevBtn?.addEventListener('click', () => {
+      if (isAtMinMonth()) return;
+      const prev = new Date(viewYear, viewMonth - 1, 1);
+      viewYear = prev.getFullYear();
+      viewMonth = prev.getMonth();
+      focusedIso = toIsoDate(prev);
+      renderDatePickerGrid();
+    });
+    dpNextBtn?.addEventListener('click', () => {
+      const next = new Date(viewYear, viewMonth + 1, 1);
+      viewYear = next.getFullYear();
+      viewMonth = next.getMonth();
+      focusedIso = toIsoDate(next);
+      renderDatePickerGrid();
+    });
+
+    dpGrid.addEventListener('click', (e) => {
+      const btn = e.target.closest('.md3e-dp__day');
+      if (!btn || btn.dataset.disabled === 'true') return;
+      selectDateIso(btn.dataset.date, { focusCell: true });
+    });
+
+    dpGrid.addEventListener('keydown', (e) => {
+      const activeBtn = e.target.closest('.md3e-dp__day');
+      if (!activeBtn) return;
+      const cur = parseIsoDate(activeBtn.dataset.date);
+      let nextDate = null;
+      if (e.key === 'ArrowLeft') nextDate = addDays(cur, -1);
+      else if (e.key === 'ArrowRight') nextDate = addDays(cur, 1);
+      else if (e.key === 'ArrowUp') nextDate = addDays(cur, -7);
+      else if (e.key === 'ArrowDown') nextDate = addDays(cur, 7);
+      else if (e.key === 'Home') nextDate = addDays(cur, -((cur.getDay() + 6) % 7));
+      else if (e.key === 'End') nextDate = addDays(cur, 6 - ((cur.getDay() + 6) % 7));
+      else if (e.key === 'PageUp') nextDate = addMonthsClamped(cur, e.shiftKey ? -12 : -1);
+      else if (e.key === 'PageDown') nextDate = addMonthsClamped(cur, e.shiftKey ? 12 : 1);
+      else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (activeBtn.dataset.disabled !== 'true') {
+          selectDateIso(activeBtn.dataset.date, { focusCell: true });
+        }
+        return;
+      } else {
+        return;
+      }
+      e.preventDefault();
+      nextDate = clampToMinDate(nextDate);
+      const nextIso = toIsoDate(nextDate);
+      focusedIso = nextIso;
+      viewYear = nextDate.getFullYear();
+      viewMonth = nextDate.getMonth();
+      renderDatePickerGrid({ focusDateIso: nextIso });
+    });
+
+    renderDatePickerGrid();
   }
 
   // --- Phase 2 Labs: md3e-morph.js Real-Time Morph, Wavy SVG+Canvas Progress, Squeeze & Bidirectional Toolbar ---
@@ -5656,11 +8068,12 @@
 
   if (realtimeMorphPath && realtimeMorphBtn) {
     const ctaMorpher = createShapeMorpher(realtimeMorphPath, { initialShape: 'square', spring: 'fast-spatial' });
-    ctaMorpher.bindPressMorph(realtimeMorphBtn, {
+    const bindRealtimePressMorph = () => ctaMorpher.bindPressMorph(realtimeMorphBtn, {
       restShape: 'square',
       pressedShape: 'cookie-9-sided',
       toggleShape: 'sunny',
     });
+    let unbindRealtimePressMorph = bindRealtimePressMorph();
     const cyclePresets = ['square', 'cookie-9-sided', 'clover-4-leaf', 'sunny', 'heart', 'flower'];
     let cycleIdx = 0;
     realtimeMorphBtn.addEventListener('click', () => {
@@ -5670,6 +8083,9 @@
     morphCycleBtn?.addEventListener('click', () => {
       cycleIdx = (cycleIdx + 1) % cyclePresets.length;
       const targetShape = cyclePresets[cycleIdx];
+      unbindRealtimePressMorph?.();
+      realtimeMorphBtn.setAttribute('aria-pressed', String(targetShape !== 'square'));
+      unbindRealtimePressMorph = bindRealtimePressMorph();
       ctaMorpher.morphTo(targetShape);
       morphStatusEl.textContent = `Morphed in rAF -> ${targetShape}`;
       showToast(`Real-time Morph -> ${targetShape}`);
@@ -5677,15 +8093,32 @@
   }
 
   if (jsMorphLoaderPath) {
-    const loaderMorpher = createShapeMorpher(jsMorphLoaderPath, {
-      initialShape: LOADING_SEQUENCE[0],
-      scale: 0.84,
-    });
-    loaderMorpher.startSequence(LOADING_SEQUENCE, {
-      intervalMs: 650,
-      stiffness: 200,
-      damping: 0.6,
-    });
+    let loaderMorpher = null;
+    let stopLoaderSeq = null;
+    const startLoaderSeq = () => {
+      stopLoaderSeq?.();
+      loaderMorpher?.destroy();
+      loaderMorpher = createShapeMorpher(jsMorphLoaderPath, {
+        initialShape: LOADING_SEQUENCE[0],
+        scale: 0.84,
+      });
+      stopLoaderSeq = loaderMorpher.startSequence(LOADING_SEQUENCE, {
+        intervalMs: 650,
+        stiffness: 200,
+        damping: 0.6,
+      });
+    };
+    setJsMorphLoaderPaused = (paused) => {
+      if (paused) {
+        stopLoaderSeq?.();
+        stopLoaderSeq = null;
+        loaderMorpher?.destroy();
+        loaderMorpher = null;
+      } else {
+        startLoaderSeq();
+      }
+    };
+    if (!loadersPaused) startLoaderSeq();
   }
 
   // Dual Wavy Progress Controller (SVG Linear + HiDPI Canvas Linear + SVG Circular Wavy)
@@ -5917,18 +8350,49 @@
     });
   });
 
+  const syncFromSharedSeedValue = (val) => {
+    if (!val) {
+      activeCustomHex = null;
+      applySeed('purple', { persist: false });
+      return;
+    }
+    if (val.startsWith('#')) {
+      try { applyCustomSeedHex(val, { persist: false }); } catch {}
+    } else if (PRESET_SEED_HEX[val]) {
+      applySeed(val, { persist: false });
+    }
+  };
+
   const savedTheme = loadSharedPref(STORAGE_THEME_KEY);
   const savedSeed = loadSharedPref(STORAGE_SEED_KEY);
+  const savedVariant = loadSharedPref(STORAGE_VARIANT_KEY);
   if (savedTheme && themeModes.includes(savedTheme)) {
     applyTheme(savedTheme, { persist: false });
   }
-  if (savedSeed) {
-    if (savedSeed.startsWith('#')) {
-      try { applyCustomSeedHex(savedSeed, { persist: false }); } catch {}
-    } else if (PRESET_SEED_HEX[savedSeed]) {
-      applySeed(savedSeed, { persist: false });
-    }
+  if (savedVariant !== null) {
+    applyVariant(normalizeSharedVariant(savedVariant), { persist: false });
   }
+  if (savedSeed) {
+    syncFromSharedSeedValue(savedSeed);
+  }
+
+  window.addEventListener('storage', (e) => {
+    if (e.storageArea && e.storageArea !== window.localStorage) return;
+    if (e.key === null) {
+      applyTheme('system', { persist: false });
+      applyVariant('', { persist: false });
+      syncFromSharedSeedValue('purple');
+      return;
+    }
+    if (e.key === STORAGE_THEME_KEY) {
+      const nextTheme = e.newValue && themeModes.includes(e.newValue) ? e.newValue : 'system';
+      applyTheme(nextTheme, { persist: false });
+    } else if (e.key === STORAGE_SEED_KEY) {
+      syncFromSharedSeedValue(e.newValue);
+    } else if (e.key === STORAGE_VARIANT_KEY) {
+      applyVariant(normalizeSharedVariant(e.newValue), { persist: false });
+    }
+  });
 
   syncResponsiveNavMode();
   refreshSwatches();

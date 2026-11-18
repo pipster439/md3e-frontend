@@ -152,7 +152,7 @@ Fixed to screen bottom (e.g. mobile viewport footer) with surface-container styl
 
 ### 1.3 Bidirectional Floating ↔ Docked Morphing Toolbar
 
-Combines `assets/tokens/md3e-blur.css` (`.md3e-blur-surface`) with a spatial state transition so a compact centered floating toolbar morphs smoothly into a full-width docked workspace bar when pinned (`data-toolbar-mode="floating" | "docked"`). Use `document.startViewTransition()` when available so width, corner radius (`32px -> 0px`), and action distribution glide on the compositor without blocking interactions on desktop workspaces:
+Combines `assets/tokens/md3e-blur.css` (`.md3e-blur-surface`) with a spatial state transition so a compact centered floating toolbar morphs smoothly into a full-width docked workspace bar when pinned (`data-toolbar-mode="floating" | "docked"`). Use `document.startViewTransition()` when available so width, corner radius (`32px -> 0px`), and action distribution glide on the compositor without blocking interactions on desktop workspaces *(note: for frosted `backdrop-filter` **modals + scrims**, never use static `startViewTransition` bitmap snapshots — use Live DOM FLIP with `createSpringAnimator` per `references/personal-studio.md` and `references/containment.md`)*:
 
 ```html
 <div
@@ -1448,6 +1448,13 @@ function calculateHourFromPointer(dialElement, clientX, clientY) {
 > [!CAUTION]
 > **Never expose a bare native `<input type="color">` control in an M3E interface**: On Chromium/Windows/macOS desktop browsers, native color inputs spawn an unstyled OS color dialog (`0px` sharp rectangle corners, fixed `#3B3B3B` background, and `1px` wireframe R/G/B inputs) that breaks tonal containment and clashes visually with dynamic HCT surfaces.
 > **The Fix**: Build an anchored `[popover="auto"]` palette panel (`28px` outer `--md-sys-shape-corner-extra-large` -> `12px` concentric inner 2D Chroma×Tone canvas, `surface-container-high` + optional `.md3e-blur-surface`) driven directly by `Hct` / `hctSolveToInt` from `assets/tokens/md3e-dynamic-color.js`. Wire the trigger with native Invoker Commands (`commandfor` + `command="toggle-popover"`, never combining `popovertarget` and `commandfor`, and without `aria-haspopup` on a `role="group"` picker), gate `inset: auto` + `margin` inside `@supports (position-area: block-end)`, style separate `::-webkit-slider-*` / `::-moz-range-*` blocks for Hue/Chroma/Tone range inputs, and feature-detect `EyeDropper` as progressive enhancement. See `assets/starter/index.html` (`#md3e-color-popover`) for the complete implementation.
+
+### 11.3 Calendar Date Picker & Complex Component Recipes
+
+Production recipes for all five complex M3E Web components live in their respective group references (and interactively in `assets/starter/index.html` `#section-primitives`):
+- **Calendar Date Picker (Single & Range Continuous Strip + Headless Adapters)** & **Transparent `<fieldset><legend>` Outlined Text Field**: [`references/components/text-input.md`](text-input.md)
+- **Interruptible Native `<dialog>` (`overscroll-behavior: contain`)** & **Anchored `[popover="auto"]` Vertical Menu (`overflow: visible`, typeahead, `allow-discrete`)**: [`references/components/containment.md`](containment.md)
+- **Select (`[data-state]` / `[data-highlighted]` / `[data-selected]` Skin Contract + Radix/Base/Ark recipes + progressive `appearance: base-select`)**: [`references/components/selection.md`](selection.md)
 
 ---
 

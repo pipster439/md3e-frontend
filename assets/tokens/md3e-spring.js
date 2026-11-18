@@ -28,7 +28,7 @@ export const SPRING_PRESETS = Object.freeze({
 
 const DEFAULT_STIFFNESS = 380;
 const DEFAULT_DAMPING = 0.8;
-const DEFAULT_PRECISION = 0.05;
+const DEFAULT_PRECISION = 0.005;
 const FRAME_1_DT = 1 / 60;
 const MIN_DT = 0.0005;
 const MAX_DT = 0.05;
@@ -222,19 +222,24 @@ export function createSpringAnimator({
   precision = DEFAULT_PRECISION,
   onUpdate,
   onComplete,
+  onRest,
 } = {}) {
   let value = Number.isFinite(initialValue) ? initialValue : 0;
   let velocity = 0;
   let target = value;
   let k = isPositiveFinite(stiffness) ? stiffness : DEFAULT_STIFFNESS;
   let z = isPositiveFinite(damping) ? damping : DEFAULT_DAMPING;
-  const eps = isPositiveFinite(precision) ? precision : DEFAULT_PRECISION;
+  let eps = isPositiveFinite(precision) ? precision : DEFAULT_PRECISION;
+  const defaultOnRest = typeof onRest === 'function' ? onRest : undefined;
 
   let frameHandle = null;
+  let running = false;
   let lastTs = null;
   let lastDt = FRAME_1_DT;
   let pausedByVisibility = false;
   let needsRebase = false;
+  let targetEpoch = 0;
+  let activeOnRest;
 
   function onVisibilityChange(hidden) {
     if (hidden) {
@@ -249,13 +254,16 @@ export function createSpringAnimator({
     if (pausedByVisibility) {
       pausedByVisibility = false;
       needsRebase = true;
-      if (!frameHandle) {
+      if (running && !frameHandle) {
         frameHandle = scheduleFrame(tick);
       }
     }
   }
 
   function stop() {
+    targetEpoch += 1;
+    activeOnRest = undefined;
+    running = false;
     if (frameHandle) {
       cancelFrame(frameHandle);
       frameHandle = null;
@@ -267,8 +275,9 @@ export function createSpringAnimator({
   }
 
   function tick(ts) {
+    frameHandle = null;
+    if (!running) return;
     if (isDocumentHidden()) {
-      frameHandle = null;
       pausedByVisibility = true;
       needsRebase = true;
       return;
@@ -295,18 +304,27 @@ export function createSpringAnimator({
     if (Math.abs(value - target) < eps && Math.abs(velocity) < eps) {
       value = target;
       velocity = 0;
+      running = false;
       frameHandle = null;
       pausedByVisibility = false;
       needsRebase = false;
       lastTs = null;
       visibilitySubscribers.delete(onVisibilityChange);
+      const settledEpoch = targetEpoch;
+      const restCb = activeOnRest === undefined ? defaultOnRest : activeOnRest;
+      activeOnRest = undefined;
       onUpdate?.(value, 0);
-      onComplete?.();
+      if (targetEpoch === settledEpoch) {
+        onComplete?.();
+        restCb?.(value);
+      }
       return;
     }
 
     onUpdate?.(value, velocity);
-    frameHandle = scheduleFrame(tick);
+    if (running && !pausedByVisibility && !frameHandle) {
+      frameHandle = scheduleFrame(tick);
+    }
   }
 
   return {
@@ -314,24 +332,61 @@ export function createSpringAnimator({
     get velocity() { return velocity; },
     get target() { return target; },
     get paused() { return pausedByVisibility; },
-    configure({ stiffness: nextK, damping: nextZ } = {}) {
+    getValue() { return value; },
+    getVelocity() { return velocity; },
+    getTarget() { return target; },
+    isAnimating() { return running || frameHandle !== null || pausedByVisibility; },
+    configure({ stiffness: nextK, damping: nextZ, precision: nextEps } = {}) {
       if (isPositiveFinite(nextK)) k = nextK;
       if (isPositiveFinite(nextZ)) z = nextZ;
+      if (isPositiveFinite(nextEps)) eps = nextEps;
     },
-    setTarget(nextTarget, velocityOverride, { immediate = false } = {}) {
+    setTarget(nextTarget, velocityOrOpts, maybeOpts) {
       if (typeof nextTarget !== 'number' || !Number.isFinite(nextTarget)) return;
+      let velocityOverride;
+      let opts = {};
+      if (velocityOrOpts !== null && typeof velocityOrOpts === 'object') {
+        opts = velocityOrOpts;
+        velocityOverride = opts.velocity;
+      } else {
+        velocityOverride = velocityOrOpts;
+        if (maybeOpts !== null && typeof maybeOpts === 'object') {
+          opts = maybeOpts;
+        }
+      }
+
+      if (isPositiveFinite(opts.stiffness)) k = opts.stiffness;
+      if (isPositiveFinite(opts.damping)) z = opts.damping;
+      if (isPositiveFinite(opts.precision)) eps = opts.precision;
+
       target = nextTarget;
       if (typeof velocityOverride === 'number' && Number.isFinite(velocityOverride)) {
         velocity = velocityOverride;
       }
-      if (immediate || isReducedMotionPreferred()) {
+
+      const hasPerTargetOnRest = Object.prototype.hasOwnProperty.call(opts, 'onRest');
+      const nextOnRest = hasPerTargetOnRest
+        ? (typeof opts.onRest === 'function' ? opts.onRest : null)
+        : undefined;
+
+      if (opts.immediate || isReducedMotionPreferred()) {
         stop();
+        const settledEpoch = ++targetEpoch;
+        const restCb = nextOnRest === undefined ? defaultOnRest : nextOnRest;
         value = target;
         velocity = 0;
         onUpdate?.(value, 0);
-        onComplete?.();
+        if (targetEpoch === settledEpoch) {
+          onComplete?.();
+          restCb?.(value);
+        }
         return;
       }
+
+      targetEpoch += 1;
+      activeOnRest = nextOnRest;
+      running = true;
+
       ensureVisibilitySubscription();
       visibilitySubscribers.add(onVisibilityChange);
       if (isDocumentHidden()) {
@@ -359,6 +414,15 @@ export function createSpringAnimator({
       stop();
       value = nextValue;
       target = nextValue;
+      velocity = 0;
+      onUpdate?.(value, 0);
+    },
+    jump(nextValue) {
+      const resolved = nextValue === undefined ? target : nextValue;
+      if (typeof resolved !== 'number' || !Number.isFinite(resolved)) return;
+      stop();
+      value = resolved;
+      target = resolved;
       velocity = 0;
       onUpdate?.(value, 0);
     },

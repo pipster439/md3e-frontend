@@ -15,7 +15,7 @@ files, ~3,700 lines total, covering all 36 components:
 | `components/communication.md` | Badges · Progress indicators · Loading indicator · Snackbar · Tooltips |
 | `components/containment.md` | Cards · Dialogs · Bottom sheets · Side sheets · Carousel · Lists · Divider · Menus |
 | `components/navigation.md` | App bars · Toolbars · Navigation bar · Navigation rail · Navigation drawer · Tabs · Search |
-| `components/selection.md` | Checkbox · Chips · Radio button · Switch · Sliders |
+| `components/selection.md` | Checkbox · Chips · Radio button · Select *(Exposed Dropdown)* · Switch · Sliders |
 | `components/text-input.md` | Text fields · Date pickers · Time pickers |
 
 For ready-to-copy semantic HTML/CSS/JS implementations of Expressive components (toolbars, split button, connected/standard button groups, FAB menu, 7-polygon loading indicator, toggle buttons, search bar, badges, carousel, responsive nav rail, clock dial, 35-shape containers & frosted chrome), see [`components/expressive-recipes.md`](components/expressive-recipes.md).
@@ -120,7 +120,9 @@ is absent here, read the group file.
 | FAB menu item | height 56dp |
 | Chip | height 32dp; corner 8dp; icon 18dp; padding 16dp (8dp with icon); between elements 8dp |
 | Input chip | avatar 24dp, avatar corner 12dp; close icon target ≥48dp |
-| Text field | height 56dp; padding 16dp (12dp with icons); icon-to-text 16dp; supporting text top padding 4dp; supporting text ↔ counter 16dp |
+| Text field | height 56dp; padding 16dp (12dp with icons); icon-to-text 16dp; supporting text top padding 4dp; supporting text ↔ counter 16dp; populated label pad 4dp |
+| Select *(Exposed Dropdown)* | trigger 56dp (4dp outlined / 4dp-top filled); option row 48dp; vertical menu corner 16dp (`corner-large`) or baseline 4dp |
+| Date picker | modal 360×524dp; day cell target 48dp; today/selected indicator circle 40dp; Edit/Nav icon buttons 48dp |
 | Navigation drawer | width 360dp; active indicator 56dp high, 336dp wide, 28dp corner; left/right padding 28dp |
 | Navigation rail | collapsed 96dp wide; expanded 220–360dp wide; item 56dp; icon 24dp |
 | Divider | inset 16dp left / 0 right; middle-inset 16dp both; 4dp to supporting text |
@@ -164,6 +166,16 @@ Drive every morph with a spatial spring, never a hand-written transition.
 ## Modern Web Architecture (Semantic HTML & Headless Primitives)
 
 - Build UI primitives directly on **native semantic HTML** (`<button type="button">`, `<input>`, `<select>`, `<dialog>`, `<nav>`) styled with MD3E CSS custom properties (`--md-sys-*`) and token utility classes (`.md3e-btn`, `.md3e-icon-btn`, `.md3e-fab`, `.md3e-switch`). Native elements expose zero Shadow DOM encapsulation barriers, full Tailwind utility composability, and rock-solid baseline accessibility.
-- For complex composite widgets with demanding focus/keyboard plumbing (Comboboxes, Dropdown Menus, Roving Tabs, Popovers, Nested Dialogs) in React, Vue, or Svelte apps, adopt unstyled **Headless UI primitives** (**Radix UI**, **Base UI**, **React Aria**, or **Ark UI**) and bind their exposed ARIA / data-state attributes (`[data-state="open"]`, `[data-state="checked"]`, `[data-highlighted]`) directly to MD3E colour roles, state layers, and `--md-sys-motion-*` springs.
+- For complex composite widgets with demanding focus/keyboard plumbing (Selects, Date Pickers, Comboboxes, Nested Dropdown Menus, Roving Tabs, React Portals) in React, Vue, or Svelte apps, adopt unstyled **Headless UI primitives** (**Radix UI**, **Base UI**, **React Aria**, or **Ark UI**) and bind their exposed ARIA / data-state attributes (`[data-state="open|closed"]`, `[data-highlighted]`, `[data-selected]`, `[data-disabled]`) directly to MD3E colour roles, state layers, and `--md-sys-motion-*` springs.
 - Split buttons, connected button groups, floating/docked toolbars, FAB menus, and the 7-polygon loading indicator also ship ready-to-copy vanilla recipes in [`components/expressive-recipes.md`](components/expressive-recipes.md).
 - When defining component-scoped variables (`--md-comp-<component>-<part>-<property>`), bind them strictly to `--md-sys-*` system tokens — never hardcode raw hex colours, pixel corners, or arbitrary curves.
+
+### Complex Component Architecture Matrix (Pure Native vs Skin Contract + Headless Bridge)
+
+| Component | Recommended Web Paradigm | Key Spec, A11y & Motion Contract | Reference |
+|---|---|---|---|
+| **Text Field** *(Filled & Outlined)* | **Pure Native HTML** (`<input>`/`<textarea>` + `<label>` + `<fieldset><legend>`) | Transparent `<fieldset><legend>` notch (never solid `<label>` patches over blur/gradients), prefix/suffix slots, spring clear button, `tabular-nums` counter, `:has(:user-invalid)` + `aria-invalid` + dynamic `aria-describedby` | [`components/text-input.md`](components/text-input.md#text-fields) |
+| **Dialog** *(Basic & Full-screen)* | **Pure Native `<dialog>`** via `.showModal()` *(or Radix/Base/Ark `[data-state]` portal)* | NO redundant `role="dialog"` / `aria-modal`; `dialog:modal` & `dialog::backdrop` `overscroll-behavior: contain` (never lock `html`/`body`); `closedby`; interruptible `createSpringAnimator` + `cancel` reversal & focus restore | [`components/containment.md`](components/containment.md#dialogs) |
+| **Menu** *(Expressive Vertical & Submenus)* | **Pure Native Top-Layer `[popover="auto"]`** + CSS Anchor Positioning *(or Radix/Base/Ark Menu)* | `@supports (position-area: block-end)` + `position-try-fallbacks` + 4-edge JS fallback; `overflow: visible` + safe-triangle nested submenus; `<hr>` dividers; `role="menuitemcheckbox"`; `Arrow*`/`Home`/`End`/typeahead; separate `transition-behavior: allow-discrete` + `@starting-style` | [`components/containment.md`](components/containment.md#menus) |
+| **Select** *(Exposed Dropdown)* | **Visual Skin Contract + Headless Primitive Bridge** *(+ progressive `base-select`)* | Unified `[data-state="open\|closed"]`, `[data-highlighted]`, `[data-selected]`, `[data-disabled]` mapped onto **Radix Select**, **Base UI Select**, **Ark UI Select**, or vanilla `[popover="auto"]` listbox; progressive `@supports (appearance: base-select)` (`::picker(select)` without `overflow: hidden`) | [`components/selection.md`](components/selection.md#select) |
+| **Date Picker** *(Single & Range)* | **Visual Skin Contract + `role="grid"` Adapter Bridge** | Docked `[popover="auto"]` & modal `<dialog>`; `[data-today]`, `[data-selected]`, continuous `secondary-container` `[data-in-range]` strip behind circular `primary` `[data-range-start]`/`[data-range-end]` caps; full `role="grid"` keyboard nav; **React Aria / Ark UI / Radix / Base UI** adapters | [`components/text-input.md`](components/text-input.md#date-pickers) |

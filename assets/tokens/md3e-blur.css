@@ -10,10 +10,12 @@
  *   2. Neutral-safe `color-mix(in oklab, ...)` tinting (never `in oklch`)
  *   3. Optical saturate + brightness/contrast layer and specular top rim on
  *      rectangular floating chrome (leaving `.md3e-shape*` untouched)
- *   4. Richer Layer 4 curve when `[data-studio-profile="personal-studio"]` is set
+ *   4. Richer Layer 4 curve + HDR specular rim when
+ *      `[data-studio-profile="personal-studio"]` is set
  *   5. Mandatory `@media (prefers-reduced-transparency: reduce)`,
  *      `[data-reduced-transparency="true"]`, `@media (prefers-contrast: more)`,
- *      `[data-contrast="high"]`, and `@media (forced-colors: active)` fallbacks
+ *      `[data-contrast="high"]`, `[data-studio-hdr="off"]`, and
+ *      `@media (forced-colors: active)` fallbacks
  * ========================================================================== */
 
 :root {
@@ -183,6 +185,8 @@
   --md-sys-blur-brightness: var(--md-studio-glass-brightness, 1.10);
   --md-sys-blur-contrast: var(--md-studio-glass-contrast, 1.05);
   --md3e-specular-alpha: var(--md-studio-specular-alpha, 18%);
+  --md-studio-hdr-boost: 35%;
+  dynamic-range-limit: standard;
 }
 
 [data-studio-profile="personal-studio"] :where(.md3e-blur, .md3e-blur-surface) {
@@ -249,7 +253,7 @@
     .md3e-blur-secondary,
     .md3e-blur-tertiary,
     .md3e-blur-inverse
-  ):not([class*="md3e-shape"]) {
+  ):where(:not([class*="md3e-shape"])) {
     background-color: color-mix(
       in oklab,
       var(--md3e-blur-tint, var(--md-sys-color-surface-container)) var(--md3e-blur-alpha, var(--md-sys-blur-surface-alpha)),
@@ -266,7 +270,7 @@
       brightness(var(--md-sys-blur-brightness, 1.04))
       contrast(var(--md-sys-blur-contrast, 1.03));
     box-shadow:
-      inset 0 1px 0 0 color-mix(in oklab, var(--md3e-specular-tint, var(--md-sys-color-on-surface)) var(--md3e-specular-alpha, 18%), transparent),
+      inset 0 1px 0 0 var(--md3e-specular-rim, color-mix(in oklab, var(--md3e-specular-tint, var(--md-sys-color-on-surface)) var(--md3e-specular-alpha, 18%), transparent)),
       inset 0 0 0 1px color-mix(in oklab, var(--md3e-specular-tint, var(--md-sys-color-on-surface)) calc(var(--md3e-specular-alpha, 18%) * 0.42), transparent),
       0 12px 32px -12px color-mix(in oklab, var(--md-sys-color-shadow) 24%, transparent);
   }
@@ -280,6 +284,102 @@
     -webkit-backdrop-filter: blur(var(--md3e-blur-radius, var(--md-sys-blur-sm))) saturate(120%);
     backdrop-filter: blur(var(--md3e-blur-radius, var(--md-sys-blur-sm))) saturate(120%);
   }
+}
+
+/* ----------------------------------------------------------------------------
+ * Layer 4 Adaptive HDR Specular Rim (Strictly Scoped to 1px Inset Catchlight)
+ * Surface fill remains standard SDR HCT; descendant text resets to standard.
+ * -------------------------------------------------------------------------- */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  @media (color-gamut: p3) {
+    :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) :where(
+      .md3e-blur,
+      .md3e-blur-surface,
+      .md3e-blur-surface-low,
+      .md3e-blur-surface-high,
+      .md3e-blur-surface-highest,
+      .md3e-blur-primary,
+      .md3e-blur-secondary,
+      .md3e-blur-tertiary,
+      .md3e-blur-inverse,
+      .studio-tuner-panel,
+      #studio-tuner-panel,
+      .bento-vt-modal
+    ):where(:not([class*="md3e-shape"])) {
+      --md3e-specular-rim: color-mix(
+        in oklab,
+        color-mix(
+          in oklab,
+          var(--md3e-specular-tint, var(--md-sys-color-on-surface)) calc(100% - var(--md-studio-hdr-boost, 35%) * 0.4),
+          color(display-p3 1 1 1) calc(var(--md-studio-hdr-boost, 35%) * 0.4)
+        ) clamp(0%, calc(var(--md3e-specular-alpha, 18%) + var(--md-studio-hdr-boost, 35%) * 0.28), 64%),
+        transparent
+      );
+    }
+  }
+
+  @media (dynamic-range: high) {
+    :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) :where(
+      .md3e-blur,
+      .md3e-blur-surface,
+      .md3e-blur-surface-low,
+      .md3e-blur-surface-high,
+      .md3e-blur-surface-highest,
+      .md3e-blur-primary,
+      .md3e-blur-secondary,
+      .md3e-blur-tertiary,
+      .md3e-blur-inverse,
+      .studio-tuner-panel,
+      #studio-tuner-panel,
+      .bento-vt-modal
+    ):where(:not([class*="md3e-shape"])) {
+      dynamic-range-limit: constrained-high;
+      --md3e-specular-rim: color-mix(
+        in oklab,
+        color-mix(
+          in oklab,
+          var(--md3e-specular-tint, var(--md-sys-color-on-surface)) calc(100% - var(--md-studio-hdr-boost, 35%) * 0.48),
+          color(display-p3 1.24 1.24 1.24) calc(var(--md-studio-hdr-boost, 35%) * 0.48)
+        ) clamp(0%, calc(var(--md3e-specular-alpha, 18%) + var(--md-studio-hdr-boost, 35%) * 0.34), 72%),
+        transparent
+      );
+    }
+
+    :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) :where(
+      .md3e-blur,
+      .md3e-blur-surface,
+      .md3e-blur-surface-low,
+      .md3e-blur-surface-high,
+      .md3e-blur-surface-highest,
+      .md3e-blur-primary,
+      .md3e-blur-secondary,
+      .md3e-blur-tertiary,
+      .md3e-blur-inverse,
+      .studio-tuner-panel,
+      #studio-tuner-panel,
+      .bento-vt-modal
+    ) :where(*:not(.bento-pill-indicator, .bento-rail__indicator, .md3e-seg-indicator)) {
+      dynamic-range-limit: standard;
+    }
+  }
+}
+
+:root[data-studio-profile="personal-studio"][data-studio-hdr="off"] :where(
+  .md3e-blur,
+  .md3e-blur-surface,
+  .md3e-blur-surface-low,
+  .md3e-blur-surface-high,
+  .md3e-blur-surface-highest,
+  .md3e-blur-primary,
+  .md3e-blur-secondary,
+  .md3e-blur-tertiary,
+  .md3e-blur-inverse,
+  .studio-tuner-panel,
+  #studio-tuner-panel,
+  .bento-vt-modal
+) {
+  dynamic-range-limit: standard;
+  --md3e-specular-rim: color-mix(in oklab, var(--md3e-specular-tint, var(--md-sys-color-on-surface)) var(--md3e-specular-alpha, 18%), transparent);
 }
 
 /* ----------------------------------------------------------------------------
@@ -304,6 +404,8 @@
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     box-shadow: none;
+    dynamic-range-limit: standard;
+    --md3e-specular-rim: none;
   }
   :where(.md3e-blur-scrim) {
     background-color: var(--md3e-blur-fallback, color-mix(in oklab, var(--md-sys-color-scrim) 52%, transparent));
@@ -340,6 +442,8 @@
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   box-shadow: none;
+  dynamic-range-limit: standard;
+  --md3e-specular-rim: none;
 }
 
 :is(
@@ -367,6 +471,8 @@
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     box-shadow: none;
+    dynamic-range-limit: standard;
+    --md3e-specular-rim: none;
   }
   :where(.md3e-blur-scrim) {
     background-color: var(--md3e-blur-fallback, color-mix(in oklab, var(--md-sys-color-scrim) 64%, transparent));
@@ -403,6 +509,8 @@
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   box-shadow: none;
+  dynamic-range-limit: standard;
+  --md3e-specular-rim: none;
 }
 
 :is(
@@ -432,6 +540,8 @@
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     box-shadow: none;
+    dynamic-range-limit: standard;
+    --md3e-specular-rim: none;
   }
   :where(.md3e-blur-scrim) {
     background-color: color-mix(in oklab, CanvasText 35%, transparent);

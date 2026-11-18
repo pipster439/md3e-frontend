@@ -1010,53 +1010,65 @@ export function createShapeMorpher(
   });
 
   let activeSequenceCleanup = null;
+  const bindCleanups = new Set();
 
   // Render initial rest path immediately
   render(0);
 
+  function configure(opts = {}) {
+    animator.configure(opts);
+  }
+
+  function morphTo(nextShape, { immediate = false, velocity = null } = {}) {
+    const nextPoly = nextShape instanceof RoundedPolygon ? nextShape.normalized() : buildShape(nextShape);
+    if (!immediate && !animator.isAnimating() && (
+      (nextPoly === startPoly && (startPoly === targetPoly || (animator.target === 0 && currentProgress <= 0.001)))
+      || (nextPoly === targetPoly && animator.target === 1 && currentProgress >= 0.999)
+    )) {
+      return;
+    }
+    const snapNow = immediate
+      || (typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches));
+
+    if (snapNow) {
+      startPoly = nextPoly;
+      targetPoly = nextPoly;
+      activeMorph = new Morph(startPoly, targetPoly);
+      animator.snap(1);
+      return;
+    }
+
+    // If toggling cleanly back toward startPolygon, reverse target directly (0 <-> 1)
+    if (nextPoly === startPoly && startPoly !== targetPoly) {
+      const preservedVel = velocity ?? animator.velocity;
+      animator.setTarget(0, { velocity: preservedVel });
+      return;
+    }
+    if (nextPoly === targetPoly && startPoly !== targetPoly) {
+      const preservedVel = velocity ?? animator.velocity;
+      animator.setTarget(1, { velocity: preservedVel });
+      return;
+    }
+
+    // Mid-flight retargeting: freeze current interpolated polygon cleanly as new start!
+    const frozenPoly = currentProgress <= 0.001
+      ? startPoly
+      : currentProgress >= 0.999
+        ? targetPoly
+        : activeMorph.toPolygon(currentProgress);
+    const preservedVel = velocity ?? (animator.velocity * 0.35);
+    startPoly = frozenPoly;
+    targetPoly = nextPoly;
+    activeMorph = new Morph(startPoly, targetPoly);
+    animator.snap(0);
+    animator.setTarget(1, preservedVel);
+  }
+
   return {
     get animator() { return animator; },
     get morph() { return activeMorph; },
-    configure(opts = {}) {
-      animator.configure(opts);
-    },
-    morphTo(nextShape, { immediate = false, velocity = null } = {}) {
-      const nextPoly = nextShape instanceof RoundedPolygon ? nextShape.normalized() : buildShape(nextShape);
-      const snapNow = immediate
-        || (typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches));
-
-      if (snapNow) {
-        startPoly = nextPoly;
-        targetPoly = nextPoly;
-        activeMorph = new Morph(startPoly, targetPoly);
-        animator.snap(1);
-        return;
-      }
-
-      // If toggling cleanly back toward startPolygon, reverse target directly (0 <-> 1)
-      if (nextPoly === startPoly && activeMorph.startPolygon !== activeMorph.endPolygon) {
-        targetPoly = startPoly;
-        animator.setTarget(0, velocity ?? undefined);
-        return;
-      }
-      if (nextPoly === targetPoly && activeMorph.startPolygon !== activeMorph.endPolygon) {
-        animator.setTarget(1, velocity ?? undefined);
-        return;
-      }
-
-      // Mid-flight retargeting: freeze current interpolated polygon cleanly as new start!
-      const frozenPoly = currentProgress <= 0.001
-        ? startPoly
-        : currentProgress >= 0.999
-          ? activeMorph.endPolygon
-          : activeMorph.toPolygon(currentProgress);
-      const preservedVel = velocity ?? (Math.abs(animator.velocity) * 0.35);
-      startPoly = frozenPoly;
-      targetPoly = nextPoly;
-      activeMorph = new Morph(startPoly, targetPoly);
-      animator.snap(0);
-      animator.setTarget(1, preservedVel);
-    },
+    configure,
+    morphTo,
     bindPressMorph(
       controlEl,
       { restShape = initialShape, pressedShape = 'cookie-9-sided', toggleShape = null, clickFlashMs = 260 } = {},
@@ -1068,18 +1080,19 @@ export function createShapeMorpher(
       let flashTimer = null;
       const effectiveRest = () => (isToggled && toggleShape ? toggleShape : restShape);
 
-      const onDown = () => {
+      const onDown = (e) => {
+        if (e?.button !== undefined && e.button !== 0) return;
         clearTimeout(flashTimer);
         isPressed = true;
         handledByPointer = true;
-        this.morphTo(pressedShape);
+        morphTo(pressedShape);
       };
       const release = (flipToggle) => {
         if (flipToggle && toggleShape) {
           isToggled = !isToggled;
           controlEl.setAttribute?.('aria-pressed', String(isToggled));
         }
-        this.morphTo(effectiveRest());
+        morphTo(effectiveRest());
       };
       const onUp = () => {
         if (!isPressed) return;
@@ -1089,6 +1102,7 @@ export function createShapeMorpher(
       const onCancel = () => {
         if (!isPressed) return;
         isPressed = false;
+        handledByPointer = false;
         release(false);
       };
       const onClick = () => {
@@ -1100,10 +1114,10 @@ export function createShapeMorpher(
         if (toggleShape) {
           isToggled = !isToggled;
           controlEl.setAttribute?.('aria-pressed', String(isToggled));
-          this.morphTo(effectiveRest());
+          morphTo(effectiveRest());
         } else {
-          this.morphTo(pressedShape);
-          flashTimer = setTimeout(() => this.morphTo(effectiveRest()), clickFlashMs);
+          morphTo(pressedShape);
+          flashTimer = setTimeout(() => morphTo(effectiveRest()), clickFlashMs);
         }
       };
 
@@ -1112,14 +1126,17 @@ export function createShapeMorpher(
       controlEl.addEventListener('pointercancel', onCancel);
       controlEl.addEventListener('pointerleave', onCancel);
       controlEl.addEventListener('click', onClick);
-      return () => {
+      const unbind = () => {
         clearTimeout(flashTimer);
         controlEl.removeEventListener('pointerdown', onDown);
         controlEl.removeEventListener('pointerup', onUp);
         controlEl.removeEventListener('pointercancel', onCancel);
         controlEl.removeEventListener('pointerleave', onCancel);
         controlEl.removeEventListener('click', onClick);
+        bindCleanups.delete(unbind);
       };
+      bindCleanups.add(unbind);
+      return unbind;
     },
     startSequence(
       sequence = LOADING_SEQUENCE,
@@ -1129,12 +1146,12 @@ export function createShapeMorpher(
       let stepIdx = 0;
       let timerId = null;
       animator.configure({ stiffness, damping });
-      this.morphTo(sequence[0], { immediate: true });
+      morphTo(sequence[0], { immediate: true });
       const advance = () => {
         // Pause sequence advancement ONLY when tab is hidden; never stall in foreground.
         if (typeof document !== 'undefined' && document.hidden === true) return;
         stepIdx = (stepIdx + 1) % sequence.length;
-        this.morphTo(sequence[stepIdx]);
+        morphTo(sequence[stepIdx]);
       };
       timerId = setInterval(advance, intervalMs);
       const stopSequence = () => {
@@ -1151,6 +1168,10 @@ export function createShapeMorpher(
     },
     destroy() {
       activeSequenceCleanup?.();
+      for (const unbind of Array.from(bindCleanups)) {
+        unbind();
+      }
+      bindCleanups.clear();
       animator.stop();
     },
   };

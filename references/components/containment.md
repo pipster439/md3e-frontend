@@ -165,6 +165,192 @@ Full-screen dialog — "Full-screen dialog padding and size measurements":
 
 **Notes.** No explicit do/don't or "not recommended" statement appears on this page.
 
+### Modern Web Architecture (Pure Native `<dialog>`, Zero Scroll-Lock & Interruptible Spring)
+
+- **Native `<dialog>` + `.showModal()` (NO `role="dialog"` / `aria-modal`)**: Native `<dialog>` opened via `.showModal()` provides top-layer stacking, automatic background `inert` isolation, `Escape` dismissal, and native dialog semantics — **never** add redundant `role="dialog"` or `aria-modal="true"` (`MD3E020` / `MD3E029`). Pair `<dialog>` with `aria-labelledby` (pointing to the headline) or `aria-label`.
+- **Zero Root Scroll-Locking (`overscroll-behavior: contain`)**: **NEVER** set `overflow: hidden` or `position: fixed` on `<html>` or `<body>` when opening a modal dialog (which causes scrollbar-gutter layout shifts, breaks `position: sticky` rails, and loses scroll position). Instead, contain scroll chaining directly on the top-layer elements:
+  ```css
+  dialog.md3e-dialog:modal { overscroll-behavior: contain; }
+  dialog.md3e-dialog::backdrop { overflow: hidden; overscroll-behavior: contain; }
+  ```
+- **`closedby` Progressive Enhancement & Safe Backdrop Click**: Use `closedby="any"` on light-dismiss dialogs (or `closedby="closerequest"` when confirmation requires clicking an explicit action), paired with a `pointerdown` + `pointerup` target check so dragging text out onto `::backdrop` does not trigger accidental dismissal.
+- **Interruptible Spring Enter/Exit (`cancel` interception + velocity continuity)**: Intercept the `cancel` event (`e.preventDefault()`) and backdrop clicks, driving a `createSpringAnimator` (`md3e-spring.js`) over `0 -> 1` (`--dialog-progress`) so pressing `Escape` or clicking outside mid-flight (e.g. at `150ms`) immediately reverses scale, translate, opacity, and backdrop dimming from live velocity, calling `dialog.close()` only once settled at `0`. Re-triggering open mid-close reverses back to `1` without flickering. Reset `dialog.returnValue = ''` before `.showModal()` and restore focus to the opener button on close.
+- **Headless Portal Bridge**: In React/Vue/Svelte apps using Radix Dialog, Base UI Dialog, or Ark UI Dialog, bind `[data-state="open|closed"]` (or `[data-open]` / `[data-closed]`) directly to the same `28dp` (`--md-sys-shape-corner-extra-large`) `surface-container-high` container tokens.
+
+```html
+<button type="button" class="md3e-btn md3e-btn--tonal md3e-btn--s" id="btn-confirm-open">
+  Open Confirm Dialog
+</button>
+
+<dialog class="md3e-dialog" id="confirm-dialog" aria-labelledby="confirm-dialog-title" closedby="any">
+  <div class="md3e-dialog__surface">
+    <span class="material-symbols-outlined md3e-dialog__icon" aria-hidden="true">restart_alt</span>
+    <h2 class="md3e-dialog__title" id="confirm-dialog-title">Reset workspace tokens?</h2>
+    <p class="md3e-dialog__body">
+      Custom seed overrides will revert to the baseline expressive tonal palette.
+    </p>
+    <div class="md3e-dialog__actions">
+      <button type="button" class="md3e-dialog__btn" value="cancel" id="confirm-dialog-cancel">Cancel</button>
+      <button type="button" class="md3e-dialog__btn md3e-dialog__btn--primary" value="confirm" id="confirm-dialog-ok">Reset</button>
+    </div>
+  </div>
+</dialog>
+```
+
+```css
+dialog.md3e-dialog {
+  --dialog-progress: 0;
+  margin: auto;
+  padding: 0;
+  border: none;
+  inline-size: min(560px, calc(100vw - 48px));
+  min-inline-size: min(280px, calc(100vw - 48px));
+  border-radius: var(--md-sys-shape-corner-extra-large); /* 28dp */
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  overflow: visible;
+  opacity: var(--dialog-progress);
+  transform: translateY(calc((1 - var(--dialog-progress)) * 16px))
+             scale(calc(0.92 + var(--dialog-progress) * 0.08));
+}
+
+dialog.md3e-dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog.md3e-dialog::backdrop {
+  background: color-mix(in oklab, var(--md-sys-color-scrim) calc(var(--dialog-progress, 1) * 42%), transparent);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.md3e-dialog__surface {
+  display: flex;
+  flex-direction: column;
+  padding: var(--md-sys-spacing-6); /* 24dp */
+  max-block-size: calc(100dvh - 48px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.md3e-dialog__icon {
+  align-self: center;
+  color: var(--md-sys-color-secondary);
+  margin-block-end: var(--md-sys-spacing-4);
+}
+
+.md3e-dialog__title {
+  margin: 0 0 var(--md-sys-spacing-4);
+  font-family: var(--md-sys-typescale-brand-font);
+  font-size: var(--md-sys-typescale-headline-small-size);
+  line-height: var(--md-sys-typescale-headline-small-line-height);
+  font-weight: var(--md-sys-typescale-headline-small-weight);
+  text-align: center;
+}
+
+.md3e-dialog__body {
+  margin: 0 0 var(--md-sys-spacing-6);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.md3e-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--md-sys-spacing-2); /* 8dp */
+}
+
+.md3e-dialog__btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  block-size: 40px;
+  padding-inline: var(--md-sys-spacing-4);
+  border: none;
+  border-radius: var(--md-sys-shape-corner-large-increased);
+  background: transparent;
+  color: var(--md-sys-color-primary);
+  font-family: var(--md-sys-typescale-plain-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  cursor: pointer;
+}
+
+.md3e-dialog__btn::before {
+  content: "";
+  position: absolute;
+  inset-block: -4px;
+  inset-inline: 0;
+  min-inline-size: var(--md-sys-touch-target-min);
+  min-block-size: var(--md-sys-touch-target-min);
+}
+
+.md3e-dialog__btn:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+}
+
+@media (forced-colors: active) {
+  dialog.md3e-dialog {
+    border: 1px solid CanvasText;
+  }
+}
+```
+
+```js
+// Interruptible <dialog> spring controller (150ms mid-flight reversal + focus restore)
+import { createSpringAnimator } from './tokens/md3e-spring.js';
+
+export function bindInterruptibleDialog(dialogEl, openerBtn) {
+  let prevFocus = null;
+  let pointerDownOnBackdrop = false;
+
+  const spring = createSpringAnimator({
+    initialValue: 0,
+    stiffness: 380,
+    damping: 0.8,
+    precision: 0.002,
+    onUpdate(p) {
+      dialogEl.style.setProperty('--dialog-progress', p.toFixed(4));
+    },
+  });
+
+  const open = () => {
+    prevFocus = document.activeElement;
+    dialogEl.returnValue = '';
+    if (!dialogEl.open) dialogEl.showModal();
+    spring.setTarget(1);
+  };
+
+  const close = (returnValue = 'cancel') => {
+    spring.setTarget(0, {
+      onRest() {
+        if (dialogEl.open) dialogEl.close(returnValue);
+        (prevFocus && typeof prevFocus.focus === 'function' ? prevFocus : openerBtn)?.focus();
+      },
+    });
+  };
+
+  dialogEl.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    close('cancel');
+  });
+
+  dialogEl.addEventListener('pointerdown', (e) => {
+    pointerDownOnBackdrop = e.target === dialogEl;
+  });
+
+  dialogEl.addEventListener('pointerup', (e) => {
+    if (pointerDownOnBackdrop && e.target === dialogEl) close('cancel');
+    pointerDownOnBackdrop = false;
+  });
+
+  return { open, close };
+}
+```
+
 ---
 
 ## Bottom sheets
@@ -753,3 +939,236 @@ Menu (baseline) — "Baseline menu padding and size measurements":
 - "Vibrant menus are more prominent so should be used sparingly."
 - Baseline menu is still supported but "doesn't have the latest shapes, color styles, selection states, and motion"; M3 expressive vertical menus are recommended for new designs.
 - A baseline menu appears when a person interacts with a button, action, or other control; the dump's examples are Button, Text field, Icon button, Selected text.
+
+### Modern Web Architecture (`[popover="auto"]`, CSS Anchor Positioning & Safe-Triangle Submenus)
+
+- **Top-Layer `[popover="auto"]` (Zero `overflow: hidden` Parent Clipping)**: Always mount M3E menus as native `[popover="auto"]` elements so opening a menu inside a `overflow: hidden` card or constrained scroll pane promotes it directly into the browser **Top Layer** with built-in light-dismiss and `Escape` closure. Wire triggers with `popovertarget` (or native Invoker Commands `commandfor` + `command="toggle-popover"`, never combining both on one trigger).
+- **CSS Anchor Positioning + 4-Edge Viewport Flip Fallback**:
+  - Gate anchor positioning cleanly inside `@supports (position-area: block-end)`: bind `anchor-name: --menu-anchor` on the trigger, `position-anchor: --menu-anchor`, `inset: auto; margin: 0; position-area: block-end span-inline-end; position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;`.
+  - Provide an explicit `@supports not (position-area: block-end)` + JS `getBoundingClientRect()` 4-edge viewport collision fallback so older browsers flip cleanly across top/bottom/start/end edges without clipping.
+- **`overflow: visible`, Nested Submenus & Safe-Triangle Corridor**: Keep `overflow: visible;` on `.md3e-menu` so nested submenus (implemented either as nested `[popover="auto"]` top-layer popovers or positioned flyouts) and `:focus-visible` outlines never clip. When closing a nested submenu via `Escape` or `ArrowLeft`, call `event.stopPropagation()` so only the deepest submenu closes and returns focus to its parent trigger. Track pointer coordinates with a diagonal **safe-triangle** polygon grace window so moving diagonally from a parent item into its open submenu does not drop hover prematurely.
+- **Native `<hr>` Separators, `role="menuitemcheckbox"`, & Keyboard / First-Letter Typeahead**:
+  - Use semantic `<hr class="md3e-menu__divider">` for group dividers (`outline-variant`), `<button type="button" role="menuitemcheckbox" aria-checked="true|false">` for toggleable options, and progressive `focusgroup="menu nomemory"` alongside full JS fallback (`ArrowDown` / `ArrowUp` wrapping across enabled items, `Home` / `End`, `ArrowRight` opening submenus and focusing first child, `ArrowLeft` / `Escape` single-level close, `Tab` graceful close, and printable **first-letter typeahead**).
+- **Separate `transition-behavior: allow-discrete;` + `@starting-style`**: Always place `transition-behavior: allow-discrete;` as a separate declaration **after** `transition:` (including `display` and `overlay` alongside `opacity` and `transform`) inside `@media (prefers-reduced-motion: no-preference)` so top-layer popovers animate smoothly on both entry and exit.
+
+```html
+<!-- Trigger + Popover Menu safely inside an overflow: hidden parent card -->
+<div class="md3e-menu-host">
+  <button
+    type="button"
+    class="md3e-btn md3e-btn--outlined md3e-btn--s md3e-menu-anchor"
+    id="view-menu-trigger"
+    popovertarget="view-menu"
+    aria-haspopup="menu"
+    aria-expanded="false"
+    aria-controls="view-menu"
+  >
+    <span>Options</span>
+    <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
+  </button>
+
+  <div class="md3e-menu" id="view-menu" popover="auto" role="menu" aria-labelledby="view-menu-trigger" focusgroup="menu nomemory">
+    <button type="button" class="md3e-menu__item" role="menuitem">
+      <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
+      <span>Duplicate view</span>
+    </button>
+    <button type="button" class="md3e-menu__item" role="menuitemcheckbox" aria-checked="true">
+      <span class="material-symbols-outlined md3e-menu__check" aria-hidden="true">check</span>
+      <span>Show grid metrics</span>
+    </button>
+    <hr class="md3e-menu__divider">
+    <button
+      type="button"
+      class="md3e-menu__item"
+      id="export-submenu-trigger"
+      role="menuitem"
+      popovertarget="export-submenu"
+      aria-haspopup="menu"
+      aria-expanded="false"
+      aria-controls="export-submenu"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">ios_share</span>
+      <span>Export as…</span>
+      <span class="material-symbols-outlined md3e-menu__trailing" aria-hidden="true">chevron_right</span>
+    </button>
+  </div>
+
+  <div class="md3e-menu" id="export-submenu" popover="auto" role="menu" aria-labelledby="export-submenu-trigger">
+    <button type="button" class="md3e-menu__item" role="menuitem"><span>CSS Tokens</span></button>
+    <button type="button" class="md3e-menu__item" role="menuitem"><span>JSON Telemetry</span></button>
+  </div>
+</div>
+```
+
+```css
+.md3e-menu-anchor {
+  anchor-name: --md3e-menu-trigger;
+}
+
+.md3e-menu {
+  --md3e-menu-top: 64px;
+  --md3e-menu-left: 16px;
+  margin: 0;
+  padding: 2px 0; /* 2dp vertical menu padding */
+  min-inline-size: 168px;
+  max-inline-size: 280px;
+  border: none;
+  overflow: visible; /* Allow safe-triangle flyouts & focus rings without clipping */
+  border-radius: var(--md-sys-shape-corner-large); /* 16dp Expressive vertical menu */
+  background: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface);
+  box-shadow: var(--md-sys-elevation-level2);
+  display: none;
+  flex-direction: column;
+  gap: 2px; /* 2dp between items */
+  opacity: 0;
+  transform: translateY(-6px) scale(0.96);
+  transform-origin: top left;
+}
+
+@supports (position-area: block-end) {
+  .md3e-menu[popover] {
+    position-anchor: --md3e-menu-trigger;
+    inset: auto;
+    margin: 0;
+    position-area: block-end span-inline-end;
+    position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+  }
+}
+
+@supports not (position-area: block-end) {
+  .md3e-menu[popover] {
+    position: fixed;
+    inset-block-start: var(--md3e-menu-top, 64px);
+    inset-inline-start: var(--md3e-menu-left, 16px);
+  }
+}
+
+.md3e-menu:popover-open {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .md3e-menu {
+    transition:
+      opacity var(--md-sys-motion-fast-effects),
+      transform var(--md-sys-motion-fast-spatial),
+      display var(--md-sys-motion-fast-effects-duration),
+      overlay var(--md-sys-motion-fast-effects-duration);
+    transition-behavior: allow-discrete;
+  }
+
+  @starting-style {
+    .md3e-menu:popover-open {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.96);
+    }
+  }
+}
+
+.md3e-menu__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-3);
+  inline-size: 100%;
+  min-block-size: var(--md-sys-touch-target-min); /* 48dp */
+  padding-inline: var(--md-sys-spacing-3);
+  border: none;
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-sys-typescale-plain-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--md-sys-motion-fast-effects),
+              color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-menu__item:hover,
+.md3e-menu__item[data-highlighted="true"] {
+  background: color-mix(in oklab, var(--md-sys-color-on-surface) 8%, transparent);
+}
+
+.md3e-menu__item[role="menuitemcheckbox"][aria-checked="true"] {
+  background: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
+  font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+}
+
+.md3e-menu__item[role="menuitemcheckbox"][aria-checked="false"] .md3e-menu__check {
+  opacity: 0;
+}
+
+.md3e-menu__trailing {
+  margin-inline-start: auto;
+}
+
+.md3e-menu__divider {
+  margin: var(--md-sys-spacing-1) var(--md-sys-spacing-3);
+  border: none;
+  border-block-start: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.md3e-menu__item:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-menu,
+  .md3e-menu__item {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .md3e-menu {
+    border: 1px solid CanvasText;
+  }
+}
+```
+
+```js
+// Arrow/Home/End + first-letter typeahead + single-level submenu Escape
+export function bindMenuKeyboard(menuEl, triggerEl) {
+  const getItems = () => [...menuEl.querySelectorAll('[role="menuitem"], [role="menuitemcheckbox"]')].filter((el) => !el.disabled);
+
+  menuEl.addEventListener('keydown', (e) => {
+    const items = getItems();
+    if (!items.length) return;
+    const idx = items.indexOf(document.activeElement);
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      items[(idx + 1) % items.length].focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      items[(idx - 1 + items.length) % items.length].focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      items[0].focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      items[items.length - 1].focus();
+    } else if (e.key === 'ArrowLeft' || e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation(); // Keep parent menu open when closing a nested submenu
+      menuEl.hidePopover?.();
+      triggerEl?.focus();
+    } else if (e.key.length === 1 && /\S/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const q = e.key.toLowerCase();
+      const ordered = [...items.slice(idx + 1), ...items.slice(0, idx + 1)];
+      const match = ordered.find((el) => el.textContent.trim().toLowerCase().startsWith(q));
+      if (match) {
+        e.preventDefault();
+        match.focus();
+      }
+    }
+  });
+}
+```

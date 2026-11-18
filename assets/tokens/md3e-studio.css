@@ -5,20 +5,16 @@
  * Designed to compose cleanly on top of MD3E Core (`md3e-tokens.css`,
  * `md3e-blur.css`, `md3e-motion.css`) and Desktop Bento without emitting
  * `1px solid` borders, rectangular `box-shadow` elevation, `in oklch` on
- * neutrals, or hardcoded colour literals.
+ * neutrals, global canvas blobs, or hardcoded colour literals.
  * ========================================================================== */
 
-/* Keep Layer 4 ambient caustic field inert when Personal Studio is inactive */
-:root:not([data-studio-profile="personal-studio"]) .studio-caustic-field {
-  display: none;
-}
-
 :root[data-studio-profile="personal-studio"] {
-  /* Optical Glass defaults */
+  /* Optical Glass & Adaptive HDR Headroom defaults */
   --md-studio-blur-px: 28px;
   --md-studio-glass-alpha: 56%;
   --md-studio-glass-saturate: 190%;
   --md-studio-specular-alpha: 18%;
+  --md-studio-hdr-boost: 35%;
   --md-studio-glass-brightness: 1.10;
   --md-studio-glass-contrast: 1.05;
 
@@ -32,6 +28,9 @@
   --md-studio-spotlight-alpha: 12%;
   --md-studio-split-ratio: 58%;
 
+  /* Keep root canvas, body text, and large surfaces strictly SDR standard */
+  dynamic-range-limit: standard;
+
   /* Native desktop thin scrollbar with >= 3:1 thumb/track contrast */
   --md3e-scrollbar-thumb: var(--md-sys-color-outline);
   --md3e-scrollbar-track: var(--md-sys-color-surface-container-low);
@@ -39,56 +38,223 @@
   scrollbar-color: var(--md3e-scrollbar-thumb) var(--md3e-scrollbar-track);
 }
 
-/* ----------------------------------------------------------------------------
- * 1. Ambient Caustic Light Field (refraction source for frosted glass)
- * -------------------------------------------------------------------------- */
-:root[data-studio-profile="personal-studio"] .studio-caustic-field {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-  background-image:
-    radial-gradient(
-      760px circle at 14% 12%,
-      color-mix(in oklab, var(--md-sys-color-primary) 26%, transparent),
-      transparent 66%
-    ),
-    radial-gradient(
-      680px circle at 84% 18%,
-      color-mix(in oklab, var(--md-sys-color-tertiary) 22%, transparent),
-      transparent 64%
-    ),
-    radial-gradient(
-      720px circle at 58% 88%,
-      color-mix(in oklab, var(--md-sys-color-secondary) 18%, transparent),
-      transparent 68%
-    );
+:root[data-studio-profile="personal-studio"] :where(
+  body,
+  p,
+  main,
+  article,
+  section:not(.bento-vt-modal),
+  .bento-card,
+  .bento-surface
+) {
+  dynamic-range-limit: standard;
 }
 
-:root[data-studio-profile="personal-studio"][data-theme="light"] .studio-caustic-field {
-  background-image:
-    radial-gradient(
-      760px circle at 14% 12%,
-      color-mix(in oklab, var(--md-sys-color-primary) 16%, transparent),
-      transparent 66%
-    ),
-    radial-gradient(
-      680px circle at 84% 18%,
-      color-mix(in oklab, var(--md-sys-color-tertiary) 14%, transparent),
-      transparent 64%
-    ),
-    radial-gradient(
-      720px circle at 58% 88%,
-      color-mix(in oklab, var(--md-sys-color-secondary) 12%, transparent),
-      transparent 68%
+/* ----------------------------------------------------------------------------
+ * 1. Clean Dark Canvas & Adaptive HDR Optical Headroom (Micro-Details Only)
+ *    Dark `--md-sys-color-surface` stays 100% pure with zero canvas light-bleed.
+ *    HDR/wide-gamut headroom applies ONLY to:
+ *      (a) [data-studio-spotlight]::after
+ *      (b) Top 1px inset specular rim on .md3e-blur*, .studio-tuner-panel, .bento-vt-modal
+ *      (c) Active indicators (.bento-pill-indicator, .bento-rail__indicator, .md3e-seg-indicator)
+ *      (d) .studio-scrubber:focus-visible / active scrubber fill & thumb
+ * -------------------------------------------------------------------------- */
+@media (color-gamut: p3) {
+  :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) [data-studio-spotlight]::after {
+    --md-studio-spotlight-core: color-mix(
+      in oklab,
+      var(--md-sys-color-primary) calc(100% - var(--md-studio-hdr-boost, 35%) * 0.4),
+      color(display-p3 1 1 1) calc(var(--md-studio-hdr-boost, 35%) * 0.4)
     );
+    background: radial-gradient(
+      var(--md-studio-spotlight-px, 260px) circle at var(--studio-mx, 50%) var(--studio-my, 50%),
+      color-mix(
+        in oklab,
+        var(--md-studio-spotlight-core) calc(var(--md-studio-spotlight-alpha, 12%) + var(--md-studio-hdr-boost, 35%) * 0.14),
+        transparent
+      ),
+      color-mix(
+        in oklab,
+        var(--md-sys-color-tertiary) calc(var(--md-studio-spotlight-alpha, 12%) * 0.55),
+        transparent
+      ) 44%,
+      transparent 74%
+    );
+  }
+
+  :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) :where(
+    .studio-tuner-panel,
+    #studio-tuner-panel,
+    .bento-vt-modal
+  ):not([class*="md3e-shape"]) {
+    --md3e-specular-rim: color-mix(
+      in oklab,
+      color-mix(
+        in oklab,
+        var(--md3e-specular-tint, var(--md-sys-color-on-surface)) calc(100% - var(--md-studio-hdr-boost, 35%) * 0.4),
+        color(display-p3 1 1 1) calc(var(--md-studio-hdr-boost, 35%) * 0.4)
+      ) clamp(0%, calc(var(--md-studio-specular-alpha, 18%) + var(--md-studio-hdr-boost, 35%) * 0.28), 64%),
+      transparent
+    );
+  }
+
+  :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) :where(
+    .bento-pill-indicator,
+    .bento-rail__indicator,
+    .md3e-seg-indicator
+  ) {
+    box-shadow:
+      inset 0 1px 0 0 color-mix(
+        in oklab,
+        color(display-p3 1 1 1) calc(12% + var(--md-studio-hdr-boost, 35%) * 0.28),
+        transparent
+      ),
+      inset 0 0 0 1px color-mix(
+        in oklab,
+        var(--md-sys-color-primary) calc(10% + var(--md-studio-hdr-boost, 35%) * 0.14),
+        transparent
+      );
+  }
+
+  :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) .studio-scrubber {
+    --studio-scrubber-fill: color-mix(
+      in oklab,
+      var(--md-sys-color-secondary-container) 86%,
+      color-mix(in oklab, color(display-p3 1 1 1) calc(var(--md-studio-hdr-boost, 35%) * 0.14), transparent)
+    );
+    --studio-scrubber-indicator: color-mix(
+      in oklab,
+      var(--md-sys-color-secondary) calc(100% - var(--md-studio-hdr-boost, 35%) * 0.3),
+      color(display-p3 1 1 1) calc(var(--md-studio-hdr-boost, 35%) * 0.3)
+    );
+  }
+
+  :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) .studio-scrubber[data-scrubber-source="human"] {
+    --studio-scrubber-fill: color-mix(
+      in oklab,
+      var(--md-sys-color-primary-container) 88%,
+      color-mix(in oklab, color(display-p3 1 1 1) calc(var(--md-studio-hdr-boost, 35%) * 0.16), transparent)
+    );
+    --studio-scrubber-indicator: color-mix(
+      in oklab,
+      var(--md-sys-color-primary) calc(100% - var(--md-studio-hdr-boost, 35%) * 0.32),
+      color(display-p3 1 1 1) calc(var(--md-studio-hdr-boost, 35%) * 0.32)
+    );
+  }
+
+  :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) .studio-scrubber[data-scrubber-source="ai"] {
+    --studio-scrubber-fill: color-mix(
+      in oklab,
+      var(--md-sys-color-tertiary-container) 86%,
+      color-mix(in oklab, color(display-p3 1 1 1) calc(var(--md-studio-hdr-boost, 35%) * 0.14), transparent)
+    );
+    --studio-scrubber-indicator: color-mix(
+      in oklab,
+      var(--md-sys-color-tertiary) calc(100% - var(--md-studio-hdr-boost, 35%) * 0.32),
+      color(display-p3 1 1 1) calc(var(--md-studio-hdr-boost, 35%) * 0.32)
+    );
+  }
+
+  :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) .studio-scrubber:focus-visible {
+    outline-color: color-mix(
+      in oklab,
+      var(--md-sys-color-secondary) calc(100% - var(--md-studio-hdr-boost, 35%) * 0.28),
+      color(display-p3 1 1 1) calc(var(--md-studio-hdr-boost, 35%) * 0.28)
+    );
+    box-shadow: inset 0 1px 0 0 color-mix(
+      in oklab,
+      color(display-p3 1 1 1) calc(14% + var(--md-studio-hdr-boost, 35%) * 0.24),
+      transparent
+    );
+  }
+}
+
+@media (dynamic-range: high) {
+  :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) [data-studio-spotlight]::after {
+    dynamic-range-limit: constrained-high;
+    --md-studio-spotlight-core: color-mix(
+      in oklab,
+      var(--md-sys-color-primary) calc(100% - var(--md-studio-hdr-boost, 35%) * 0.48),
+      color(display-p3 1.24 1.24 1.24) calc(var(--md-studio-hdr-boost, 35%) * 0.48)
+    );
+  }
+
+  :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) :where(
+    .studio-tuner-panel,
+    #studio-tuner-panel,
+    .bento-vt-modal
+  ):not([class*="md3e-shape"]) {
+    dynamic-range-limit: constrained-high;
+    --md3e-specular-rim: color-mix(
+      in oklab,
+      color-mix(
+        in oklab,
+        var(--md3e-specular-tint, var(--md-sys-color-on-surface)) calc(100% - var(--md-studio-hdr-boost, 35%) * 0.48),
+        color(display-p3 1.24 1.24 1.24) calc(var(--md-studio-hdr-boost, 35%) * 0.48)
+      ) clamp(0%, calc(var(--md-studio-specular-alpha, 18%) + var(--md-studio-hdr-boost, 35%) * 0.34), 72%),
+      transparent
+    );
+  }
+
+  :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) :where(
+    .studio-tuner-panel,
+    #studio-tuner-panel,
+    .bento-vt-modal
+  ) :where(*:not(.bento-pill-indicator, .bento-rail__indicator, .md3e-seg-indicator, .studio-scrubber, .studio-scrubber *)) {
+    dynamic-range-limit: standard;
+  }
+
+  :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) :where(.studio-scrubber:not(:focus-visible):not([data-dragging="true"])) {
+    dynamic-range-limit: standard;
+  }
+
+  :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) :where(
+    .bento-pill-indicator,
+    .bento-rail__indicator,
+    .md3e-seg-indicator
+  ) {
+    dynamic-range-limit: constrained-high;
+    box-shadow:
+      inset 0 1px 0 0 color-mix(
+        in oklab,
+        color(display-p3 1.24 1.24 1.24) calc(16% + var(--md-studio-hdr-boost, 35%) * 0.32),
+        transparent
+      ),
+      inset 0 0 0 1px color-mix(
+        in oklab,
+        var(--md-sys-color-primary) calc(14% + var(--md-studio-hdr-boost, 35%) * 0.16),
+        transparent
+      );
+  }
+
+  :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) .studio-scrubber:focus-visible,
+  :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) .studio-scrubber[data-dragging="true"] {
+    dynamic-range-limit: constrained-high;
+    --studio-scrubber-indicator: color-mix(
+      in oklab,
+      var(--md-sys-color-primary) calc(100% - var(--md-studio-hdr-boost, 35%) * 0.42),
+      color(display-p3 1.24 1.24 1.24) calc(var(--md-studio-hdr-boost, 35%) * 0.42)
+    );
+  }
+
+  :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]:not([data-reduced-transparency="true"]):not([data-contrast="high"])) .studio-scrubber::after {
+    dynamic-range-limit: constrained-high;
+    --studio-scrubber-indicator: color-mix(
+      in oklab,
+      var(--md-sys-color-primary) calc(100% - var(--md-studio-hdr-boost, 35%) * 0.4),
+      color(display-p3 1.24 1.24 1.24) calc(var(--md-studio-hdr-boost, 35%) * 0.4)
+    );
+  }
+
+  :where(:root[data-studio-profile="personal-studio"][data-studio-hdr="on"]) .studio-scrubber :where(.studio-scrubber__name, .studio-scrubber__val) {
+    dynamic-range-limit: standard;
+  }
 }
 
 /* ----------------------------------------------------------------------------
  * 2. Pointer Spotlight ([data-studio-spotlight])
  * -------------------------------------------------------------------------- */
-:root[data-studio-profile="personal-studio"] [data-studio-spotlight] {
+:where(:root[data-studio-profile="personal-studio"] [data-studio-spotlight]) {
   position: relative;
 }
 
@@ -124,6 +290,9 @@
   --studio-fade-bottom: 0px;
   scrollbar-width: thin;
   scrollbar-color: var(--md3e-scrollbar-thumb) var(--md3e-scrollbar-track);
+}
+
+:root[data-studio-profile="personal-studio"] :where(.studio-scroll-fade, [data-studio-scroll-fade]):not(#studio-tuner-panel, .studio-tuner-panel) {
   -webkit-mask-image: linear-gradient(
     to bottom,
     transparent 0,
@@ -180,6 +349,11 @@
 /* ----------------------------------------------------------------------------
  * 4. Non-Occluding Titlebar Status Capsule (#titlebar-status-pill)
  * -------------------------------------------------------------------------- */
+#titlebar-status-pill,
+.studio-status-pill {
+  display: none;
+}
+
 :root[data-studio-profile="personal-studio"] #titlebar-status-pill,
 :root[data-studio-profile="personal-studio"] .studio-status-pill {
   display: inline-block;
@@ -193,7 +367,7 @@
   font-weight: var(--md-sys-typescale-label-medium-weight);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  max-inline-size: 320px;
+  max-inline-size: clamp(110px, 13vw, 210px);
   overflow: hidden;
   text-overflow: ellipsis;
   transition: background-color var(--md-bento-motion-fast-effects, var(--md-sys-motion-fast-effects)),
@@ -215,17 +389,14 @@
 /* ----------------------------------------------------------------------------
  * 5. Co-Tuning Drawer (#studio-tuner-panel) & Drag Scrubbers (.studio-scrubber)
  * -------------------------------------------------------------------------- */
-#studio-tuner-panel[hidden] {
-  display: none;
-}
-
-:root[data-studio-profile="personal-studio"] #studio-tuner-panel {
+#studio-tuner-panel {
   position: fixed;
-  inset-block-start: 56px;
+  top: var(--md-bento-titlebar-bottom, 52px);
   inset-inline-end: var(--md-sys-spacing-4);
   z-index: 260;
   inline-size: min(416px, calc(100vw - 32px));
-  max-block-size: calc(100dvh - 80px);
+  max-inline-size: calc(100vw - 32px);
+  max-block-size: calc(100dvh - var(--md-bento-titlebar-bottom, 52px) - 24px);
   display: flex;
   flex-direction: column;
   gap: var(--md-sys-spacing-4);
@@ -233,19 +404,33 @@
   border-radius: var(--md-sys-shape-corner-extra-large);
   overflow-y: auto;
   overscroll-behavior: contain;
+  -webkit-mask-image: none;
+  mask-image: none;
   transition: opacity var(--md-bento-motion-default-effects, var(--md-sys-motion-default-effects)),
               transform var(--md-bento-motion-default-spatial, var(--md-sys-motion-default-spatial));
 }
 
-:root[data-studio-profile="personal-studio"] #studio-tuner-panel[hidden] {
+#studio-tuner-panel[hidden] {
   display: none;
 }
 
 .studio-tuner__header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--md-sys-spacing-3);
+}
+
+.studio-tuner__header > :first-child {
+  min-inline-size: 0;
+}
+
+.studio-tuner__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--md-sys-spacing-2);
 }
 
 .studio-tuner__title {
@@ -256,9 +441,11 @@
   color: var(--md-sys-color-on-surface);
 }
 
-.studio-intent-badge {
+.studio-intent-badge,
+.studio-hdr-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   padding: var(--md-sys-spacing-1) var(--md-sys-spacing-3);
   border-radius: var(--md-sys-shape-corner-full);
   background: var(--md-sys-color-tertiary-container);
@@ -267,6 +454,28 @@
   line-height: var(--md-sys-typescale-label-medium-line-height);
   font-weight: var(--md-sys-typescale-label-medium-weight);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.studio-intent-badge {
+  min-inline-size: 124px;
+}
+
+.studio-hdr-badge {
+  min-inline-size: 98px;
+  background: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.studio-hdr-badge[data-hdr-active="true"] {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.studio-tuner__btn[aria-checked="true"] {
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
 }
 
 .studio-tuner__group {
@@ -372,6 +581,8 @@
 }
 
 .studio-scrubber__val {
+  min-inline-size: 4.5ch;
+  text-align: end;
   font-variant-numeric: tabular-nums;
   font-weight: var(--md-sys-typescale-label-large-weight);
   color: var(--md-sys-color-on-surface);
@@ -574,7 +785,7 @@ dialog.studio-cmd-dialog::backdrop {
   content: "";
   position: absolute;
   inset-block: 0;
-  inset-inline: -16px;
+  inset-inline: -10px;
   min-inline-size: var(--md-sys-touch-target-min, 48px);
   min-block-size: var(--md-sys-touch-target-min, 48px);
 }
@@ -608,11 +819,54 @@ dialog.studio-cmd-dialog::backdrop {
 }
 
 /* ----------------------------------------------------------------------------
- * 8. Accessibility Fallbacks: Reduced Transparency, Motion, Contrast, Forced Colors
+ * 8. HDR Off & Accessibility Fallbacks: Reduced Transparency, Motion, Contrast, Forced Colors
  * -------------------------------------------------------------------------- */
+:root[data-studio-profile="personal-studio"][data-studio-hdr="off"] {
+  --md-studio-hdr-boost: 0%;
+  dynamic-range-limit: standard;
+}
+
+:root[data-studio-profile="personal-studio"][data-studio-hdr="off"] :where(
+  [data-studio-spotlight]::after,
+  .studio-tuner-panel,
+  #studio-tuner-panel,
+  .bento-vt-modal,
+  .bento-pill-indicator,
+  .bento-rail__indicator,
+  .md3e-seg-indicator,
+  .studio-scrubber,
+  .studio-scrubber::after
+) {
+  dynamic-range-limit: standard;
+}
+
+:root[data-studio-profile="personal-studio"][data-studio-hdr="off"] :where(
+  .bento-pill-indicator,
+  .bento-rail__indicator,
+  .md3e-seg-indicator
+) {
+  box-shadow: none;
+}
+
+:root[data-studio-profile="personal-studio"][data-studio-hdr="off"] .studio-scrubber {
+  --studio-scrubber-fill: color-mix(in oklab, var(--md-sys-color-secondary-container) 86%, transparent);
+  --studio-scrubber-indicator: var(--md-sys-color-secondary);
+}
+
+:root[data-studio-profile="personal-studio"][data-studio-hdr="off"] .studio-scrubber[data-scrubber-source="human"] {
+  --studio-scrubber-fill: color-mix(in oklab, var(--md-sys-color-primary-container) 88%, transparent);
+  --studio-scrubber-indicator: var(--md-sys-color-primary);
+}
+
+:root[data-studio-profile="personal-studio"][data-studio-hdr="off"] .studio-scrubber[data-scrubber-source="ai"] {
+  --studio-scrubber-fill: color-mix(in oklab, var(--md-sys-color-tertiary-container) 86%, transparent);
+  --studio-scrubber-indicator: var(--md-sys-color-tertiary);
+}
+
 @media (prefers-reduced-transparency: reduce) {
-  :root[data-studio-profile="personal-studio"] .studio-caustic-field {
-    display: none;
+  :root[data-studio-profile="personal-studio"] {
+    --md-studio-hdr-boost: 0%;
+    dynamic-range-limit: standard;
   }
   dialog.studio-cmd-dialog::backdrop {
     background: color-mix(in oklab, var(--md-sys-color-scrim) 64%, transparent);
@@ -622,15 +876,46 @@ dialog.studio-cmd-dialog::backdrop {
   :root[data-studio-profile="personal-studio"] [data-studio-spotlight]::after {
     display: none;
   }
+  :root[data-studio-profile="personal-studio"] :where(
+    .studio-tuner-panel,
+    #studio-tuner-panel,
+    .bento-vt-modal,
+    .bento-pill-indicator,
+    .bento-rail__indicator,
+    .md3e-seg-indicator,
+    .studio-scrubber,
+    .studio-scrubber::after
+  ) {
+    dynamic-range-limit: standard;
+    box-shadow: none;
+  }
+  :root[data-studio-profile="personal-studio"] .studio-scrubber {
+    --studio-scrubber-fill: color-mix(in oklab, var(--md-sys-color-secondary-container) 86%, transparent);
+    --studio-scrubber-indicator: var(--md-sys-color-secondary);
+  }
+  :root[data-studio-profile="personal-studio"] .studio-scrubber[data-scrubber-source="human"] {
+    --studio-scrubber-fill: color-mix(in oklab, var(--md-sys-color-primary-container) 88%, transparent);
+    --studio-scrubber-indicator: var(--md-sys-color-primary);
+  }
+  :root[data-studio-profile="personal-studio"] .studio-scrubber[data-scrubber-source="ai"] {
+    --studio-scrubber-fill: color-mix(in oklab, var(--md-sys-color-tertiary-container) 86%, transparent);
+    --studio-scrubber-indicator: var(--md-sys-color-tertiary);
+  }
+  :root[data-studio-profile="personal-studio"] .studio-scrubber:focus-visible {
+    outline-color: var(--md-sys-color-secondary);
+  }
 }
 
-:root[data-studio-profile="personal-studio"][data-reduced-transparency="true"] .studio-caustic-field,
-:root[data-studio-profile="personal-studio"][data-contrast="high"] .studio-caustic-field {
-  display: none;
+:root[data-studio-profile="personal-studio"][data-reduced-transparency="true"],
+:root[data-studio-profile="personal-studio"][data-contrast="high"] {
+  --md-studio-hdr-boost: 0%;
+  dynamic-range-limit: standard;
 }
 
-:root[data-studio-profile="personal-studio"][data-reduced-transparency="true"] dialog.studio-cmd-dialog::backdrop,
-:root[data-studio-profile="personal-studio"][data-contrast="high"] dialog.studio-cmd-dialog::backdrop {
+:root[data-reduced-transparency="true"] dialog.studio-cmd-dialog::backdrop,
+:root[data-contrast="high"] dialog.studio-cmd-dialog::backdrop,
+[data-reduced-transparency="true"] dialog.studio-cmd-dialog::backdrop,
+[data-contrast="high"] dialog.studio-cmd-dialog::backdrop {
   background: color-mix(in oklab, var(--md-sys-color-scrim) 64%, transparent);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
@@ -641,15 +926,91 @@ dialog.studio-cmd-dialog::backdrop {
   display: none;
 }
 
+:root[data-studio-profile="personal-studio"][data-reduced-transparency="true"] :where(
+  .studio-tuner-panel,
+  #studio-tuner-panel,
+  .bento-vt-modal,
+  .bento-pill-indicator,
+  .bento-rail__indicator,
+  .md3e-seg-indicator,
+  .studio-scrubber,
+  .studio-scrubber::after
+),
+:root[data-studio-profile="personal-studio"][data-contrast="high"] :where(
+  .studio-tuner-panel,
+  #studio-tuner-panel,
+  .bento-vt-modal,
+  .bento-pill-indicator,
+  .bento-rail__indicator,
+  .md3e-seg-indicator,
+  .studio-scrubber,
+  .studio-scrubber::after
+) {
+  dynamic-range-limit: standard;
+  box-shadow: none;
+}
+
+:root[data-studio-profile="personal-studio"][data-reduced-transparency="true"] .studio-scrubber,
+:root[data-studio-profile="personal-studio"][data-contrast="high"] .studio-scrubber {
+  --studio-scrubber-fill: color-mix(in oklab, var(--md-sys-color-secondary-container) 86%, transparent);
+  --studio-scrubber-indicator: var(--md-sys-color-secondary);
+}
+
+:root[data-studio-profile="personal-studio"][data-reduced-transparency="true"] .studio-scrubber[data-scrubber-source="human"],
+:root[data-studio-profile="personal-studio"][data-contrast="high"] .studio-scrubber[data-scrubber-source="human"] {
+  --studio-scrubber-fill: color-mix(in oklab, var(--md-sys-color-primary-container) 88%, transparent);
+  --studio-scrubber-indicator: var(--md-sys-color-primary);
+}
+
+:root[data-studio-profile="personal-studio"][data-reduced-transparency="true"] .studio-scrubber[data-scrubber-source="ai"],
+:root[data-studio-profile="personal-studio"][data-contrast="high"] .studio-scrubber[data-scrubber-source="ai"] {
+  --studio-scrubber-fill: color-mix(in oklab, var(--md-sys-color-tertiary-container) 86%, transparent);
+  --studio-scrubber-indicator: var(--md-sys-color-tertiary);
+}
+
+:root[data-studio-profile="personal-studio"][data-reduced-transparency="true"] .studio-scrubber:focus-visible,
+:root[data-studio-profile="personal-studio"][data-contrast="high"] .studio-scrubber:focus-visible {
+  outline-color: var(--md-sys-color-secondary);
+}
+
 @media (prefers-contrast: more) {
   :root[data-studio-profile="personal-studio"] {
+    --md-studio-hdr-boost: 0%;
+    dynamic-range-limit: standard;
     --md3e-scrollbar-thumb: var(--md-sys-color-on-surface);
     --md3e-scrollbar-track: var(--md-sys-color-surface);
     scrollbar-width: auto;
   }
-  :root[data-studio-profile="personal-studio"] .studio-caustic-field,
   :root[data-studio-profile="personal-studio"] [data-studio-spotlight]::after {
     display: none;
+  }
+  :root[data-studio-profile="personal-studio"] :where(
+    .studio-tuner-panel,
+    #studio-tuner-panel,
+    .bento-vt-modal,
+    .bento-pill-indicator,
+    .bento-rail__indicator,
+    .md3e-seg-indicator,
+    .studio-scrubber,
+    .studio-scrubber::after
+  ) {
+    dynamic-range-limit: standard;
+    box-shadow: none;
+  }
+  :root[data-studio-profile="personal-studio"] .studio-scrubber {
+    --studio-scrubber-fill: color-mix(in oklab, var(--md-sys-color-secondary-container) 86%, transparent);
+    --studio-scrubber-indicator: var(--md-sys-color-secondary);
+  }
+  :root[data-studio-profile="personal-studio"] .studio-scrubber[data-scrubber-source="human"] {
+    --studio-scrubber-fill: color-mix(in oklab, var(--md-sys-color-primary-container) 88%, transparent);
+    --studio-scrubber-indicator: var(--md-sys-color-primary);
+  }
+  :root[data-studio-profile="personal-studio"] .studio-scrubber[data-scrubber-source="ai"] {
+    --studio-scrubber-fill: color-mix(in oklab, var(--md-sys-color-tertiary-container) 86%, transparent);
+    --studio-scrubber-indicator: var(--md-sys-color-tertiary);
+  }
+  :root[data-studio-profile="personal-studio"] .studio-scrubber:focus-visible {
+    outline-color: var(--md-sys-color-secondary);
   }
   dialog.studio-cmd-dialog::backdrop {
     background: color-mix(in oklab, var(--md-sys-color-scrim) 68%, transparent);
@@ -669,7 +1030,7 @@ dialog.studio-cmd-dialog::backdrop {
   :root[data-studio-profile="personal-studio"] [data-studio-spotlight]::after,
   :root[data-studio-profile="personal-studio"] #titlebar-status-pill,
   :root[data-studio-profile="personal-studio"] .studio-status-pill,
-  :root[data-studio-profile="personal-studio"] #studio-tuner-panel,
+  #studio-tuner-panel,
   .studio-scrubber,
   .studio-tuner__btn,
   .studio-cmd-item,
@@ -681,21 +1042,54 @@ dialog.studio-cmd-dialog::backdrop {
 
 @media (forced-colors: active) {
   :root[data-studio-profile="personal-studio"] {
+    --md-studio-hdr-boost: 0%;
+    dynamic-range-limit: standard;
     scrollbar-color: auto;
     scrollbar-width: auto;
   }
-  :root[data-studio-profile="personal-studio"] .studio-caustic-field,
   :root[data-studio-profile="personal-studio"] [data-studio-spotlight]::after {
     display: none;
   }
-  :root[data-studio-profile="personal-studio"] #studio-tuner-panel,
+  :root[data-studio-profile="personal-studio"] :where(
+    .studio-tuner-panel,
+    #studio-tuner-panel,
+    .bento-vt-modal,
+    .bento-pill-indicator,
+    .bento-rail__indicator,
+    .md3e-seg-indicator,
+    .studio-scrubber,
+    .studio-scrubber::after
+  ) {
+    dynamic-range-limit: standard;
+    box-shadow: none;
+  }
+  :root[data-studio-profile="personal-studio"] #titlebar-status-pill,
+  :root[data-studio-profile="personal-studio"] .studio-status-pill,
+  #studio-tuner-panel,
   dialog.studio-cmd-dialog,
-  .studio-scrubber,
   .studio-tuner__btn,
   .studio-cmd-dialog__input,
   .studio-cmd-item,
   #studio-css-output {
     background: Canvas;
+    color: CanvasText;
+    border: 1px solid CanvasText;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .studio-scrubber {
+    forced-color-adjust: none;
+    background-color: Canvas;
+    background-image: linear-gradient(
+      to right,
+      Highlight 0%,
+      Highlight var(--studio-scrubber-pct),
+      transparent var(--studio-scrubber-pct),
+      transparent 100%
+    );
+    background-size: 100% 4px;
+    background-repeat: no-repeat;
+    background-position: left bottom;
     color: CanvasText;
     border: 1px solid CanvasText;
   }
