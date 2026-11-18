@@ -5,16 +5,14 @@ Source: <https://m3.material.io/styles/color/system/overview>, token values in
 
 ## The model in one paragraph
 
-A product can generate a scheme from one or more source colours. The bundled
-baseline example uses one seed and **six tonal
+A product picks **one seed colour**. Material expands it into **six tonal
 palettes** (primary, secondary, tertiary, neutral, neutral-variant, error),
 each with 13 **tones** from 0 to 100. A tone is a *luminance step*, not a
 lightness percentage — tone 0 is always black and tone 100 is always white,
 regardless of hue. A **colour role** is a pointer such as "primary" that names
 a job, and each role resolves to a different tone in light and dark. That is
-why roles are useful for themeable components: the role is the API, the tone
-is the implementation. Brand artwork and intentionally fixed colours may need
-literal values outside the dynamic role system.
+why you never write a hex value in a component: the role is the API, the tone
+is the implementation.
 
 ## Role → tone mapping (baseline scheme)
 
@@ -28,7 +26,7 @@ literal values outside the dynamic role system.
 | tertiary-container | T90 | T30 | on-tertiary-container | T10 | T90 |
 | error | E40 | E80 | on-error | E100 | E20 |
 | error-container | E90 | E30 | on-error-container | E10 | E90 |
-| surface | N99 | N10 | on-surface | N10 | N90 |
+| surface | N98 | N6 | on-surface | N10 | N90 |
 | surface-variant | NV90 | NV30 | on-surface-variant | NV30 | NV80 |
 | surface-container-lowest | N100 | N4 | surface-container-low | N96 | N10 |
 | surface-container | N94 | N12 | surface-container-high | N92 | N17 |
@@ -38,21 +36,24 @@ literal values outside the dynamic role system.
 | inverse-on-surface | N95 | N20 | inverse-primary | P80 | P40 |
 
 Read `P`/`S`/`T`/`E` as primary/secondary/tertiary/error palettes, `N` as
-neutral, `NV` as neutral-variant.
+neutral, `NV` as neutral-variant. Together with the 12 Fixed roles below plus
+`scrim` (`N0` / `#000000`, typically rendered at 32% opacity), `shadow`, and
+legacy `surface-tint`, `assets/tokens/md3e-tokens.css` defines all **47**
+`--md-sys-color-*` tokens.
 
 ## Choosing a role
 
 Work down this list; the first line that describes the element wins.
 
 1. **Primary action, high emphasis** → `primary` fill with `on-primary` content.
-   Filled buttons and other high-emphasis actions.
+   Filled buttons, the one thing the screen is for.
 2. **Standout fill for a key component** → `primary-container` /
    `on-primary-container`. FABs, selected chips, the active nav indicator.
    This is the most-used pairing in M3E and the one most often skipped.
 3. **Secondary action, selected state** → `secondary-container` /
    `on-secondary-container`. Tonal buttons, the selected row, filled chips.
-4. **Contrasting accent** → `tertiary` / `tertiary-container`. Use accents
-   selectively, to balance rather than compete. M3E makes tertiary more prominent than
+4. **Contrasting accent** → `tertiary` / `tertiary-container`. One accent per
+   view, to balance rather than compete. M3E makes tertiary more prominent than
    M3 did, so it now carries real accents instead of only decorative ones.
 5. **Failure** → `error` / `error-container`.
 6. **A surface** → pick by the elevation it should read as:
@@ -64,12 +65,13 @@ Work down this list; the first line that describes the element wins.
 8. **Content on top of an inverse surface** (snackbar, tooltip) →
    `inverse-surface` + `inverse-on-surface` (+ `inverse-primary` for the action).
 
-### Contrast pairing
+### The one rule you cannot break
 
-Start with the intended **on-** counterpart of a container: `primary` →
-`on-primary`, `surface-container-high` → `on-surface`, and so on. Test actual
-contrast in both themes and interaction states. Custom palettes, imagery and
-opacity can change the rendered result; the role name alone is not a guarantee.
+Content colour must always be the **on-** counterpart of the container it sits
+on: `primary` → `on-primary`, `surface-container-high` → `on-surface`, and so
+on. This pairing is what guarantees contrast in both themes. Mixing them
+(`on-primary` text on `secondary-container`) is the single most common M3
+mistake and it breaks silently in dark mode.
 
 ### Fixed roles
 
@@ -79,16 +81,27 @@ theme switch — a logo block, a brand hero, a coloured card in a light-themed
 app that must stay light. If you use fixed roles for ordinary UI, dark mode
 goes wrong: you will paint a light container onto a dark surface.
 
-### Expressive colour updates
+### Expressive colour updates (MCU SPEC_2025, Scheme Variants & Contrast)
 
-- **Wider tonal range.** M3E uses deeper tones and more of the palette, so
-  primary/secondary/tertiary separate cleanly instead of blurring together.
-  Opt in with `[data-color-variant="vibrant"]` in the token file.
-- **Stronger contrast between roles.** The point is hierarchy, while labels,
-  icons and other cues still carry meaning without relying on colour alone.
-- **Three contrast levels** are standardised: standard, medium, high. They are
-  tonal shifts of the same roles, never a separate palette. Implement with
-  `@media (prefers-contrast: more)`.
+- **Official scheme variants (`data-color-variant`).** Unlike earlier baseline M3, Material Color Utilities `SPEC_2025` computes distinct hue rotations, chroma multipliers, and surface tinting per scheme variant:
+  - `tonal-spot` *(default)*: balanced low-to-medium chroma harmonised with the seed.
+  - `expressive`: detached, high-variety primary/secondary/tertiary hue rotations with noticeably tinted neutral containers.
+  - `vibrant`: maximum chromatic impact (high-chroma accent palettes and lively surface containers).
+  - `neutral`: restrained near-greyscale accents (`C = 4..12`).
+  - `monochrome`: strict achromatic greyscale (`C = 0`, 2021 rules) for editorial/minimal UI.
+  - `fidelity`: anchors `primary-container` near the true seed tone paired with a temperature-complement `tertiary` (via `scripts/color_to_css.py`).
+- **Multi-seed presets & brand generator.** Import `assets/tokens/md3e-palettes.css` for built-in curated seeds (`data-seed="purple|ocean|emerald|amber|rose|teal"`), or generate any custom brand seed with pure-stdlib CAM16/HCT:
+  ```bash
+  python scripts/color_to_css.py --seed "#0B57D0" --variant expressive --emit-css tokens/brand-colors.css
+  ```
+- **Three contrast levels & Forced Colors Mode.** Standard (`0.0`, `>= 4.5:1`), Medium (`data-contrast="medium"`, `>= 6.0:1`), and High (`data-contrast="high"` + `@media (prefers-contrast: more)`, `>= 7.0:1`) are all shipped per variant and seed in `md3e-tokens.css` / `md3e-palettes.css`. Window High Contrast (`@media (forced-colors: active)`) overrides focus outlines to `Highlight` and resets frosted overlays to `Canvas` / `CanvasText`.
+- **Colour interpolation space caveat.** When tinting or mixing translucent neutral surfaces, always use `color-mix(in oklab, ...)` — never `in oklch` on neutrals/low-chroma colours, which triggers Chromium's powerless hue angle bug (`0deg` reddish shift).
+
+## Blur, translucency & scrims (Web Spec vs Android 16 System UI)
+
+- **Official `m3.material.io` Component Spec:** Does **not** publish `md.sys.blur.*` tokens. Component depth is communicated via opaque tonal `surface-container-*` elevation steps and solid dark `scrim` (`32%` opacity).
+- **Android 16 Material 3 Expressive System UI:** Android 16 introduced real-time window-level background blur on *transient system overlays* (Notification Shade, Quick Settings, Recents, Lock Screen) alongside a mandatory accessibility toggle allowing users to disable background blur.
+- **Optional Web frosted chrome (`.md3e-frosted-surface`):** For transient floating chrome (e.g. a floating toolbar) where background translucency aids spatial context, `md3e-tokens.css` provides **project extension** helpers (`--md3e-fx-blur-subtle: 12px`, `--md3e-fx-blur-standard: 20px`, `--md3e-fx-blur-heavy: 40px`). `.md3e-frosted-surface` always falls back to opaque `surface-container`, tints with high-opacity `color-mix(in oklab, ...)` (`82%`) to protect text contrast, and automatically disables `backdrop-filter` under `@media (prefers-reduced-transparency: reduce)`, `prefers-contrast: more`, `[data-contrast="high"]`, and `forced-colors: active`. Never use raw `backdrop-filter: blur(...)` without a reduced-transparency guard (`MD3E022`).
 
 ## State layers
 
@@ -102,8 +115,8 @@ A state layer is a semi-transparent overlay **in the content's own colour**
 | Pressed | 10% |
 | Dragged | 16% |
 
-Disabled state opacity and state-layer dimensions vary by component; check its
-specification. On touch-first layouts, preserve an adequate effective target.
+Disabled: container 12%, content 38%. The state layer is 40dp; the interactive
+target around it is 48dp.
 
 ```css
 /* correct: the overlay inherits the content colour */
@@ -136,4 +149,35 @@ Redefine the roles; do not invert or filter anything. Concretely: swap
 `[data-theme="dark"]` in, honour `prefers-color-scheme`, and set
 `color-scheme: dark` so form controls and scrollbars follow. Emphasis roles go
 *lighter* in dark mode (P80 over P40), and surface containers get *lighter* as
-they rise (N12 → N22), which is the opposite direction from light mode.
+they rise (`N4 → N10 → N12 → N17 → N22`), which is the opposite direction from
+light mode (`N100 → N96 → N94 → N92 → N90`).
+
+
+## Image & wallpaper dynamic colour extraction
+
+Both the build-time CLI and the zero-dependency browser ES module implement MCU's
+two-stage **`QuantizerCelebi`** (`QuantizerWu` + `QuantizerWsmeans` in CIE `L*a*b*`)
+followed by **`Score`** (excited hue proportion weight `0.7`, target chroma `48`,
+hue-deduplicated Top-N candidates) and **`SPEC_2025` HCT** generation:
+
+- **Build-time CLI (`scripts/color_to_css.py --image`)**:
+
+```bash
+python scripts/color_to_css.py --image wallpaper.jpg --variant expressive --emit-css tokens/brand-colors.css
+python scripts/color_to_css.py --image wallpaper.png --json   # returns ranked extracted_candidates + schemes
+```
+
+- **Browser runtime (`assets/tokens/md3e-dynamic-color.js`)**: accepts a
+  user-uploaded `File` / `Blob` from `<input type="file" accept="image/*" class="visually-hidden">`
+  (hidden via accessible `.visually-hidden` clip-path rather than `display: none` so
+  keyboard users can still focus the paired `<label>` trigger), downscales onto a
+  `<= 128px` `<canvas>`, extracts ranked seed candidates, and injects `[data-seed="custom"]`
+  CSS covering all `5` UI variants, light/dark themes, and standard/medium/high contrast levels:
+
+```js
+import { applyDynamicSeed, extractSeedsFromImage, renderStandaloneCss } from '../tokens/md3e-dynamic-color.js';
+
+const { primarySeed, candidates } = await extractSeedsFromImage(fileInput.files[0]);
+applyDynamicSeed(primarySeed); // injects [data-seed="custom"] CSS into <head> and updates <html>
+const exportCss = renderStandaloneCss(primarySeed, { variant: 'expressive' });
+```

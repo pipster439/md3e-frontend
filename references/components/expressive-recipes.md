@@ -9,32 +9,32 @@ Every recipe uses pure semantic HTML, MD3E CSS tokens (`--md-sys-*`), and spring
 ## 1. Toolbars (Docked & Floating)
 
 > [!IMPORTANT]
-> The baseline bottom app bar is **no longer recommended** in M3E. Consider a **Docked Toolbar** for fixed edge placement or a **Floating Toolbar** when actions need flexible placement or elevation.
+> The bottom app bar is **deprecated** in M3E. Use a **Docked Toolbar** for fixed edge placement or a **Floating Toolbar** when actions need flexible placement or elevation. All toolbars default to **64dp height**.
 
-### 1.1 Floating Toolbar
+### 1.1 Floating Toolbar (Standard & Vibrant)
 
-A pill-shaped toolbar elevated above content. Ideal for contextual actions, canvas controls, or mobile bottom navigation.
+A pill-shaped toolbar elevated above content. Use `role="toolbar"` for action groups (and `nav` only for site navigation). Whenever a fixed Floating Toolbar is active on a scrolling view, add `padding-block-end: 112px` (or equivalent bottom scroll clearance) on the main pane so lower cards and controls are never occluded at max scroll.
 
 ```html
-<nav class="md3e-toolbar-floating" aria-label="Quick actions">
-  <button class="md3e-toolbar-btn" aria-label="Draw">
-    <span class="material-symbols-outlined">brush</span>
+<div class="md3e-toolbar-floating" role="toolbar" aria-label="Canvas actions">
+  <button type="button" class="md3e-toolbar-btn" aria-label="Draw" aria-pressed="true">
+    <span class="material-symbols-outlined" aria-hidden="true">brush</span>
   </button>
-  <button class="md3e-toolbar-btn" aria-label="Erase">
-    <span class="material-symbols-outlined">ink_eraser</span>
+  <button type="button" class="md3e-toolbar-btn" aria-label="Erase" aria-pressed="false">
+    <span class="material-symbols-outlined" aria-hidden="true">ink_eraser</span>
   </button>
-  <div class="md3e-toolbar-divider" role="separator"></div>
-  <button class="md3e-toolbar-btn" aria-label="Undo">
-    <span class="material-symbols-outlined">undo</span>
+  <div class="md3e-toolbar-divider" role="separator" aria-orientation="vertical"></div>
+  <button type="button" class="md3e-toolbar-btn" aria-label="Undo">
+    <span class="material-symbols-outlined" aria-hidden="true">undo</span>
   </button>
-  <button class="md3e-toolbar-btn" aria-label="Redo">
-    <span class="material-symbols-outlined">redo</span>
+  <button type="button" class="md3e-toolbar-btn" aria-label="Redo">
+    <span class="material-symbols-outlined" aria-hidden="true">redo</span>
   </button>
-  <div class="md3e-toolbar-divider" role="separator"></div>
-  <button class="md3e-toolbar-btn md3e-toolbar-btn--primary" aria-label="Share">
-    <span class="material-symbols-outlined">share</span>
+  <div class="md3e-toolbar-divider" role="separator" aria-orientation="vertical"></div>
+  <button type="button" class="md3e-toolbar-btn md3e-toolbar-btn--primary" aria-label="Share">
+    <span class="material-symbols-outlined" aria-hidden="true">share</span>
   </button>
-</nav>
+</div>
 ```
 
 ```css
@@ -46,22 +46,30 @@ A pill-shaped toolbar elevated above content. Ideal for contextual actions, canv
   display: inline-flex;
   align-items: center;
   gap: var(--md-sys-spacing-1);
-  height: 56px;
+  height: 64px;
+  max-width: calc(100vw - var(--md-sys-spacing-8));
   padding-inline: var(--md-sys-spacing-2);
-  background: var(--md-sys-color-surface-container-high);
+  background: var(--md-sys-color-surface-container);
   color: var(--md-sys-color-on-surface);
   border-radius: var(--md-sys-shape-corner-full);
-  box-shadow: var(--md-sys-elevation-level2);
+  box-shadow: var(--md-sys-elevation-level3);
   z-index: 100;
   transition: transform var(--md-sys-motion-default-spatial);
+}
+
+/* Vibrant toolbar variant (M3E) */
+.md3e-toolbar-floating--vibrant {
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
 }
 
 .md3e-toolbar-btn {
   position: relative;
   display: grid;
   place-items: center;
-  width: var(--md-sys-touch-target-min); /* 48px hit target */
-  height: var(--md-sys-touch-target-min);
+  min-width: var(--md-sys-touch-target-min); /* 48px hit target */
+  min-height: var(--md-sys-touch-target-min);
+  padding: 0;
   border: none;
   background: transparent;
   color: var(--md-sys-color-on-surface-variant);
@@ -71,9 +79,27 @@ A pill-shaped toolbar elevated above content. Ideal for contextual actions, canv
               color var(--md-sys-motion-fast-effects);
 }
 
+.md3e-toolbar-floating--vibrant .md3e-toolbar-btn {
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.md3e-toolbar-btn[aria-pressed="true"] {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
 .md3e-toolbar-btn:hover {
-  background: color-mix(in srgb, currentColor var(--md-sys-state-hover-state-layer-opacity), transparent);
+  background: color-mix(in srgb, currentColor calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), transparent);
   color: var(--md-sys-color-on-surface);
+}
+
+.md3e-toolbar-btn[aria-pressed="true"]:hover {
+  background: color-mix(
+    in srgb,
+    var(--md-sys-color-on-secondary-container) calc(var(--md-sys-state-hover-state-layer-opacity) * 100%),
+    var(--md-sys-color-secondary-container)
+  );
+  color: var(--md-sys-color-on-secondary-container);
 }
 
 .md3e-toolbar-btn:focus-visible {
@@ -105,10 +131,12 @@ Fixed to screen bottom (e.g. mobile viewport footer) with surface-container styl
   height: 64px;
   padding-inline: var(--md-sys-spacing-4);
   background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-top: 1px solid var(--md-sys-color-outline-variant);
+  z-index: 100;
 }
 ```
 
@@ -116,18 +144,22 @@ Fixed to screen bottom (e.g. mobile viewport footer) with surface-container styl
 
 ## 2. Split Button
 
-A combined control: primary action on the start side, flyout/menu trigger on the end side.
-Shares a single continuous silhouette with an inner divider.
+A two-button control separated by an explicit **2dp gap**: leading action button on the start side, trailing menu trigger on the end side. Outer corners stay pill-shaped (`20px` on 40dp S size), inner corners start at `4px`, morph to `8px` on hover/press, and the trailing trigger morphs into a full circle (`20px`) with a 180° rotated chevron when `aria-expanded="true"`.
 
 ```html
 <div class="md3e-split-btn md3e-split-btn--filled">
   <button class="md3e-split-btn__action" type="button">
-    <span class="material-symbols-outlined">send</span>
-    Publish
+    <span class="material-symbols-outlined" aria-hidden="true">send</span>
+    <span>Publish</span>
   </button>
-  <div class="md3e-split-btn__divider"></div>
-  <button class="md3e-split-btn__arrow" aria-label="More publishing options" aria-haspopup="menu" aria-expanded="false" type="button">
-    <span class="material-symbols-outlined">arrow_drop_down</span>
+  <button
+    class="md3e-split-btn__arrow"
+    type="button"
+    aria-label="More publishing options"
+    aria-haspopup="menu"
+    aria-expanded="false"
+  >
+    <span class="material-symbols-outlined md3e-split-btn__chevron" aria-hidden="true">keyboard_arrow_down</span>
   </button>
 </div>
 ```
@@ -135,93 +167,165 @@ Shares a single continuous silhouette with an inner divider.
 ```css
 .md3e-split-btn {
   display: inline-flex;
-  align-items: stretch;
-  height: 40px;
-  border-radius: var(--md-sys-shape-corner-full);
-  overflow: hidden;
-  position: relative;
-  transition: transform var(--md-sys-motion-fast-spatial);
+  align-items: center;
+  gap: 2px; /* Official M3E 2dp between-space */
 }
 
-/* Filled Variant */
-.md3e-split-btn--filled {
+.md3e-split-btn__action,
+.md3e-split-btn__arrow {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  border: none;
+  cursor: pointer;
+  font-family: var(--md-sys-typescale-plain-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+  --md-sys-icon-size: 20px;
+  --md-sys-icon-opsz: 20;
+  transition: border-radius var(--md-sys-motion-fast-spatial),
+              transform var(--md-sys-motion-fast-spatial),
+              background-color var(--md-sys-motion-fast-effects),
+              color var(--md-sys-motion-fast-effects);
+}
+
+/* Preserve 48px touch target without inflating 40px visual container */
+.md3e-split-btn__action::before,
+.md3e-split-btn__arrow::before {
+  content: "";
+  position: absolute;
+  inset-block: -4px;
+  inset-inline: -2px;
+  min-width: var(--md-sys-touch-target-min);
+  min-height: var(--md-sys-touch-target-min);
+}
+
+/* State-layer overlay */
+.md3e-split-btn__action::after,
+.md3e-split-btn__arrow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-fast-effects);
+}
+
+.md3e-split-btn__action {
+  gap: var(--md-sys-spacing-2);
+  padding-inline-start: var(--md-sys-spacing-4);
+  padding-inline-end: var(--md-sys-spacing-3);
+  border-start-start-radius: var(--md-sys-shape-corner-large-increased); /* 20px */
+  border-end-start-radius: var(--md-sys-shape-corner-large-increased);
+  border-start-end-radius: var(--md-sys-shape-corner-extra-small); /* 4px */
+  border-end-end-radius: var(--md-sys-shape-corner-extra-small);
+}
+
+.md3e-split-btn__arrow {
+  width: 44px;
+  padding: 0;
+  border-start-start-radius: var(--md-sys-shape-corner-extra-small); /* 4px */
+  border-end-start-radius: var(--md-sys-shape-corner-extra-small);
+  border-start-end-radius: var(--md-sys-shape-corner-large-increased); /* 20px */
+  border-end-end-radius: var(--md-sys-shape-corner-large-increased);
+}
+
+/* Variants */
+.md3e-split-btn--filled .md3e-split-btn__action,
+.md3e-split-btn--filled .md3e-split-btn__arrow {
   background: var(--md-sys-color-primary);
   color: var(--md-sys-color-on-primary);
 }
 
-/* Tonal Variant */
-.md3e-split-btn--tonal {
+.md3e-split-btn--tonal .md3e-split-btn__action,
+.md3e-split-btn--tonal .md3e-split-btn__arrow {
   background: var(--md-sys-color-secondary-container);
   color: var(--md-sys-color-on-secondary-container);
 }
 
-/* Outlined Variant */
-.md3e-split-btn--outlined {
+.md3e-split-btn--outlined .md3e-split-btn__action,
+.md3e-split-btn--outlined .md3e-split-btn__arrow {
   background: transparent;
-  color: var(--md-sys-color-primary);
-  box-shadow: inset 0 0 0 1px var(--md-sys-color-outline);
+  color: var(--md-sys-color-on-surface-variant);
+  box-shadow: inset 0 0 0 1px var(--md-sys-color-outline-variant);
 }
 
-.md3e-split-btn__action {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--md-sys-spacing-2);
-  padding-inline-start: var(--md-sys-spacing-4);
-  padding-inline-end: var(--md-sys-spacing-3);
-  border: none;
-  background: transparent;
-  color: inherit;
-  font-family: var(--md-sys-typescale-plain-font);
-  font-size: var(--md-sys-typescale-label-large-size);
-  font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
-  cursor: pointer;
+/* Hover / Focus / Active / Expanded morphs */
+.md3e-split-btn__action:hover::after,
+.md3e-split-btn__arrow:hover::after {
+  opacity: var(--md-sys-state-hover-state-layer-opacity);
 }
 
-.md3e-split-btn__divider {
-  width: 1px;
-  margin-block: var(--md-sys-spacing-2);
-  background: currentColor;
-  opacity: 0.38;
+.md3e-split-btn__action:focus-visible::after,
+.md3e-split-btn__arrow:focus-visible::after {
+  opacity: var(--md-sys-state-focus-state-layer-opacity);
 }
 
-.md3e-split-btn__arrow {
-  display: grid;
-  place-items: center;
-  padding-inline: var(--md-sys-spacing-2);
-  border: none;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
+.md3e-split-btn__action:active::after,
+.md3e-split-btn__arrow:active::after {
+  opacity: var(--md-sys-state-pressed-state-layer-opacity);
 }
 
-.md3e-split-btn__action:hover,
-.md3e-split-btn__arrow:hover {
-  background: color-mix(in srgb, currentColor 0.12, transparent);
+.md3e-split-btn__action:is(:hover, :active) {
+  border-start-end-radius: var(--md-sys-shape-corner-small); /* 8px */
+  border-end-end-radius: var(--md-sys-shape-corner-small);
+}
+
+.md3e-split-btn__arrow:is(:hover, :active) {
+  border-start-start-radius: var(--md-sys-shape-corner-small); /* 8px */
+  border-end-start-radius: var(--md-sys-shape-corner-small);
+}
+
+.md3e-split-btn__arrow[aria-expanded="true"] {
+  border-radius: var(--md-sys-shape-corner-large-increased); /* 20px full circle */
+}
+
+.md3e-split-btn__chevron {
+  transition: transform var(--md-sys-motion-fast-spatial);
+}
+
+.md3e-split-btn__arrow[aria-expanded="true"] .md3e-split-btn__chevron {
+  transform: rotate(180deg);
 }
 
 .md3e-split-btn__action:focus-visible,
 .md3e-split-btn__arrow:focus-visible {
   outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
-  outline-offset: -2px;
+  outline-offset: var(--md-sys-focus-ring-gap);
+  z-index: 1;
+}
+
+.md3e-split-btn__action:disabled,
+.md3e-split-btn__arrow:disabled {
+  opacity: var(--md-sys-state-disabled-content-opacity);
+  cursor: default;
+  pointer-events: none;
 }
 ```
 
 ---
 
-## 3. Button Groups (Connected & Continuous Silhouette)
+## 3. Button Groups (Connected & Standard)
 
-In MD3E, grouped buttons share inner borders and maintain an outer continuous silhouette using asymmetric shape tokens.
+### 3.1 Connected Button Group (Superseding Segmented Button)
+
+Connected button groups place individual buttons side by side with a **2dp gap**, outer pill corners (`20px`), inner corners (`8px` at S size, morphing to `4px` on press), and morph the **selected item** to full pill (`20px`) without shifting neighbours.
 
 ```html
-<div class="md3e-btn-group" role="group" aria-label="Text formatting">
-  <button class="md3e-group-btn" aria-pressed="true">
-    <span class="material-symbols-outlined">format_bold</span>
+<div class="md3e-btn-group" role="group" aria-label="Text alignment">
+  <button type="button" class="md3e-group-btn" aria-label="Align left" aria-pressed="true">
+    <span class="material-symbols-outlined" aria-hidden="true">format_align_left</span>
   </button>
-  <button class="md3e-group-btn" aria-pressed="false">
-    <span class="material-symbols-outlined">format_italic</span>
+  <button type="button" class="md3e-group-btn" aria-label="Align center" aria-pressed="false">
+    <span class="material-symbols-outlined" aria-hidden="true">format_align_center</span>
   </button>
-  <button class="md3e-group-btn" aria-pressed="false">
-    <span class="material-symbols-outlined">format_underlined</span>
+  <button type="button" class="md3e-group-btn" aria-label="Align right" aria-pressed="false">
+    <span class="material-symbols-outlined" aria-hidden="true">format_align_right</span>
   </button>
 </div>
 ```
@@ -229,44 +333,104 @@ In MD3E, grouped buttons share inner borders and maintain an outer continuous si
 ```css
 .md3e-btn-group {
   display: inline-flex;
-  border-radius: var(--md-sys-shape-corner-medium); /* 12px */
-  background: var(--md-sys-color-surface-container);
-  border: 1px solid var(--md-sys-color-outline-variant);
-  overflow: hidden;
+  align-items: center;
+  gap: 2px; /* Official M3E 2dp padding for all connected groups */
 }
 
 .md3e-group-btn {
-  display: inline-grid;
-  place-items: center;
-  min-width: var(--md-sys-touch-target-min);
-  min-height: var(--md-sys-touch-target-min);
-  padding: var(--md-sys-spacing-2) var(--md-sys-spacing-3);
-  border: none;
-  background: transparent;
-  color: var(--md-sys-color-on-surface);
-  cursor: pointer;
   position: relative;
-  transition: background-color var(--md-sys-motion-fast-effects),
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--md-sys-spacing-2);
+  height: 40px;
+  min-width: 48px;
+  padding-inline: var(--md-sys-spacing-3);
+  border: none;
+  border-radius: var(--md-sys-shape-corner-small); /* 8px inner corner at S */
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-plain-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  --md-sys-icon-size: 20px;
+  --md-sys-icon-opsz: 20;
+  cursor: pointer;
+  transition: border-radius var(--md-sys-motion-fast-spatial),
+              background-color var(--md-sys-motion-fast-effects),
               color var(--md-sys-motion-fast-effects);
 }
 
-.md3e-group-btn + .md3e-group-btn {
-  border-inline-start: 1px solid var(--md-sys-color-outline-variant);
+.md3e-group-btn::before {
+  content: "";
+  position: absolute;
+  inset-block: -4px;
+  inset-inline: 0;
+  min-height: var(--md-sys-touch-target-min);
+}
+
+.md3e-group-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-fast-effects);
+}
+
+.md3e-group-btn:first-child {
+  border-start-start-radius: var(--md-sys-shape-corner-large-increased); /* 20px */
+  border-end-start-radius: var(--md-sys-shape-corner-large-increased);
+}
+
+.md3e-group-btn:last-child {
+  border-start-end-radius: var(--md-sys-shape-corner-large-increased); /* 20px */
+  border-end-end-radius: var(--md-sys-shape-corner-large-increased);
+}
+
+.md3e-group-btn:active:not(:disabled) {
+  border-radius: var(--md-sys-shape-corner-extra-small); /* 4px pressed feedback */
 }
 
 .md3e-group-btn[aria-pressed="true"] {
   background: var(--md-sys-color-secondary-container);
   color: var(--md-sys-color-on-secondary-container);
+  border-radius: var(--md-sys-shape-corner-large-increased); /* Full pill on selection */
+  font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+  --md-sys-icon-fill: 1;
 }
 
-.md3e-group-btn:hover {
-  background: color-mix(in srgb, currentColor 0.08, transparent);
+.md3e-group-btn:hover::after {
+  opacity: var(--md-sys-state-hover-state-layer-opacity);
+}
+
+.md3e-group-btn:focus-visible::after {
+  opacity: var(--md-sys-state-focus-state-layer-opacity);
+}
+
+.md3e-group-btn:active::after {
+  opacity: var(--md-sys-state-pressed-state-layer-opacity);
 }
 
 .md3e-group-btn:focus-visible {
   outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
-  outline-offset: -2px;
+  outline-offset: var(--md-sys-focus-ring-gap);
   z-index: 1;
+}
+```
+
+### 3.2 Standard Button Group
+
+Standard button groups use explicit inter-button gaps by size (`18px` XS, `12px` S, `8px` M/L/XL) so buttons maintain `>= 48px` accessible separation and morph width/shape dynamically on press/selection.
+
+```css
+.md3e-btn-group-standard {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-3); /* 12px for Small (40dp); use 8px for Medium+ */
 }
 ```
 
@@ -274,49 +438,70 @@ In MD3E, grouped buttons share inner borders and maintain an outer continuous si
 
 ## 4. FAB Menu (Morphing Action Sheet)
 
-A Floating Action Button that morphs into a stacked speed-dial / action menu.
+A Floating Action Button (`56dp`) that expands into up to 6 Medium-sized (`56dp` high) action pills and morphs into a `56dp` close button. Closed menus **must** carry `inert` so keyboard focus cannot enter invisible buttons, and **must** support `Escape` + scrim dismissal + focus return.
 
 ```html
 <div class="md3e-fab-menu-container">
   <!-- Backdrop scrim -->
   <div class="md3e-fab-scrim" id="fab-scrim" aria-hidden="true"></div>
 
-  <!-- Menu items list -->
-  <div class="md3e-fab-menu" id="fab-menu" role="menu" aria-hidden="true">
-    <div class="md3e-fab-menu-item" role="menuitem">
-      <span class="md3e-fab-menu-label">Upload file</span>
-      <button class="md3e-fab-mini" aria-label="Upload file">
-        <span class="material-symbols-outlined">upload_file</span>
-      </button>
-    </div>
-    <div class="md3e-fab-menu-item" role="menuitem">
-      <span class="md3e-fab-menu-label">New document</span>
-      <button class="md3e-fab-mini" aria-label="New document">
-        <span class="material-symbols-outlined">note_add</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- Main FAB trigger -->
-  <button class="md3e-fab" id="fab-trigger" aria-label="Actions menu" aria-expanded="false">
-    <span class="material-symbols-outlined md3e-fab-icon">add</span>
+  <!-- Main 56dp FAB / Close button trigger (first in DOM/Tab order; column-reverse places it at bottom) -->
+  <button
+    type="button"
+    class="md3e-fab"
+    id="fab-trigger"
+    aria-label="Open actions menu"
+    aria-haspopup="menu"
+    aria-expanded="false"
+    aria-controls="fab-menu"
+  >
+    <span class="material-symbols-outlined md3e-fab-icon" aria-hidden="true">add</span>
   </button>
+
+  <!-- Menu items list (inert prevents keyboard focus when closed) -->
+  <div class="md3e-fab-menu" id="fab-menu" role="menu" aria-label="Create actions" aria-hidden="true" inert>
+    <button type="button" class="md3e-fab-menu-item" role="menuitem">
+      <span class="material-symbols-outlined" aria-hidden="true">upload_file</span>
+      <span>Upload file</span>
+    </button>
+    <button type="button" class="md3e-fab-menu-item" role="menuitem">
+      <span class="material-symbols-outlined" aria-hidden="true">note_add</span>
+      <span>New document</span>
+    </button>
+  </div>
 </div>
 ```
 
 ```css
+.md3e-fab-scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--md-sys-color-scrim);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-default-effects);
+  z-index: 890;
+}
+
+.md3e-fab-scrim.is-open {
+  opacity: 0.32;
+  pointer-events: auto;
+}
+
 .md3e-fab-menu-container {
   position: fixed;
-  inset-block-end: var(--md-sys-spacing-6);
-  inset-inline-end: var(--md-sys-spacing-6);
+  inset-block-end: var(--md-sys-spacing-4); /* 16dp FAB margin per M3E spec */
+  inset-inline-end: var(--md-sys-spacing-4);
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse; /* Trigger stays first in DOM/Tab order while rendering at bottom */
   align-items: flex-end;
-  gap: var(--md-sys-spacing-3);
+  gap: var(--md-sys-spacing-1); /* 4dp gap between FAB and menu */
   z-index: 900;
 }
 
 .md3e-fab {
+  position: relative;
+  z-index: 910;
   width: 56px;
   height: 56px;
   border-radius: var(--md-sys-shape-corner-large); /* 16px */
@@ -328,11 +513,19 @@ A Floating Action Button that morphs into a stacked speed-dial / action menu.
   place-items: center;
   box-shadow: var(--md-sys-elevation-level3);
   transition: transform var(--md-sys-motion-default-spatial),
-              background-color var(--md-sys-motion-fast-effects);
+              border-radius var(--md-sys-motion-default-spatial),
+              background-color var(--md-sys-motion-fast-effects),
+              color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-fab[aria-expanded="true"] {
+  border-radius: var(--md-sys-shape-corner-extra-large); /* 28px circle close button */
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
 }
 
 .md3e-fab-icon {
-  font-size: 24px;
+  --md-sys-icon-size: 24px;
   transition: transform var(--md-sys-motion-default-spatial);
 }
 
@@ -340,14 +533,24 @@ A Floating Action Button that morphs into a stacked speed-dial / action menu.
   transform: rotate(45deg);
 }
 
+.md3e-fab:focus-visible,
+.md3e-fab-menu-item:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+}
+
 .md3e-fab-menu {
+  position: relative;
+  z-index: 910;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: var(--md-sys-spacing-3);
+  gap: var(--md-sys-spacing-1); /* 4dp item spacing per M3E FAB menu spec */
+  margin-block-end: var(--md-sys-spacing-1);
   opacity: 0;
   pointer-events: none;
-  transform: translateY(16px) scale(0.95);
+  transform: translateY(12px) scale(0.95);
+  transform-origin: bottom right;
   transition: opacity var(--md-sys-motion-fast-effects),
               transform var(--md-sys-motion-default-spatial);
 }
@@ -358,56 +561,130 @@ A Floating Action Button that morphs into a stacked speed-dial / action menu.
   transform: translateY(0) scale(1);
 }
 
+/* Official M3E FAB menu item: 56dp height, 24dp padding, 8dp gap, Title Medium */
 .md3e-fab-menu-item {
-  display: flex;
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  gap: var(--md-sys-spacing-3);
-}
-
-.md3e-fab-menu-label {
-  padding: var(--md-sys-spacing-1) var(--md-sys-spacing-3);
-  background: var(--md-sys-color-surface-container-high);
-  color: var(--md-sys-color-on-surface);
-  border-radius: var(--md-sys-shape-corner-small);
-  font-size: var(--md-sys-typescale-label-large-size);
-  box-shadow: var(--md-sys-elevation-level1);
-}
-
-.md3e-fab-mini {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--md-sys-shape-corner-medium);
-  background: var(--md-sys-color-secondary-container);
-  color: var(--md-sys-color-on-secondary-container);
+  gap: var(--md-sys-spacing-2); /* 8dp */
+  height: 56px;
+  padding-inline: var(--md-sys-spacing-6); /* 24dp */
   border: none;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
+  border-radius: var(--md-sys-shape-corner-extra-large); /* 28px full pill */
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  font-family: var(--md-sys-typescale-plain-font);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
   box-shadow: var(--md-sys-elevation-level2);
+  cursor: pointer;
+  transition: transform var(--md-sys-motion-fast-spatial),
+              background-color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-fab-menu-item::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-fast-effects);
+}
+
+.md3e-fab-menu-item:hover::after {
+  opacity: var(--md-sys-state-hover-state-layer-opacity);
 }
 ```
 
 ```javascript
-// Lightweight trigger handler
 const trigger = document.getElementById('fab-trigger');
 const menu = document.getElementById('fab-menu');
+const scrim = document.getElementById('fab-scrim');
+const menuItems = [...menu.querySelectorAll('[role="menuitem"]')];
 
-trigger.addEventListener('click', () => {
+function setFabMenuOpen(open, { focusFirst = false, restoreFocus = false } = {}) {
+  trigger.setAttribute('aria-expanded', String(open));
+  trigger.setAttribute('aria-label', open ? 'Close actions menu' : 'Open actions menu');
+  menu.setAttribute('aria-hidden', String(!open));
+  menu.inert = !open;
+  scrim.classList.toggle('is-open', open);
+
+  if (open && focusFirst && menuItems[0]) {
+    menuItems[0].focus();
+  } else if (!open && restoreFocus) {
+    trigger.focus();
+  }
+}
+
+trigger.addEventListener('click', (event) => {
   const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
-  trigger.setAttribute('aria-expanded', String(!isExpanded));
-  menu.setAttribute('aria-hidden', String(isExpanded));
+  setFabMenuOpen(!isExpanded, { focusFirst: event.detail === 0 && !isExpanded });
+});
+
+scrim.addEventListener('click', () => setFabMenuOpen(false));
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && trigger.getAttribute('aria-expanded') === 'true') {
+    event.preventDefault();
+    setFabMenuOpen(false, { restoreFocus: true });
+  }
+});
+
+menu.addEventListener('keydown', (event) => {
+  const index = menuItems.indexOf(document.activeElement);
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    menuItems[(index + 1) % menuItems.length]?.focus();
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    menuItems[(index - 1 + menuItems.length) % menuItems.length]?.focus();
+  } else if (event.key === 'Tab' && index === menuItems.length - 1 && !event.shiftKey) {
+    setFabMenuOpen(false);
+  }
+});
+
+menuItems.forEach((item) => {
+  item.addEventListener('click', () => setFabMenuOpen(false, { restoreFocus: true }));
 });
 ```
 
 ---
 
-## 5. Expressive Loading Indicator (Morphing Shape Loader)
+## 5. Expressive Loading Indicator (Official 7-Polygon Morphing Loader)
 
 > [!NOTE]
-> In MD3E, the indeterminate circular spinner is replaced for short waits (<5s) by the **Expressive Loading Indicator**, which morphs playfully between geometric shapes using spring dynamics.
+> In MD3E, the indeterminate circular spinner is replaced for short waits (<5s) by the **Expressive Loading Indicator** (`48dp` box, `38dp` active shape container) morphing sequentially through 7 official `MaterialShapes` polygons (`SoftBurst -> Cookie9Sided -> Pentagon -> Pill -> Sunny -> Cookie4Sided -> Oval`, `650ms` per transition with `spring(damping=0.6, stiffness=200)`, plus `4666ms` linear rotation).
+
+### 5.1 Official 7-Polygon SVG Morphing Loader (`assets/tokens/md3e-shapes.css`)
+
+Include `assets/tokens/md3e-shapes.css`, which precomputes the 36-cubic uniform paths and `--md-comp-loading-indicator-morph-easing`:
 
 ```html
-<div class="md3e-loading-indicator" role="status" aria-label="Loading...">
+<!-- Default 7-polygon morphing Loading Indicator -->
+<div class="md3e-loading-indicator" role="status" aria-label="Loading">
+  <svg class="md3e-loading-indicator__svg" viewBox="0 0 100 100" aria-hidden="true">
+    <path class="md3e-loading-indicator__path" d="M49.96 9.61C52.69 9.6 54.19 12.58 55.63 14.9C57.07 17.22 58.7 20.12 61.42 19.94C64.14 19.75 66.51 18.03 69.05 17.04C71.6 16.04 74.92 17.33 75.4 20.01C75.87 22.7 75.05 25.45 74.95 28.18C74.84 30.9 77.36 32.73 80.02 33.37C82.67 34.02 85.84 33.98 87.6 36.07C89.36 38.15 87.94 41.17 86.18 43.25C84.42 45.34 81.82 47.24 81.81 49.97C81.8 52.7 84.41 54.61 86.18 56.69C87.95 58.77 89.38 61.77 87.63 63.87C85.88 65.96 82.7 65.94 80.05 66.59C77.4 67.24 74.85 69.05 74.96 71.78C75.07 74.5 75.91 77.25 75.45 79.94C74.98 82.63 71.66 83.92 69.11 82.94C66.57 81.96 64.19 80.26 61.47 80.06C58.75 79.86 57.11 82.76 55.68 85.08C54.25 87.4 52.76 90.39 50.04 90.39C47.31 90.4 45.81 87.42 44.37 85.1C42.93 82.78 41.3 79.88 38.58 80.06C35.86 80.25 33.49 81.97 30.95 82.96C28.4 83.96 25.08 82.67 24.6 79.99C24.13 77.3 24.95 74.55 25.05 71.82C25.16 69.1 22.64 67.27 19.98 66.63C17.33 65.98 14.16 66.02 12.4 63.93C10.64 61.85 12.06 58.83 13.82 56.75C15.58 54.66 18.18 52.75 18.19 50.02C18.2 47.3 15.59 45.39 13.82 43.31C12.05 41.23 10.62 38.22 12.37 36.13C14.12 34.04 17.3 34.06 19.95 33.41C22.6 32.76 25.16 30.95 25.04 28.22C24.92 25.5 24.09 22.75 24.55 20.06C25.02 17.37 28.34 16.08 30.89 17.06C33.43 18.04 35.81 19.74 38.53 19.94C41.25 20.14 42.89 17.25 44.32 14.92C45.75 12.6 47.23 9.61 49.96 9.61Z" />
+  </svg>
+</div>
+
+<!-- Contained Loading Indicator (primary-container circle behind on-primary-container path) -->
+<div class="md3e-loading-indicator md3e-loading-indicator--contained" role="status" aria-label="Loading">
+  <svg class="md3e-loading-indicator__svg" viewBox="0 0 100 100" aria-hidden="true">
+    <path class="md3e-loading-indicator__path" d="M49.96 9.61C52.69 9.6 54.19 12.58 55.63 14.9C57.07 17.22 58.7 20.12 61.42 19.94C64.14 19.75 66.51 18.03 69.05 17.04C71.6 16.04 74.92 17.33 75.4 20.01C75.87 22.7 75.05 25.45 74.95 28.18C74.84 30.9 77.36 32.73 80.02 33.37C82.67 34.02 85.84 33.98 87.6 36.07C89.36 38.15 87.94 41.17 86.18 43.25C84.42 45.34 81.82 47.24 81.81 49.97C81.8 52.7 84.41 54.61 86.18 56.69C87.95 58.77 89.38 61.77 87.63 63.87C85.88 65.96 82.7 65.94 80.05 66.59C77.4 67.24 74.85 69.05 74.96 71.78C75.07 74.5 75.91 77.25 75.45 79.94C74.98 82.63 71.66 83.92 69.11 82.94C66.57 81.96 64.19 80.26 61.47 80.06C58.75 79.86 57.11 82.76 55.68 85.08C54.25 87.4 52.76 90.39 50.04 90.39C47.31 90.4 45.81 87.42 44.37 85.1C42.93 82.78 41.3 79.88 38.58 80.06C35.86 80.25 33.49 81.97 30.95 82.96C28.4 83.96 25.08 82.67 24.6 79.99C24.13 77.3 24.95 74.55 25.05 71.82C25.16 69.1 22.64 67.27 19.98 66.63C17.33 65.98 14.16 66.02 12.4 63.93C10.64 61.85 12.06 58.83 13.82 56.75C15.58 54.66 18.18 52.75 18.19 50.02C18.2 47.3 15.59 45.39 13.82 43.31C12.05 41.23 10.62 38.22 12.37 36.13C14.12 34.04 17.3 34.06 19.95 33.41C22.6 32.76 25.16 30.95 25.04 28.22C24.92 25.5 24.09 22.75 24.55 20.06C25.02 17.37 28.34 16.08 30.89 17.06C33.43 18.04 35.81 19.74 38.53 19.94C41.25 20.14 42.89 17.25 44.32 14.92C45.75 12.6 47.23 9.61 49.96 9.61Z" />
+  </svg>
+</div>
+```
+
+### 5.2 Lightweight Pure-CSS Approximation (when `md3e-shapes.css` is omitted)
+
+When shipping a zero-SVG snippet without `md3e-shapes.css`, keep a single semantic colour and pass the **easing-only** token (`--md-sys-motion-default-spatial-easing`) so CSS `animation` shorthands do not misread `460ms` as an accidental `animation-delay`:
+
+```html
+<!-- Lightweight fallback without md3e-shapes.css -->
+<div class="md3e-loading-indicator" role="status" aria-label="Loading">
   <div class="md3e-loader-shape"></div>
 </div>
 ```
@@ -418,50 +695,59 @@ trigger.addEventListener('click', () => {
   place-items: center;
   width: 48px;
   height: 48px;
+  border-radius: var(--md-sys-shape-corner-full);
+}
+
+.md3e-loading-indicator--contained {
+  background: var(--md-sys-color-primary-container);
 }
 
 .md3e-loader-shape {
-  width: 32px;
-  height: 32px;
+  width: 38px; /* Official M3E shape container size inside 48dp box */
+  height: 38px;
   background: var(--md-sys-color-primary);
-  animation: md3e-shape-morph 2.4s ease-in-out infinite;
+  /* Use -easing token so CSS animation does not interpret 460ms as animation-delay */
+  animation: md3e-shape-morph 2.4s var(--md-sys-motion-default-spatial-easing) infinite;
+}
+
+.md3e-loading-indicator--contained .md3e-loader-shape {
+  background: var(--md-sys-color-on-primary-container);
 }
 
 @keyframes md3e-shape-morph {
   0% {
-    border-radius: var(--md-sys-shape-corner-full); /* Circle */
+    /* 20px = corner-large-increased (>= 19px half of 38px), avoiding 9999px clamping */
+    border-radius: var(--md-sys-shape-corner-large-increased);
     transform: rotate(0deg) scale(1);
-    background: var(--md-sys-color-primary);
   }
   25% {
-    border-radius: var(--md-sys-shape-corner-medium); /* Rounded square */
-    transform: rotate(90deg) scale(0.85);
-    background: var(--md-sys-color-secondary);
+    border-radius: var(--md-sys-shape-corner-small);
+    transform: rotate(90deg) scale(0.86);
   }
   50% {
-    border-radius: var(--md-sys-shape-corner-extra-large-increased); /* Soft pill */
-    transform: rotate(180deg) scale(1.05);
-    background: var(--md-sys-color-tertiary);
+    border-radius: var(--md-sys-shape-corner-extra-small);
+    transform: rotate(180deg) scale(1.02);
   }
   75% {
-    border-radius: 4px 28px 4px 28px; /* Organic leaf/petal */
-    transform: rotate(270deg) scale(0.9);
-    background: var(--md-sys-color-primary-container);
+    border-radius: var(--md-sys-shape-corner-extra-small)
+                   var(--md-sys-shape-corner-large-increased)
+                   var(--md-sys-shape-corner-extra-small)
+                   var(--md-sys-shape-corner-large-increased);
+    transform: rotate(270deg) scale(0.92);
   }
   100% {
-    border-radius: var(--md-sys-shape-corner-full);
+    border-radius: var(--md-sys-shape-corner-large-increased);
     transform: rotate(360deg) scale(1);
-    background: var(--md-sys-color-primary);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .md3e-loader-shape {
-    animation: md3e-pulse 1.5s ease-in-out infinite;
-    border-radius: var(--md-sys-shape-corner-full);
+    animation: md3e-pulse 1.5s var(--md-sys-motion-easing-linear) infinite;
+    border-radius: var(--md-sys-shape-corner-large-increased);
   }
   @keyframes md3e-pulse {
-    0%, 100% { opacity: 0.4; }
+    0%, 100% { opacity: 0.45; }
     50% { opacity: 1; }
   }
 }
@@ -475,14 +761,18 @@ Toggle buttons morph resting shapes: **Round when unselected, Square when select
 
 > [!CAUTION]
 > **Common Pitfall: Why `9999px` breaks shape morph animations**:
-> In CSS, `var(--md-sys-shape-corner-full)` is defined as `9999px`. When animating `border-radius` between `9999px` and `12px` (`corner-medium`), the browser numerically interpolates from 9999 down to 12. However, for a 40px height button, the browser visually clamps any corner radius $\ge 20\text{px}$ to half the button's height. Because 99.8% of the numerical range [12, 9999] lies above 20px, the button remains visually clamped as a full pill for 99.8% of the duration, then snaps suddenly into a square in the final 1–2 frames! In reverse (12px to 9999px), it crosses 20px in the very first frame, showing zero animation.
-> 
-> **The Fix**: For a standard 40px button, use `var(--md-sys-shape-corner-large-increased)` (`20px`) for the unselected pill state. Since $20\text{px} = \frac{40\text{px}}{2}$, it renders as a geometrically perfect pill, while keeping the interpolation range tightly bounded to $[12\text{px}, 20\text{px}]$. Every millisecond of the spring physics curve is fully visible in both directions!
+> In CSS, `var(--md-sys-shape-corner-full)` is `9999px`. When animating `border-radius` between `9999px` and `12px`, browsers interpolate numerically from `9999` down to `12`, while visually clamping anything $\ge 20\text{px}$ on a `40px` button. As a result, 99.8% of the transition sits above `20px` and snaps in the final frames!
+> **The Fix**: Use `var(--md-sys-shape-corner-large-increased)` (`20px`) for the resting pill of a `40px` button (`28px` for 56px M, `48px` for 96px L).
 
 ```html
-<button class="md3e-toggle-btn" aria-pressed="false" onclick="this.setAttribute('aria-pressed', this.getAttribute('aria-pressed') === 'true' ? 'false' : 'true')">
-  <span class="material-symbols-outlined">bookmark</span>
-  Save Bookmark
+<button
+  type="button"
+  class="md3e-toggle-btn"
+  aria-pressed="false"
+  onclick="this.setAttribute('aria-pressed', this.getAttribute('aria-pressed') === 'true' ? 'false' : 'true')"
+>
+  <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
+  <span>Save bookmark</span>
 </button>
 ```
 
@@ -495,17 +785,21 @@ Toggle buttons morph resting shapes: **Round when unselected, Square when select
   gap: var(--md-sys-spacing-2);
   height: 40px;
   padding-inline: var(--md-sys-spacing-4);
-  font: inherit;
+  font-family: var(--md-sys-typescale-plain-font);
   font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  --md-sys-icon-size: 20px;
+  --md-sys-icon-opsz: 20;
   cursor: pointer;
   border: none;
   user-select: none;
-  
-  /* Unselected state: Round shape (20px on 40px height = exact pill), surface-container fill */
+
+  /* Filled toggle unselected per M3E spec: surface-container + on-surface-variant */
   background: var(--md-sys-color-surface-container);
   color: var(--md-sys-color-on-surface-variant);
-  border-radius: var(--md-sys-shape-corner-large-increased); /* 20px */
-  
+  border-radius: var(--md-sys-shape-corner-large-increased); /* 20px exact pill on 40px height */
+
   transition: border-radius var(--md-sys-motion-default-spatial),
               background-color var(--md-sys-motion-fast-effects),
               color var(--md-sys-motion-fast-effects),
@@ -516,34 +810,58 @@ Toggle buttons morph resting shapes: **Round when unselected, Square when select
 .md3e-toggle-btn::before {
   content: "";
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 100%;
-  height: 100%;
+  inset-block: -4px;
+  inset-inline: 0;
   min-height: var(--md-sys-touch-target-min);
   min-width: var(--md-sys-touch-target-min);
 }
 
-.md3e-toggle-btn:active {
-  transform: scale(0.97);
+.md3e-toggle-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-fast-effects);
+}
+
+.md3e-toggle-btn:hover::after {
+  opacity: var(--md-sys-state-hover-state-layer-opacity);
+}
+
+.md3e-toggle-btn:focus-visible::after {
+  opacity: var(--md-sys-state-focus-state-layer-opacity);
+}
+
+.md3e-toggle-btn:active::after {
+  opacity: var(--md-sys-state-pressed-state-layer-opacity);
+}
+
+.md3e-toggle-btn:active:not(:disabled) {
+  transform: scale(0.98);
+  border-radius: var(--md-sys-shape-corner-small); /* 8px pressed radius */
 }
 
 .md3e-toggle-btn[aria-pressed="true"] {
-  /* Selected state: Square shape (12dp), primary container fill */
-  background: var(--md-sys-color-primary-container);
-  color: var(--md-sys-color-on-primary-container);
+  /* Filled toggle selected per M3E spec: primary + on-primary, square 12dp */
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
   border-radius: var(--md-sys-shape-corner-medium); /* 12px */
   font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
-}
-
-.md3e-toggle-btn[aria-pressed="true"] .material-symbols-outlined {
-  font-variation-settings: 'FILL' 1;
+  --md-sys-icon-fill: 1;
 }
 
 .md3e-toggle-btn:focus-visible {
   outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
   outline-offset: var(--md-sys-focus-ring-gap);
+}
+
+.md3e-toggle-btn:disabled {
+  opacity: var(--md-sys-state-disabled-content-opacity);
+  cursor: default;
+  pointer-events: none;
 }
 ```
 
@@ -552,14 +870,14 @@ Toggle buttons morph resting shapes: **Round when unselected, Square when select
 ## 7. Search Bar (Integrated Focus & Suppressing Inner Browser Outlines)
 
 > [!CAUTION]
-> **Common Pitfall**: In web browsers, native `<input>` elements automatically render a sharp rectangular user-agent focus outline when focused. When placing an `<input>` inside a pill-shaped Material Design container (`--md-sys-shape-corner-full`), you **must** set `outline: 2px solid transparent;` (or `outline-color: transparent;`) and `border: none;` on the inner input, while letting the parent container handle `:focus-within` with the MD3E focus ring. Otherwise, an ugly rectangular browser input box will appear trapped inside the pill!
+> **Common Pitfall**: Native `<input>` elements render a sharp rectangular user-agent focus outline when focused. When placing an `<input>` inside a pill-shaped container, set `outline: 2px solid transparent;` (never `outline: none;` so Windows High Contrast mode remains visible) and style `:focus-within` on `.md3e-search-bar` with the MD3E focus ring.
 
 ```html
 <div class="md3e-search-bar" role="search">
-  <span class="material-symbols-outlined md3e-search-icon">search</span>
+  <span class="material-symbols-outlined md3e-search-icon" aria-hidden="true">search</span>
   <input type="text" placeholder="Search..." aria-label="Search content">
-  <button class="md3e-icon-btn" aria-label="Voice search">
-    <span class="material-symbols-outlined">mic</span>
+  <button type="button" class="md3e-icon-btn" aria-label="Voice search">
+    <span class="material-symbols-outlined" aria-hidden="true">mic</span>
   </button>
 </div>
 ```
@@ -572,33 +890,345 @@ Toggle buttons morph resting shapes: **Round when unselected, Square when select
   height: 56px;
   padding-inline: var(--md-sys-spacing-4);
   background-color: var(--md-sys-color-surface-container-high);
-  border-radius: var(--md-sys-shape-corner-full); /* 9999px pill */
+  color: var(--md-sys-color-on-surface);
+  border-radius: var(--md-sys-shape-corner-full);
   width: 100%;
   max-width: 480px;
   cursor: text;
   transition: background-color var(--md-sys-motion-fast-effects);
 }
 
-/* Container handles the visible MD3E focus ring */
 .md3e-search-bar:focus-within {
   outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
   outline-offset: var(--md-sys-focus-ring-gap);
   background-color: var(--md-sys-color-surface-container-highest);
 }
 
-/* Inner native input: suppress default browser rectangular outline */
 .md3e-search-bar input {
   flex: 1;
+  min-width: 0;
   border: none;
   background: transparent;
   color: var(--md-sys-color-on-surface);
-  font: inherit;
+  font-family: var(--md-sys-typescale-plain-font);
   font-size: var(--md-sys-typescale-body-large-size);
+  line-height: var(--md-sys-typescale-body-large-line-height);
   padding: 0;
   height: 100%;
-  outline: 2px solid transparent; /* Suppresses browser UA focus rectangle; preserves Windows High Contrast mode */
+  outline: 2px solid transparent;
   box-shadow: none;
+}
+
+.md3e-icon-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: var(--md-sys-touch-target-min);
+  min-height: var(--md-sys-touch-target-min);
+  padding: 0;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  transition: background-color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-icon-btn:hover {
+  background: color-mix(in srgb, currentColor calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), transparent);
+}
+
+.md3e-icon-btn:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
 }
 ```
 
+---
+
+## 8. Badges (Small 6dp Dot & Large 16dp Count with Line-Height Isolation)
+
+> [!CAUTION]
+> **Line-Height Inheritance Pitfall**:
+> Global body `line-height` is typically `24px`–`26px` (especially under CJK `:lang(zh)` adaptation). Because a large badge container is strictly **16dp** high with an `11px` font size, always isolate `line-height: 16px; height: 16px;` on `.md3e-badge`.
+
+```html
+<div class="md3e-badge-anchor">
+  <button type="button" class="md3e-icon-btn" aria-label="Notifications">
+    <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
+  </button>
+  <span class="md3e-badge md3e-badge--dot" aria-hidden="true"></span>
+</div>
+
+<div class="md3e-badge-anchor">
+  <button type="button" class="md3e-icon-btn" aria-label="Unread emails: 3">
+    <span class="material-symbols-outlined" aria-hidden="true">mail</span>
+  </button>
+  <span class="md3e-badge">3</span>
+</div>
+
+<div class="md3e-badge-anchor">
+  <button type="button" class="md3e-icon-btn" aria-label="Messages: 99+">
+    <span class="material-symbols-outlined" aria-hidden="true">chat</span>
+  </button>
+  <span class="md3e-badge">99+</span>
+</div>
+```
+
+```css
+.md3e-badge-anchor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.md3e-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  box-sizing: border-box;
+  min-width: 16px;
+  height: 16px;
+  padding-inline: 4px;
+  border-radius: var(--md-sys-shape-corner-full);
+  background-color: var(--md-sys-color-error);
+  color: var(--md-sys-color-on-error);
+  font-family: var(--md-sys-typescale-plain-font);
+  font-size: var(--md-sys-typescale-label-small-size);
+  font-weight: var(--md-sys-typescale-label-small-emphasized-weight);
+  line-height: 16px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transform: translate(25%, -25%);
+  user-select: none;
+}
+
+.md3e-badge--dot {
+  width: 6px;
+  height: 6px;
+  min-width: 6px;
+  padding: 0;
+  top: 8px;
+  right: 8px;
+  transform: translate(50%, -50%);
+}
+```
+
+---
+
+## 9. Carousel Component & Native Scrollbar Suppression
+
+```html
+<div class="md3e-carousel" role="region" aria-label="Featured showcase">
+  <article class="md3e-carousel__item" tabindex="0">
+    <h3>Item 1</h3>
+  </article>
+  <article class="md3e-carousel__item" tabindex="0">
+    <h3>Item 2</h3>
+  </article>
+  <article class="md3e-carousel__item" tabindex="0">
+    <h3>Item 3</h3>
+  </article>
+</div>
+```
+
+```css
+.md3e-carousel {
+  display: flex;
+  gap: var(--md-sys-spacing-3);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-block: var(--md-sys-spacing-2);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.md3e-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.md3e-carousel__item {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  width: 220px;
+  height: 160px;
+  padding: var(--md-sys-spacing-4);
+  border-radius: var(--md-sys-shape-corner-large);
+  background-color: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  transition: transform var(--md-sys-motion-fast-spatial);
+}
+
+.md3e-carousel__item:hover {
+  transform: scale(1.02);
+}
+
+.md3e-carousel__item:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+}
+```
+
+---
+
+## 10. Responsive Navigation Rail & Modal Sheet (GPU-Accelerated Zero-Reflow)
+
+> [!IMPORTANT]
+> **Performance Guideline**: Never animate CSS `width` when transitioning between collapsed (`80px` desktop token `--md-sys-nav-rail-width-collapsed` / `96dp` spec diagram) and expanded (`220px` `--md-sys-nav-rail-width-expanded`) navigation states or opening a mobile modal rail. Animating `width` forces document layout reflow every frame. Keep the persistent rail width fixed (or swap at media/attribute breakpoints, defaulting expanded at `Large >= 1200px` on desktop) and animate the modal drawer overlay purely on the compositor with `transform: translateX()`.
+
+```css
+/* Medium / Expanded+: Persistent collapsed navigation rail (--md-sys-nav-rail-width-collapsed: 80px; 96px for vertical spec pills) */
+.md3e-nav-rail {
+  width: var(--md-sys-nav-rail-width-collapsed, 80px);
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--md-sys-spacing-2);
+  padding-block: var(--md-sys-spacing-4);
+  background: var(--md-sys-color-surface-container);
+  border-inline-end: 1px solid var(--md-sys-color-outline-variant);
+}
+
+/* Expanded / Mobile Modal Rail Sheet (GPU-composited slide, zero reflow) */
+.md3e-nav-sheet {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 240px;
+  padding: var(--md-sys-spacing-4);
+  background: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface);
+  border-start-end-radius: var(--md-sys-shape-corner-large);
+  border-end-end-radius: var(--md-sys-shape-corner-large);
+  box-shadow: var(--md-sys-elevation-level3);
+  transform: translateX(-100%);
+  transition: transform var(--md-sys-motion-default-spatial);
+  z-index: 150;
+}
+
+.md3e-nav-sheet.is-open {
+  transform: translateX(0);
+}
+
+.md3e-nav-scrim {
+  position: fixed;
+  inset: 0;
+  background-color: var(--md-sys-color-scrim);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-default-effects);
+  z-index: 140;
+}
+
+.md3e-nav-scrim.is-active {
+  opacity: 0.32;
+  pointer-events: auto;
+}
+```
+
+---
+
+## 11. Interactive Clock Dial & Calendar Date Picker
+
+### 11.1 Clock Dial Interaction Math
+
+The M3E clock dial uses polar angle quantization. When a pointer event occurs on the 256dp dial container:
+
+```javascript
+function calculateHourFromPointer(dialElement, clientX, clientY) {
+  const rect = dialElement.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  const dx = clientX - centerX;
+  const dy = clientY - centerY;
+
+  // Compute angle in radians where 12 o'clock is 0 rad (top)
+  let theta = Math.atan2(dy, dx) + Math.PI / 2;
+  if (theta < 0) theta += 2 * Math.PI;
+
+  // Convert to 360 degrees and quantize to 30-degree (1 hour) increments
+  const deg = theta * (180 / Math.PI);
+  let hour = Math.round(deg / 30) % 12;
+  if (hour === 0) hour = 12;
+
+  return { hour, rotationDeg: hour * 30 };
+}
+```
+
+---
+
+## 12. Official 35-Shape Containers & Optional Frosted Floating Chrome
+
+### 12.1 Masked Polygon Avatars & Decorative Crops (`md3e-shapes.css`)
+
+Use `.md3e-shape` paired with any of the 35 official `.md3e-shape-<name>` classes. Wrap in `.md3e-shape-shadow-wrap` to apply a soft contour shadow (`filter: drop-shadow(...)`):
+
+```html
+<span class="md3e-shape-shadow-wrap">
+  <div class="md3e-shape md3e-shape-cookie-9-sided md3e-hero-avatar">
+    <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+  </div>
+</span>
+```
+
+```css
+.md3e-hero-avatar {
+  width: 72px;
+  display: grid;
+  place-items: center;
+  background: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
+  --md-sys-icon-size: 32px;
+}
+```
+
+### 12.2 Optional Frosted Floating Toolbar (Android 16 M3E Blur Adaptation)
+
+Component surfaces default to opaque tonal `surface-container-*` roles. Or apply the turnkey `.md3e-frosted-surface` class from `assets/tokens/md3e-tokens.css` directly; when writing a custom frosted rule on floating chrome, tint with `color-mix(in oklab, ...)` (`in oklch` causes pink shifts on low-chroma neutrals), guard `-webkit-backdrop-filter` / `backdrop-filter`, and always reset under `@media (prefers-reduced-transparency: reduce)`, high contrast, and `forced-colors: active`:
+
+```css
+.md3e-frosted-chrome {
+  background: var(--md-sys-color-surface-container);
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .md3e-frosted-chrome {
+    background: color-mix(in oklab, var(--md-sys-color-surface-container) 82%, transparent);
+    -webkit-backdrop-filter: blur(var(--md3e-fx-blur-standard, 20px));
+    backdrop-filter: blur(var(--md3e-fx-blur-standard, 20px));
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .md3e-frosted-chrome {
+    background: var(--md-sys-color-surface-container);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+[data-contrast="high"] .md3e-frosted-chrome {
+  background: var(--md-sys-color-surface-container);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (forced-colors: active) {
+  .md3e-frosted-chrome {
+    background: Canvas;
+    color: CanvasText;
+    border: 1px solid CanvasText;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
 ```

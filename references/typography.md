@@ -31,8 +31,8 @@ replacement set; it is a spotlight.
 
 Values are px on the web (dp/sp on device). Sizes and line heights are
 **identical** between baseline and emphasized, so swapping one token for the
-other never reflows the layout. Only weight — and at the two smallest sizes
-tracking — changes.
+other never reflows the layout. Only weight — and tracking (to `0`, or `0.1px`
+at the three smallest sizes: Body Small, Label Medium, Label Small) — changes.
 
 **Emphasized weight rule:** baseline 400 → 500, and baseline 500 → 700. On a
 variable font the spec's 700 maps to around `wght: 600`.
@@ -47,8 +47,8 @@ variable font the spec's 700 maps to around `wght: 600`.
 | Body | All paragraph and descriptive text | Button labels |
 | Label | Buttons, chips, tabs, captions, badges | Multi-line prose |
 
-A product need not use all 15 styles. Choose a consistent subset that fits;
-custom text styles can be appropriate for brand, localization or legibility.
+A product does not use all 15 styles. Pick the five or six that fit and use
+them consistently — the scale is a menu, not a checklist.
 
 ## Emphasized styles
 
@@ -138,9 +138,13 @@ Hebrew.
 | Large | ~30% taller | Burmese, Telugu |
 | Extra large | ~100% taller | Nastaliq |
 
-Choose line heights for the actual font and language, then test translated
-content and text zoom. Avoid a blanket language override without checking how
-the chosen font renders.
+Default to **medium** when the product ships any non-Latin script, and switch
+per detected language. Components with fixed heights are built for the small
+category and will overlap text if you ignore this — for a product that ships
+Chinese, Japanese or Korean, this is the difference between a working UI and a
+broken one.
+
+`assets/tokens/md3e-tokens.css` ships complete `:lang(zh)`, `:lang(ja)`, `:lang(ko)`, `:lang(ar)`, `:lang(hi)`, `:lang(th)`, `:lang(vi)` overrides for all 15 `--md-sys-typescale-*-line-height` tokens (`68 / 56 / 48 / 44 / 38 / 34 / 30 / 26 / 22 / 26 / 22 / 18 / 22 / 18 / 18px`):
 
 ```css
 :lang(zh), :lang(ja), :lang(ko) {
@@ -153,7 +157,7 @@ the chosen font renders.
 
 | Don't | Do |
 |---|---|
-| Inconsistent ad hoc sizes | Start from a type token, then customize deliberately |
+| `font-size: 13px` | A token — 13 is not on the scale |
 | `font-weight: bold` sprinkled ad hoc | The emphasized weight token |
 | Uppercase button labels | Sentence case (uppercase was M2) |
 | Interchangeable "medium/bold" everywhere | Two weights: 400/500 baseline, 500/700 emphasized |

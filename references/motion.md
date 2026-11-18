@@ -1,14 +1,13 @@
 # Motion — Material 3 Expressive
 
 Sources: <https://m3.material.io/styles/motion/overview/how-it-works>,
-<https://m3.material.io/styles/motion/overview/specs>,
-<https://developer.android.com/reference/kotlin/androidx/compose/material3/MotionScheme>.
+<https://m3.material.io/styles/motion/overview/specs>
 
 ## Springs replace duration + easing
 
-M3E introduced a **physics system** for component motion. Springs are useful
-for Material-style interactions, while CSS duration-and-easing animations remain
-valid for other intentional motion and compatibility needs.
+M3E introduced a **physics system**. It replaces the previous
+duration-and-easing model for component motion. You no longer say "300ms
+ease-in-out"; you say "default spatial spring" and the system resolves it.
 
 A spring has three attributes:
 
@@ -25,13 +24,15 @@ zero. Retargeting an animation that is already running just works.
 
 Two preset **schemes**:
 
-- **Expressive** — recommended for prominent UI elements and hero interactions.
-  Spatial motion can overshoot to add bounce.
+- **Expressive** — Material's opinionated default. Overshoots the final value
+  to add bounce. Use it for most situations, especially hero moments and key
+  interactions.
 - **Standard** — minimal bounce, eases into place. Use it for utilitarian
   products.
 
-Choose the scheme to fit the interaction and product. A product-level scheme
-helps components feel consistent, with selective changes for emphasis.
+Most motion in a product should use one scheme; swap to the other only to
+emphasise a moment. The scheme is applied **at product level** — it is not part
+of the token name, which is what makes it swappable.
 
 Two **types**:
 
@@ -88,10 +89,7 @@ overshoot (values above 1 are legal in `linear()`). Output lives in
 .switch { transition: background-color var(--md-sys-motion-fast-effects); }
 ```
 
-```css
-/* Valid CSS timing when a spring is not the right fit */
-.card { transition: transform 300ms cubic-bezier(0.2, 0, 0, 1); }
-```
+> **Forbidden (pre-Expressive model):** never write `.card { transition: transform 300ms cubic-bezier(0.2, 0, 0, 1); }` in component code.
 
 Pick the token by asking two questions:
 
@@ -100,8 +98,9 @@ Pick the token by asking two questions:
 | **moves / resizes / reshapes** | `fast-spatial` | `default-spatial` | `slow-spatial` |
 | **fades / recolours** | `fast-effects` | `default-effects` | `slow-effects` |
 
-Use effects specs for bounded properties such as colour and opacity, and
-spatial specs for geometry. This avoids unwanted overshoot on bounded values.
+Never use a spatial spring for opacity or colour, and never use an effects
+spring for position — an effects spring will not bounce, and a spatial spring
+on colour does not compute.
 
 Switch the scheme for the whole product with one attribute:
 
@@ -109,9 +108,34 @@ Switch the scheme for the whole product with one attribute:
 <html data-motion-scheme="expressive">
 ```
 
-For gesture-driven motion that must carry release velocity, use a physics
-integrator that accepts the measured velocity. The sampled CSS `linear()`
-tokens approximate a spring but do not inherit gesture velocity automatically.
+```js
+// Hand-rolled springs are legitimate when you need gesture handoff.
+// WAAPI does not accept CSS shorthand strings (`460ms linear(...)`) or unresolved
+// `var(...)` in `easing`; read the split -duration and -easing tokens explicitly.
+const styles = getComputedStyle(document.documentElement);
+const duration = parseFloat(styles.getPropertyValue('--md-sys-motion-default-spatial-duration')) || 460;
+const easing = styles.getPropertyValue('--md-sys-motion-default-spatial-easing').trim() || 'ease-out';
+
+element.animate(
+  [{ transform: 'scale(1)' }, { transform: 'scale(1.08)' }],
+  { duration, easing, fill: 'both' }
+);
+```
+
+When writing CSS `@keyframes` animations, pass the `-easing` token (`var(--md-sys-motion-default-spatial-easing)`), never the composite shorthand (`var(--md-sys-motion-default-spatial)`), because CSS parses a second `<time>` inside the `animation:` shorthand as `animation-delay`.
+
+For engines without `linear()`, `md3e-motion.css` falls back via `@supports not (transition-timing-function: linear(0, 1))` to M3E's official Web `cubic-bezier` curves (`350ms cubic-bezier(0.42, 1.67, 0.21, 0.90)` for expressive fast spatial, `500ms cubic-bezier(0.38, 1.21, 0.22, 1.00)` for default spatial, `650ms cubic-bezier(0.39, 1.29, 0.35, 0.98)` for slow spatial).
+
+For gesture-driven motion, use **`assets/tokens/md3e-spring.js`** (`createSpringAnimator`, `resolveSpringPreset`) or WAAPI velocity handoff so a dragged element keeps its live velocity when released or interrupted mid-flight. A pure CSS `linear()` transition restarts from zero velocity.
+
+## Web alignment matrix (`linear()`, Official Web `cubic-bezier`, JS Physics)
+
+| Driver | CSS / JS API | Duration & Overshoot Behaviour | When to use |
+|---|---|---|---|
+| **CSS `linear()` spring** *(Default)* | `var(--md-sys-motion-<speed>-<kind>)` | Exact damped harmonic oscillator unit-step curve (`380/460/620ms` analytical settle `±0.1% + 20ms tail`) | Hover/press/toggle/layout transitions |
+| **Official Web `cubic-bezier`** | `var(--md-sys-motion-<speed>-<kind>-bezier)` or `<html data-motion-driver="bezier">` | `m3.material.io` published `350 / 500 / 650ms` single-overshoot curves (also automatic `@supports not` fallback) | Parity with `m3.material.io` Web bezier table or legacy browsers |
+| **JS Spring Integrator** | `assets/tokens/md3e-spring.js` (`createSpringAnimator`) | Exact closed-form `(stiffness, damping)` physics per `requestAnimationFrame`; zero velocity loss on retarget/drag release | Drag-and-drop gestures, interruptible cards/drawers, interactive physics |
+| **Morph Loading Indicator** | `--md-comp-loading-indicator-morph-easing` | Official `spring(damping = 0.6, stiffness = 200)` sampled across `650ms` interval × 7 shapes (`4550ms` cycle) + `4666ms` linear rotation | Expressive `LoadingIndicator` (`md3e-shapes.css`) |
 
 ## Legacy layer
 
@@ -141,7 +165,7 @@ file already does this under `@media (prefers-reduced-motion: reduce)`.
 
 | Do | Don't |
 |---|---|
-| Use spring tokens where they suit component motion | Treat all CSS timing as a specification failure |
+| Use spring tokens for all component motion | Hand-write duration + easing |
 | One scheme for most of the product | Mix expressive and standard arbitrarily |
 | Spatial springs for position, size, shape | Spatial springs on colour, or effects springs on position |
 | Let `default` carry most motion | Use `fast` for large surfaces or `slow` for switches |

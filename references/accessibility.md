@@ -1,9 +1,5 @@
 # Accessibility — Material 3 Expressive
 
-Sources: <https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum>,
-<https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced>,
-<https://developer.android.com/design/ui/mobile/guides/foundations/accessibility>.
-
 M3's accessibility requirements are part of the spec, not an afterthought.
 Several are the direct reason a token exists.
 
@@ -12,14 +8,14 @@ Several are the direct reason a token exists.
 | Content | Minimum |
 |---|---|
 | Body text | 4.5:1 (WCAG AA), 7:1 for AAA |
-| Large text (18px+, or 14px bold) | 3:1 |
+| Large text (18pt+ / 24px+, or 14pt+ / 18.67px+ bold) | 3:1 |
 | UI components, borders, icons | 3:1 |
 | Focus indicator | 3:1 against adjacent colours |
 
-Matching roles such as `on-primary` on `primary` are the intended starting
-point. Check the rendered combination in each theme and state: custom palettes,
-opacity, images and overlays can change contrast. A role name alone cannot
-guarantee a WCAG ratio.
+The role system already satisfies this: `on-primary` against `primary`,
+`on-surface` against `surface`, and every other container/on-pair is generated
+to meet 4.5:1. This is the concrete reason not to mix an `on-` role with a
+container it does not belong to — you lose the guarantee silently.
 
 M3 standardises **three contrast levels** — standard, medium, high. Offer a
 high-contrast path rather than assuming the default suits everyone. They are
@@ -34,47 +30,46 @@ selection needs an indicator, a check, or a shape change.
 
 ## Touch targets
 
-- **Android/Material touch guidance:** aim for at least 48×48dp of clickable
-  area even when the visual element is smaller.
-- **Web WCAG 2.2 AA:** pointer targets are at least 24×24 CSS px, with spacing,
-  inline, equivalent-control and other stated exceptions. WCAG AAA's enhanced
-  target criterion is 44×44 CSS px. Larger targets are often more usable.
-- Spacing should prevent accidental activation; there is no universal 8px
-  minimum that applies to every pair of controls.
+- Minimum interactive target: **48×48px**.
+- Recommended for a primary action: 56×56.
+- Minimum spacing between targets: 8px; 16–24px where motor precision is
+  limited.
+- The state layer is 40px; the target around it is still 48px.
 
-Expressive button sizes **XS (32)** and **S (40)** may benefit from a larger
-touch area in touch-first layouts. Verify the actual clickable area and spacing:
+Expressive button sizes **XS (32)** and **S (40)** are below the minimum, and
+that is intentional — they must expand their tap area instead of their box:
 
 ```css
 .btn-xs { height: 32px; position: relative; }
 .btn-xs::before {                       /* invisible 48px hit area */
   content: ""; position: absolute; inset: -8px;
-  border-radius: inherit; /* test overlap and clipping with neighbouring controls */
+  border-radius: inherit;
 }
 ```
 
-For a typical touch icon button, keep the glyph legible and give its hit area
-enough room through padding or layout. Check the component's own dimensions.
+Icon buttons: the glyph is 24px, the target is 48px, achieved with padding or
+an overlay — never by enlarging the glyph.
 
 ## Focus
 
-Every keyboard-focusable element needs a visible focus indicator. An inset
-ring is one useful Material treatment, but neither that position nor a
-specific 2px ring and 2px gap is a universal requirement. Check the indicator
-against WCAG focus visibility and contrast criteria.
+Every interactive element needs a visible focus indicator, and it must be at
+least as prominent as the hover state. M3E specifies a **3px focus ring** with a
+**2px offset/gap** (`--md-sys-focus-ring-width: 3px`, `--md-sys-focus-ring-gap: 2px`,
+`--md-sys-focus-ring-color: var(--md-sys-color-secondary)` in `md3e-tokens.css`):
 
 ```css
 :focus-visible {
-  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-focus-ring-color, var(--md-sys-color-secondary));
   outline-offset: var(--md-sys-focus-ring-gap);
 }
 ```
 
 Never `outline: none` without a replacement. If a component clips its overflow,
-draw the ring on a `::after` inset by 2px instead.
+draw an inset `3px` ring on a `::after` inset by `2px` instead. Under
+`@media (forced-colors: active)`, `md3e-tokens.css` overrides the ring colour
+to `Highlight`.
 
-`:focus-visible` is usually appropriate for keyboard focus. Do not suppress a
-visible focus indicator when a pointer-focused control still needs one.
+Show focus only for keyboard use (`:focus-visible`), not on mouse click.
 
 ## State completeness
 
@@ -100,16 +95,43 @@ alone, and do not leave a disabled control focusable without explanation.
 - Give dialogs and bottom sheets focus management: move focus in on open,
   trap it, return it to the trigger on close, and close on `Escape`.
 
-## Motion and vestibular safety
+## Motion, transparency & forced colors
 
-Honour `prefers-reduced-motion`. Keep a short cross-fade so state changes stay
-perceptible, and remove every spatial spring that moves, scales or morphs the
-layout. The token file already does this; verify nothing bypasses it.
+### Vestibular safety (`prefers-reduced-motion`)
+
+Honour `prefers-reduced-motion`. Keep a short cross-fade (`120ms linear`) so state
+changes stay perceptible, and remove every spatial spring that moves, scales or
+morphs the layout. `assets/tokens/md3e-motion.css` and `assets/tokens/md3e-spring.js`
+already do this; verify custom `@keyframes` or WAAPI animations never bypass it.
 
 Springs help here: because they are interruptible, a user who changes their
 mind is not forced to watch an animation finish. Avoid motion that cannot be
 interrupted, and never animate anything that could trigger discomfort —
 parallax, large zooms, spins.
+
+### Transparency & blur (`prefers-reduced-transparency`)
+
+Default to opaque tonal `surface-container-*` elevation rather than blur.
+Whenever floating chrome uses `backdrop-filter: blur(...)` (such as
+`.md3e-frosted-surface` in `assets/tokens/md3e-tokens.css`), pair it with
+`color-mix(in oklab, ...)` and an explicit solid fallback under
+`@media (prefers-reduced-transparency: reduce)`, `@media (prefers-contrast: more)`,
+and `[data-contrast="high"]` (`background: var(--md-sys-color-surface-container);
+backdrop-filter: none;`). Never ship unguarded `backdrop-filter: blur(...)`
+(`MD3E022`).
+
+### Windows High Contrast (`forced-colors: active`)
+
+Under `@media (forced-colors: active)`, browsers replace author colours with
+system palette keywords (`Canvas`, `CanvasText`, `Highlight`, `ButtonText`):
+
+- Never suppress outlines with `outline: none` on borderless inputs or search
+  bars — use `outline: 2px solid transparent;` so forced-colors focus borders
+  remain visible.
+- Override `:focus-visible` to `outline: var(--md-sys-focus-ring-width) solid Highlight;`
+  with `outline-offset: var(--md-sys-focus-ring-gap);` (already handled in
+  `md3e-tokens.css`), and reset frosted/tinted overlays to `Canvas` / `CanvasText`
+  with a `1px solid CanvasText` border and `backdrop-filter: none`.
 
 ## Text scaling
 
@@ -137,12 +159,13 @@ Prefer rem for text and spacing, px for hairline borders and icon glyphs.
 - [ ] All contrast pairs use a matching `on-` role
 - [ ] A high-contrast path exists
 - [ ] Colour is never the only signal
-- [ ] Actual target area meets platform guidance and applicable WCAG criteria
+- [ ] Every target is ≥ 48×48 with ≥ 8px separation
 - [ ] Every interactive element has a visible `:focus-visible` indicator
 - [ ] Hover / focus / pressed / disabled / selected states all render
 - [ ] Icon-only controls have accessible names
 - [ ] Dialogs trap and restore focus, close on `Escape`
 - [ ] `prefers-reduced-motion` is honoured
+- [ ] `prefers-reduced-transparency` and `forced-colors: active` fallbacks are intact
 - [ ] 200% zoom keeps all content reachable
 - [ ] CJK/Arabic line-height adaptation considered
 - [ ] Layout mirrors for RTL via logical properties

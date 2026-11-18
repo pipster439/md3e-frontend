@@ -1,32 +1,48 @@
 <!DOCTYPE html>
-<html lang="en" data-motion-scheme="expressive" data-theme="light">
+<html lang="en" data-motion-scheme="expressive">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:,">
 <title>Material 3 Expressive (MD3E) Interactive Showcase</title>
 
-<!-- Material Symbols Icons font -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+<!-- Google Fonts & Material Symbols Icons (strictly alphabetical axes; &display=block prevents FOUT) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:FILL,GRAD,opsz,wght@0..1,-50..200,20..48,100..700&display=block">
 
-<!-- MD3E Design Tokens and Motion Springs -->
+<!-- MD3E Design Tokens, Multi-Seed Palettes, 35 Shapes, Motion Springs & @material/web Bridge -->
 <link rel="stylesheet" href="../tokens/md3e-tokens.css">
+<link rel="stylesheet" href="../tokens/md3e-palettes.css">
+<link rel="stylesheet" href="../tokens/md3e-shapes.css">
 <link rel="stylesheet" href="../tokens/md3e-motion.css">
 <link rel="stylesheet" href="../tokens/md3e-material-web.css">
 
-<!-- Load Google's official Material Web Components via ESM CDN -->
-<script type="module">
-  import 'https://esm.run/@material/web/all.js';
-</script>
-
 <style>
-  /* --------------------------------------------------------------------------
-   * Reset & Base Styles — Strictly token-driven
-   * ------------------------------------------------------------------------ */
   *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    --md-sys-focus-ring-width: 3px;
+    --md-sys-focus-ring-gap: 2px;
+    --md3e-control-h: 40px;
+    --md3e-control-hit-inset: -4px;
+    --md3e-rail-collapsed-width: var(--md-sys-nav-rail-width-collapsed, var(--md-sys-spacing-20));
+    --md3e-rail-expanded-width: var(--md-sys-nav-rail-width-expanded, 220px);
+    --md3e-pane-gap: var(--md-sys-layout-pane-gap, var(--md-sys-spacing-6));
+    --md3e-measure-max: var(--md-sys-layout-measure-max, 68ch);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: calc(64px + var(--md-sys-spacing-4));
+    scroll-padding-bottom: 112px;
+  }
 
   body {
     margin: 0;
-    padding-bottom: 120px; /* Leave space for floating toolbar */
+    min-height: 100dvh;
     background: var(--md-sys-color-surface);
     color: var(--md-sys-color-on-surface);
     font-family: var(--md-sys-typescale-plain-font);
@@ -37,48 +53,725 @@
                 color var(--md-sys-motion-fast-effects);
   }
 
-  .shell {
-    max-width: 1080px;
-    margin-inline: auto;
-    padding: var(--md-sys-spacing-6);
+  @media (min-width: 840px) {
+    body {
+      background: var(--md-sys-color-surface-container);
+    }
+  }
+
+  code {
+    font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+    font-size: 0.9em;
+    padding: 1px var(--md-sys-spacing-1);
+    border-radius: var(--md-sys-shape-corner-extra-small);
+    background: var(--md-sys-color-surface-container-highest);
+    color: var(--md-sys-color-on-surface);
+  }
+
+  .skip-link {
+    position: fixed;
+    inset-block-start: var(--md-sys-spacing-2);
+    inset-inline-start: var(--md-sys-spacing-2);
+    z-index: 1000;
+    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-4);
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+    font-size: var(--md-sys-typescale-label-large-size);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+    text-decoration: none;
   }
 
   /* --- Top App Bar --- */
   .app-bar {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    height: 64px;
-    padding-inline: var(--md-sys-spacing-4);
+    gap: var(--md-sys-spacing-2);
+    min-height: 64px;
+    padding-block: var(--md-sys-spacing-2);
+    padding-inline: var(--md-sys-spacing-3);
     background: var(--md-sys-color-surface-container);
     border-bottom: 1px solid var(--md-sys-color-outline-variant);
     position: sticky;
     top: 0;
     z-index: 50;
   }
-  .app-bar__start, .app-bar__end {
+
+  .app-bar__start,
+  .app-bar__end {
     display: flex;
     align-items: center;
     gap: var(--md-sys-spacing-2);
   }
+
+  .app-bar__start {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .app-bar__end {
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    justify-content: flex-end;
+  }
+
   .app-bar h1 {
     margin: 0;
+    min-width: 0;
     font-family: var(--md-sys-typescale-brand-font);
     font-size: var(--md-sys-typescale-title-large-size);
     line-height: var(--md-sys-typescale-title-large-line-height);
     font-weight: var(--md-sys-typescale-title-large-emphasized-weight);
   }
 
-  /* --- Section Cards --- */
+  @media (max-width: 599px) {
+    .app-bar h1 {
+      font-size: var(--md-sys-typescale-title-medium-size);
+      line-height: var(--md-sys-typescale-title-medium-line-height);
+    }
+    .app-bar__end {
+      gap: var(--md-sys-spacing-1);
+    }
+  }
+
+  /* Native Header Chips (zero un-styled web-component collapse offline) */
+  .header-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-1);
+    height: var(--md3e-control-h);
+    padding-inline: var(--md-sys-spacing-3);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-shape-corner-large-increased);
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface);
+    font-family: var(--md-sys-typescale-plain-font);
+    font-size: var(--md-sys-typescale-label-large-size);
+    line-height: var(--md-sys-typescale-label-large-line-height);
+    font-weight: var(--md-sys-typescale-label-large-weight);
+    --md-sys-icon-size: 20px;
+    cursor: pointer;
+    transition: border-radius var(--md-sys-motion-fast-spatial),
+                background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects),
+                border-color var(--md-sys-motion-fast-effects);
+  }
+
+  .header-chip::before {
+    content: "";
+    position: absolute;
+    inset-block: var(--md3e-control-hit-inset);
+    inset-inline: 0;
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+  }
+
+  .header-chip::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-sys-motion-fast-effects);
+  }
+
+  .header-chip:hover::after { opacity: var(--md-sys-state-hover-state-layer-opacity); }
+  .header-chip:active::after { opacity: var(--md-sys-state-pressed-state-layer-opacity); }
+
+  .header-chip[aria-pressed="true"],
+  .header-chip[aria-expanded="true"] {
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    border-color: transparent;
+    border-radius: var(--md-sys-shape-corner-medium);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+    --md-sys-icon-fill: 1;
+  }
+
+  .header-chip:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .header-chip--desktop-only {
+    display: none;
+  }
+  @media (min-width: 840px) {
+    .header-chip--desktop-only {
+      display: inline-flex;
+    }
+  }
+  @media (max-width: 479px) {
+    .header-chip__label-secondary {
+      display: none;
+    }
+  }
+
+  .kbd-hint {
+    display: none;
+    padding: 1px 6px;
+    border-radius: var(--md-sys-shape-corner-extra-small);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    background: var(--md-sys-color-surface-container-highest);
+    color: var(--md-sys-color-on-surface-variant);
+    font-family: ui-monospace, monospace;
+    font-size: var(--md-sys-typescale-label-small-size);
+    line-height: var(--md-sys-typescale-label-small-line-height);
+  }
+
+  @media (min-width: 840px) and (pointer: fine) {
+    .kbd-hint {
+      display: inline-block;
+    }
+  }
+
+  /* --- Adaptive App Frame (5 Breakpoints + Optional Docked Side Sheet) --- */
+  .app-frame {
+    display: flex;
+    align-items: stretch;
+    min-height: calc(100dvh - 64px);
+    min-width: 0;
+  }
+
+  /* Compact Bottom Navigation Bar (< 600px) */
+  .nav-bar {
+    position: fixed;
+    inset-block-end: 0;
+    inset-inline: 0;
+    z-index: 120;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    min-height: calc(68px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-inline: var(--md-sys-spacing-1);
+    background: var(--md-sys-color-surface-container);
+    border-top: 1px solid var(--md-sys-color-outline-variant);
+    box-shadow: var(--md-sys-elevation-level2);
+  }
+
+  .nav-bar__item {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: var(--md-sys-touch-target-min);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding-block: var(--md-sys-spacing-1);
+    color: var(--md-sys-color-on-surface-variant);
+    text-decoration: none;
+    font-size: var(--md-sys-typescale-label-small-size);
+    line-height: var(--md-sys-typescale-label-small-line-height);
+    font-weight: var(--md-sys-typescale-label-small-weight);
+  }
+
+  .nav-bar__pill {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 28px;
+    border-radius: var(--md-sys-shape-corner-large);
+    --md-sys-icon-size: 20px;
+    transition: background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects);
+  }
+
+  .nav-bar__item[aria-current="page"] {
+    color: var(--md-sys-color-on-surface);
+    font-weight: var(--md-sys-typescale-label-small-emphasized-weight);
+  }
+
+  .nav-bar__item[aria-current="page"] .nav-bar__pill {
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    --md-sys-icon-fill: 1;
+  }
+
+  .nav-bar__item:hover .nav-bar__pill {
+    background: color-mix(in oklab, currentColor calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), transparent);
+  }
+
+  .nav-bar__item:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: -2px;
+    border-radius: var(--md-sys-shape-corner-small);
+  }
+
+  @media (min-width: 600px) {
+    .nav-bar {
+      display: none;
+    }
+  }
+
+  /* Navigation Rail (Medium 600px+ Collapsed / Desktop 840px+ Expandable 80px <-> 220px) */
+  .nav-rail {
+    display: none;
+    width: var(--md3e-rail-collapsed-width);
+    flex-shrink: 0;
+    position: sticky;
+    top: 64px;
+    height: calc(100dvh - 64px);
+    padding-block: var(--md-sys-spacing-4);
+    padding-inline: var(--md-sys-spacing-2);
+    background: var(--md-sys-color-surface-container);
+    border-inline-end: 1px solid var(--md-sys-color-outline-variant);
+    flex-direction: column;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transition: width var(--md-sys-motion-default-spatial),
+                padding var(--md-sys-motion-default-spatial);
+  }
+
+  .nav-rail__compose {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--md-sys-spacing-2);
+    width: 56px;
+    min-width: var(--md-sys-touch-target-min);
+    height: 56px;
+    margin-bottom: var(--md-sys-spacing-2);
+    border: none;
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    font-family: var(--md-sys-typescale-plain-font);
+    font-size: var(--md-sys-typescale-label-large-size);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+    box-shadow: var(--md-sys-elevation-level1);
+    cursor: pointer;
+    transition: width var(--md-sys-motion-default-spatial),
+                border-radius var(--md-sys-motion-fast-spatial),
+                background-color var(--md-sys-motion-fast-effects);
+  }
+
+  .nav-rail__compose::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-sys-motion-fast-effects);
+  }
+  .nav-rail__compose:hover::after { opacity: var(--md-sys-state-hover-state-layer-opacity); }
+  .nav-rail__compose:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .nav-rail__compose-label {
+    display: none;
+    white-space: nowrap;
+  }
+
+  .nav-rail__items {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-sys-spacing-1);
+    width: 100%;
+    align-items: center;
+  }
+
+  .nav-rail__item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--md-sys-spacing-1);
+    width: 100%;
+    min-height: var(--md-sys-touch-target-min);
+    padding-block: var(--md-sys-spacing-1);
+    color: var(--md-sys-color-on-surface-variant);
+    text-decoration: none;
+    border-radius: var(--md-sys-shape-corner-large-increased);
+    font-size: var(--md-sys-typescale-label-medium-size);
+    line-height: var(--md-sys-typescale-label-medium-line-height);
+    font-weight: var(--md-sys-typescale-label-medium-weight);
+    transition: background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects);
+  }
+
+  .nav-rail__pill {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 32px;
+    border-radius: var(--md-sys-shape-corner-large);
+    transition: background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects);
+  }
+
+  .nav-rail__item[aria-current="page"] {
+    color: var(--md-sys-color-on-surface);
+    font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
+  }
+
+  .nav-rail__item[aria-current="page"] .nav-rail__pill {
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    --md-sys-icon-fill: 1;
+  }
+
+  .nav-rail__item:hover .nav-rail__pill {
+    background: color-mix(in oklab, currentColor calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), transparent);
+  }
+
+  .nav-rail__item:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .nav-rail__footer {
+    margin-top: auto;
+    padding-top: var(--md-sys-spacing-3);
+    display: none;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+    font-size: var(--md-sys-typescale-label-small-size);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  @media (min-width: 840px) {
+    .nav-rail[data-rail-expanded="true"] {
+      width: var(--md3e-rail-expanded-width);
+      align-items: stretch;
+      padding-inline: var(--md-sys-spacing-3);
+    }
+
+    .nav-rail[data-rail-expanded="true"] .nav-rail__compose {
+      width: 100%;
+      justify-content: flex-start;
+      padding-inline: var(--md-sys-spacing-4);
+    }
+
+    .nav-rail[data-rail-expanded="true"] .nav-rail__compose-label {
+      display: inline;
+    }
+
+    .nav-rail[data-rail-expanded="true"] .nav-rail__items {
+      align-items: stretch;
+    }
+
+    .nav-rail[data-rail-expanded="true"] .nav-rail__item {
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: var(--md-sys-spacing-3);
+      min-height: var(--md-sys-touch-target-min);
+      padding-inline: var(--md-sys-spacing-3);
+      font-size: var(--md-sys-typescale-label-large-size);
+    }
+
+    .nav-rail[data-rail-expanded="true"] .nav-rail__pill {
+      width: auto;
+      height: auto;
+      background: transparent;
+    }
+
+    .nav-rail[data-rail-expanded="true"] .nav-rail__item[aria-current="page"] {
+      background: var(--md-sys-color-secondary-container);
+      color: var(--md-sys-color-on-secondary-container);
+      --md-sys-icon-fill: 1;
+    }
+
+    .nav-rail[data-rail-expanded="true"] .nav-rail__item:hover {
+      background: color-mix(in oklab, currentColor calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), transparent);
+    }
+
+    .nav-rail[data-rail-expanded="true"] .nav-rail__item:hover .nav-rail__pill {
+      background: transparent;
+    }
+
+    .nav-rail[data-rail-expanded="true"] .nav-rail__footer {
+      display: flex;
+    }
+  }
+
+  /* Modal Expanded Navigation Sheet (< 840px drawer) */
+  .nav-sheet-scrim {
+    position: fixed;
+    inset: 0;
+    background: var(--md-sys-color-scrim);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-sys-motion-default-effects);
+    z-index: 200;
+  }
+  .nav-sheet-scrim.is-open {
+    opacity: 0.32;
+    pointer-events: auto;
+  }
+
+  .nav-sheet {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 280px;
+    max-width: calc(100vw - 56px);
+    padding: var(--md-sys-spacing-4);
+    background: var(--md-sys-color-surface-container-low);
+    color: var(--md-sys-color-on-surface);
+    border-start-end-radius: var(--md-sys-shape-corner-large);
+    border-end-end-radius: var(--md-sys-shape-corner-large);
+    box-shadow: var(--md-sys-elevation-level3);
+    transform: translateX(-100%);
+    transition: transform var(--md-sys-motion-default-spatial);
+    z-index: 210;
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-sys-spacing-2);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .nav-sheet.is-open {
+    transform: translateX(0);
+  }
+
+  .nav-sheet__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--md-sys-spacing-2);
+  }
+
+  .nav-sheet__link {
+    display: flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-3);
+    min-height: var(--md-sys-touch-target-min);
+    padding-inline: var(--md-sys-spacing-4);
+    border-radius: var(--md-sys-shape-corner-large-increased);
+    color: var(--md-sys-color-on-surface-variant);
+    text-decoration: none;
+    font-size: var(--md-sys-typescale-label-large-size);
+    font-weight: var(--md-sys-typescale-label-large-weight);
+    transition: background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects);
+  }
+  .nav-sheet__link[aria-current="page"] {
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+    --md-sys-icon-fill: 1;
+  }
+  .nav-sheet__link:hover {
+    background: color-mix(in oklab, currentColor calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), transparent);
+  }
+  .nav-sheet__link:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  /* Main Content Shell */
+  .shell {
+    flex: 1;
+    min-width: 0;
+    max-width: 1360px;
+    margin-inline: auto;
+    padding: var(--md-sys-layout-margin-compact);
+    padding-block-end: 176px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--md-sys-layout-gutter-compact);
+    align-content: start;
+  }
+
+  @media (min-width: 600px) {
+    .nav-rail {
+      display: flex;
+    }
+    .shell {
+      padding: var(--md-sys-layout-margin-medium);
+      padding-block-end: 120px;
+      gap: var(--md-sys-layout-gutter-medium);
+    }
+  }
+
+  @media (min-width: 840px) {
+    .shell {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      padding: var(--md3e-pane-gap);
+      padding-block-end: 120px;
+      gap: var(--md3e-pane-gap);
+    }
+    .section-card--wide {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .shell {
+      padding: var(--md-sys-spacing-8);
+      padding-block-end: 120px;
+    }
+  }
+
+  /* Desktop Docked Side Sheet Inspector (#inspector-sheet) */
+  .side-sheet-scrim {
+    position: fixed;
+    inset: 0;
+    background: var(--md-sys-color-scrim);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-sys-motion-default-effects);
+    z-index: 205;
+  }
+  .side-sheet-scrim.is-open {
+    opacity: 0.32;
+    pointer-events: auto;
+  }
+  @media (min-width: 840px) {
+    .side-sheet-scrim {
+      display: none;
+    }
+  }
+
+  .side-sheet {
+    position: fixed;
+    inset-block-end: 0;
+    inset-inline: 0;
+    max-height: 75dvh;
+    background: var(--md-sys-color-surface-container-low);
+    color: var(--md-sys-color-on-surface);
+    border-start-start-radius: var(--md-sys-shape-corner-extra-large);
+    border-start-end-radius: var(--md-sys-shape-corner-extra-large);
+    border-top: 1px solid var(--md-sys-color-outline-variant);
+    box-shadow: var(--md-sys-elevation-level3);
+    padding: var(--md-sys-spacing-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-sys-spacing-3);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transform: translateY(100%);
+    transition: transform var(--md-sys-motion-default-spatial);
+    z-index: 215;
+  }
+  .side-sheet.is-open {
+    transform: translateY(0);
+  }
+
+  @media (min-width: 840px) {
+    .side-sheet {
+      position: sticky;
+      top: 64px;
+      inset-block-end: auto;
+      inset-inline: auto;
+      height: calc(100dvh - 64px);
+      max-height: calc(100dvh - 64px);
+      width: 0;
+      padding: 0;
+      border-top: none;
+      border-radius: 0;
+      border-inline-start: 0 solid var(--md-sys-color-outline-variant);
+      box-shadow: none;
+      overflow-x: hidden;
+      flex-shrink: 0;
+      transform: none;
+      z-index: 40;
+      transition: width var(--md-sys-motion-default-spatial),
+                  padding var(--md-sys-motion-default-spatial);
+    }
+    .side-sheet.is-open {
+      width: 380px;
+      padding: var(--md-sys-spacing-5);
+      padding-block-end: 104px;
+      border-inline-start-width: 1px;
+    }
+  }
+
+  .side-sheet__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--md-sys-spacing-2);
+  }
+
+  .side-sheet__title {
+    margin: 0;
+    font-size: var(--md-sys-typescale-title-medium-size);
+    line-height: var(--md-sys-typescale-title-medium-line-height);
+    font-weight: var(--md-sys-typescale-title-medium-emphasized-weight);
+  }
+
+  .inspector-list {
+    margin: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--md-sys-spacing-2) var(--md-sys-spacing-3);
+    padding: var(--md-sys-spacing-3);
+    border-radius: var(--md-sys-shape-corner-medium);
+    background: var(--md-sys-color-surface);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    font-size: var(--md-sys-typescale-label-medium-size);
+  }
+  .inspector-list dt {
+    color: var(--md-sys-color-on-surface-variant);
+    overflow-wrap: anywhere;
+  }
+  .inspector-list dd {
+    margin: 0;
+    font-family: ui-monospace, monospace;
+    font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
+    color: var(--md-sys-color-primary);
+    text-align: end;
+  }
+
+  /* --- Section Cards (Surface Container on Mobile -> Crisp Surface Panes on Desktop >=840px) --- */
+  @keyframes md3e-card-enter {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .section-card {
-    margin-block: var(--md-sys-spacing-6);
-    padding: var(--md-sys-spacing-6);
+    min-width: 0;
+    padding: var(--md-sys-spacing-5);
     background: var(--md-sys-color-surface-container-low);
     border-radius: var(--md-sys-shape-corner-large);
     border: 1px solid var(--md-sys-color-outline-variant);
+    transition: background-color var(--md-sys-motion-fast-effects),
+                border-color var(--md-sys-motion-fast-effects),
+                padding var(--md-sys-motion-fast-spatial);
   }
+
+  @media (min-width: 840px) {
+    .section-card {
+      padding: var(--md-sys-spacing-6);
+      background: var(--md-sys-color-surface);
+      border-radius: var(--md-sys-shape-corner-extra-large);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .section-card {
+      animation-name: md3e-card-enter;
+      animation-duration: var(--md-sys-motion-default-effects-duration);
+      animation-timing-function: var(--md-sys-motion-default-effects-easing);
+      animation-fill-mode: backwards;
+    }
+  }
+
   .section-card h2 {
     margin: 0 0 var(--md-sys-spacing-2);
+    font-family: var(--md-sys-typescale-brand-font);
     font-size: var(--md-sys-typescale-headline-small-size);
     line-height: var(--md-sys-typescale-headline-small-line-height);
     font-weight: var(--md-sys-typescale-headline-small-emphasized-weight);
@@ -86,35 +779,577 @@
   .section-card p {
     margin: 0 0 var(--md-sys-spacing-4);
     color: var(--md-sys-color-on-surface-variant);
+    max-width: var(--md3e-measure-max);
   }
 
   .demo-row {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--md-sys-spacing-4);
+    gap: var(--md-sys-spacing-3);
     align-items: center;
     margin-block: var(--md-sys-spacing-3);
   }
 
-  /* --- Pure MD3E Buttons (5 Sizes & Square Shape) --- */
+  .subsection-label {
+    margin-block: var(--md-sys-spacing-4) var(--md-sys-spacing-2);
+    font-size: var(--md-sys-typescale-label-large-size);
+    line-height: var(--md-sys-typescale-label-large-line-height);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+    color: var(--md-sys-color-on-surface);
+  }
+
+  /* --- Color Studio, Type & Icon Scale --- */
+  .studio-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--md-sys-spacing-3);
+    margin-bottom: var(--md-sys-spacing-4);
+  }
+
+  @media (min-width: 840px) {
+    .studio-controls {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1200px) {
+    .studio-controls {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .control-cluster {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-sys-spacing-2);
+    padding: var(--md-sys-spacing-3);
+    background: var(--md-sys-color-surface-container);
+    border-radius: var(--md-sys-shape-corner-medium);
+  }
+
+  .control-cluster__title {
+    font-size: var(--md-sys-typescale-label-medium-size);
+    line-height: var(--md-sys-typescale-label-medium-line-height);
+    font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  .choice-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--md-sys-spacing-2);
+  }
+
+  .choice-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+    height: var(--md3e-control-h);
+    padding-inline: var(--md-sys-spacing-3);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-shape-corner-small);
+    background: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    font-family: var(--md-sys-typescale-plain-font);
+    font-size: var(--md-sys-typescale-label-large-size);
+    line-height: var(--md-sys-typescale-label-large-line-height);
+    cursor: pointer;
+    transition: border-radius var(--md-sys-motion-fast-spatial),
+                background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects);
+  }
+
+  .choice-chip::before {
+    content: "";
+    position: absolute;
+    inset-block: var(--md3e-control-hit-inset);
+    inset-inline: 0;
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+  }
+
+  .choice-chip::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-sys-motion-fast-effects);
+  }
+  .choice-chip:hover::after { opacity: var(--md-sys-state-hover-state-layer-opacity); }
+  .choice-chip:active::after { opacity: var(--md-sys-state-pressed-state-layer-opacity); }
+
+  .choice-chip[aria-pressed="true"] {
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    border-color: transparent;
+    border-radius: var(--md-sys-shape-corner-large-increased);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+    --md-sys-icon-fill: 1;
+  }
+
+  .choice-chip:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  /* Fix Purple swatch inheriting ocean primary: always lock Purple dot to MD3 baseline ref primary */
+  .seed-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--md-sys-color-primary);
+    border: 1px solid var(--md-sys-color-outline);
+    flex-shrink: 0;
+  }
+  .seed-swatch[data-seed="purple"] {
+    background: var(--md-ref-palette-primary-40);
+  }
+  [data-theme="dark"] .seed-swatch[data-seed="purple"] {
+    background: var(--md-ref-palette-primary-80);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .seed-swatch[data-seed="purple"] {
+      background: var(--md-ref-palette-primary-80);
+    }
+  }
+
+  .visually-hidden {
+    position: absolute;
+    clip-path: inset(50%);
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    white-space: nowrap;
+  }
+
+  .image-studio {
+    margin-bottom: var(--md-sys-spacing-4);
+    padding: var(--md-sys-spacing-4);
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-surface-container);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-sys-spacing-3);
+  }
+
+  .image-studio__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--md-sys-spacing-3);
+  }
+
+  .image-studio__main {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--md-sys-spacing-3);
+  }
+
+  .image-drop-zone {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+    min-block-size: var(--md-sys-touch-target-min);
+    padding-inline: var(--md-sys-spacing-4);
+    padding-block: var(--md-sys-spacing-2);
+    border-radius: var(--md-sys-shape-corner-medium);
+    border: 1px dashed var(--md-sys-color-outline);
+    background: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-label-large-size);
+    line-height: var(--md-sys-typescale-label-large-line-height);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+    cursor: pointer;
+    transition: background-color var(--md-sys-motion-fast-effects),
+                border-color var(--md-sys-motion-fast-effects),
+                border-radius var(--md-sys-motion-fast-spatial);
+  }
+
+  .image-drop-zone:hover,
+  .image-drop-zone[data-dragover="true"] {
+    border-color: var(--md-sys-color-primary);
+    background: color-mix(in oklab, var(--md-sys-color-primary) 8%, var(--md-sys-color-surface));
+  }
+
+  #image-theme-input:focus-visible + .image-drop-zone {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .image-preview-thumb {
+    width: var(--md-sys-spacing-12);
+    height: var(--md-sys-spacing-12);
+    object-fit: cover;
+    border-radius: var(--md-sys-shape-corner-small);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    flex-shrink: 0;
+  }
+
+  .custom-color-label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+    min-block-size: var(--md-sys-touch-target-min);
+    padding-inline: var(--md-sys-spacing-3);
+    border-radius: var(--md-sys-shape-corner-small);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    background: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    font-size: var(--md-sys-typescale-label-large-size);
+    line-height: var(--md-sys-typescale-label-large-line-height);
+    cursor: pointer;
+  }
+
+  .custom-color-picker {
+    inline-size: var(--md-sys-spacing-8);
+    block-size: var(--md-sys-spacing-8);
+    padding: 0;
+    border: 1px solid var(--md-sys-color-outline);
+    border-radius: var(--md-sys-shape-corner-small);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .custom-color-picker:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .copy-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .copy-tip {
+    position: absolute;
+    inset-block-end: calc(100% + var(--md-sys-spacing-1));
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+    padding: var(--md-sys-spacing-1) var(--md-sys-spacing-2);
+    border-radius: var(--md-sys-shape-corner-small);
+    background: var(--md-sys-color-inverse-surface);
+    color: var(--md-sys-color-inverse-on-surface);
+    font-size: var(--md-sys-typescale-label-small-size);
+    line-height: var(--md-sys-typescale-label-small-line-height);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--md-sys-motion-fast-effects);
+  }
+
+  #btn-copy-theme-css[data-copied] + .copy-tip,
+  #btn-copy-theme-css[data-failed] + .copy-tip {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .copy-tip {
+      transition: opacity var(--md-sys-motion-fast-effects);
+    }
+  }
+
+  .surface-ladder {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    gap: var(--md-sys-spacing-2);
+  }
+
+  .swatch-tile {
+    padding: var(--md-sys-spacing-3);
+    border-radius: var(--md-sys-shape-corner-medium);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-sys-spacing-1);
+    min-width: 0;
+    transition: background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects);
+  }
+
+  .swatch-tile--lowest { background: var(--md-sys-color-surface-container-lowest); color: var(--md-sys-color-on-surface); }
+  .swatch-tile--surface { background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface); }
+  .swatch-tile--low { background: var(--md-sys-color-surface-container-low); color: var(--md-sys-color-on-surface); }
+  .swatch-tile--container { background: var(--md-sys-color-surface-container); color: var(--md-sys-color-on-surface); }
+  .swatch-tile--high { background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface); }
+  .swatch-tile--highest { background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface); }
+  .swatch-tile--primary { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); border-color: transparent; }
+  .swatch-tile--secondary { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); border-color: transparent; }
+  .swatch-tile--tertiary { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); border-color: transparent; }
+
+  .swatch-tile__name {
+    font-size: var(--md-sys-typescale-label-medium-size);
+    line-height: var(--md-sys-typescale-label-medium-line-height);
+    font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
+    overflow-wrap: anywhere;
+  }
+
+  .swatch-tile__hex {
+    font-family: ui-monospace, monospace;
+    font-size: var(--md-sys-typescale-label-small-size);
+    line-height: var(--md-sys-typescale-label-small-line-height);
+  }
+
+  /* Typography & Optical Icon Strip */
+  .type-icon-strip {
+    margin-top: var(--md-sys-spacing-4);
+    padding: var(--md-sys-spacing-4);
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-surface-container);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--md-sys-spacing-4);
+  }
+  @media (min-width: 840px) {
+    .type-icon-strip {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .type-specimen {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-sys-spacing-2);
+  }
+  .type-specimen__sample {
+    font-family: var(--md-sys-typescale-brand-font);
+    font-size: var(--md-sys-typescale-headline-medium-size);
+    line-height: var(--md-sys-typescale-headline-medium-line-height);
+    font-weight: var(--md-sys-typescale-headline-medium-weight);
+    font-variation-settings: "GRAD" 0;
+    transition: font-variation-settings var(--md-sys-motion-fast-effects);
+  }
+  .type-specimen[data-emphasized="true"] .type-specimen__sample {
+    font-weight: var(--md-sys-typescale-headline-medium-emphasized-weight);
+    font-variation-settings: "GRAD" 50;
+  }
+
+  .icon-calibration {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--md-sys-spacing-4);
+  }
+  .icon-calibration__item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-1);
+    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-3);
+    border-radius: var(--md-sys-shape-corner-small);
+    background: var(--md-sys-color-surface);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    font-size: var(--md-sys-typescale-label-medium-size);
+  }
+  .icon-calibration__item--filled {
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    border-color: transparent;
+    --md-sys-icon-fill: 1;
+  }
+  .icon-calibration__item--large {
+    --md-sys-icon-size: 32px;
+    --md-sys-icon-opsz: 32;
+  }
+
+  /* --- Shape Gallery & Loading Indicator --- */
+  .md3e-loading-indicator.is-paused .md3e-loading-indicator__svg,
+  .md3e-loading-indicator.is-paused .md3e-loading-indicator__path {
+    animation-play-state: paused;
+  }
+
+  .shape-stage {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--md-sys-spacing-6);
+    margin-bottom: var(--md-sys-spacing-4);
+    padding: var(--md-sys-spacing-4);
+    background: var(--md-sys-color-surface-container);
+    border-radius: var(--md-sys-shape-corner-large);
+  }
+
+  .shape-spotlight {
+    width: 96px;
+    height: 96px;
+    display: grid;
+    place-items: center;
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    --md-sys-icon-size: 40px;
+    transition: transform var(--md-sys-motion-fast-spatial);
+  }
+
+  .shape-stage[data-shadow-wrap="false"] .md3e-shape-shadow-wrap {
+    filter: none;
+  }
+
+  .shape-spotlight__meta {
+    min-width: 0;
+    flex: 1 1 200px;
+  }
+
+  .shape-spotlight__meta strong {
+    display: block;
+    font-size: var(--md-sys-typescale-title-medium-size);
+    line-height: var(--md-sys-typescale-title-medium-line-height);
+  }
+
+  .shape-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+    gap: var(--md-sys-spacing-2);
+  }
+
+  .shape-tile-btn {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+    padding: var(--md-sys-spacing-1);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-shape-corner-medium);
+    background: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    cursor: pointer;
+    transition: background-color var(--md-sys-motion-fast-effects),
+                border-color var(--md-sys-motion-fast-effects),
+                transform var(--md-sys-motion-fast-spatial);
+  }
+
+  .shape-tile-btn[aria-pressed="true"] {
+    background: var(--md-sys-color-secondary-container);
+    border-color: var(--md-sys-color-primary);
+  }
+
+  .shape-tile-btn:active {
+    transform: scale(0.95);
+  }
+
+  .shape-tile-btn:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .shape-tile-preview {
+    width: 32px;
+    height: 32px;
+    background: var(--md-sys-color-primary);
+  }
+
+  .shape-tile-btn[aria-pressed="true"] .shape-tile-preview {
+    background: var(--md-sys-color-on-secondary-container);
+  }
+
+  /* --- Physics Spring Playground --- */
+  .spring-track {
+    position: relative;
+    width: 100%;
+    height: 64px;
+    padding-inline: var(--md-sys-spacing-2);
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--md-sys-color-surface-container-highest);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  .spring-puck {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+    display: grid;
+    place-items: center;
+    will-change: transform;
+    user-select: none;
+  }
+
+  /* --- Pure MD3E Buttons (5 Emphasis, 5 Sizes, Square Shapes, Icon Buttons, Disabled 12%/38%) --- */
   .md3e-btn {
+    --md-btn-h: 40px;
+    --md-btn-pressed-r: var(--md-sys-shape-corner-small);
     position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: var(--md-sys-spacing-2);
+    max-width: 100%;
+    height: var(--md-btn-h);
     border: none;
     cursor: pointer;
-    font-family: inherit;
-    border-radius: var(--md-sys-shape-corner-full);
+    font-family: var(--md-sys-typescale-plain-font);
+    border-radius: calc(var(--md-btn-h) / 2);
     transition: transform var(--md-sys-motion-fast-spatial),
-                border-radius var(--md-sys-motion-default-spatial),
-                background-color var(--md-sys-motion-fast-effects);
+                border-radius var(--md-sys-motion-fast-spatial),
+                background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects);
   }
+
+  .md3e-btn::before {
+    content: "";
+    position: absolute;
+    inset-block: calc((var(--md-btn-h) - var(--md-sys-touch-target-min)) / 2);
+    inset-inline: 0;
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+  }
+
+  .md3e-btn::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-sys-motion-fast-effects);
+  }
+
+  .md3e-btn:hover:not(:disabled)::after { opacity: var(--md-sys-state-hover-state-layer-opacity); }
+  .md3e-btn:focus-visible::after { opacity: var(--md-sys-state-focus-state-layer-opacity); }
+  .md3e-btn:active:not(:disabled)::after { opacity: var(--md-sys-state-pressed-state-layer-opacity); }
+
+  .md3e-btn:active:not(:disabled) {
+    border-radius: var(--md-btn-pressed-r);
+    transform: scale(0.98);
+  }
+
   .md3e-btn:focus-visible {
     outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
     outline-offset: var(--md-sys-focus-ring-gap);
   }
+
+  .md3e-btn:disabled {
+    background: color-mix(in oklab, var(--md-sys-color-on-surface) calc(var(--md-sys-state-disabled-container-opacity) * 100%), transparent);
+    color: color-mix(in oklab, var(--md-sys-color-on-surface) calc(var(--md-sys-state-disabled-content-opacity) * 100%), transparent);
+    box-shadow: var(--md-sys-elevation-level0);
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .md3e-btn--outlined:disabled {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--md-sys-color-on-surface) calc(var(--md-sys-state-disabled-container-opacity) * 100%), transparent);
+  }
+
+  .md3e-btn--text:disabled {
+    background: transparent;
+  }
+
   .md3e-btn--filled {
     background: var(--md-sys-color-primary);
     color: var(--md-sys-color-on-primary);
@@ -123,218 +1358,577 @@
   .md3e-btn--tonal {
     background: var(--md-sys-color-secondary-container);
     color: var(--md-sys-color-on-secondary-container);
+    font-weight: var(--md-sys-typescale-label-large-weight);
+  }
+  .md3e-btn--elevated {
+    background: var(--md-sys-color-surface-container-low);
+    color: var(--md-sys-color-primary);
+    box-shadow: var(--md-sys-elevation-level1);
+    font-weight: var(--md-sys-typescale-label-large-weight);
   }
   .md3e-btn--outlined {
     background: transparent;
+    color: var(--md-sys-color-on-surface-variant);
+    box-shadow: inset 0 0 0 1px var(--md-sys-color-outline-variant);
+    font-weight: var(--md-sys-typescale-label-large-weight);
+  }
+  .md3e-btn--text {
+    background: transparent;
     color: var(--md-sys-color-primary);
-    box-shadow: inset 0 0 0 1px var(--md-sys-color-outline);
+    font-weight: var(--md-sys-typescale-label-large-weight);
   }
 
-  /* Size implementations */
   .md3e-btn--xs {
-    height: 32px;
-    min-height: var(--md-sys-touch-target-min);
-    padding-inline: 12px;
+    --md-btn-h: 32px;
+    --md-btn-pressed-r: var(--md-sys-shape-corner-small);
+    --md-sys-icon-size: 20px;
+    padding-inline: var(--md-sys-spacing-3);
+    gap: var(--md-sys-spacing-1);
     font-size: var(--md-sys-typescale-label-medium-size);
+    line-height: var(--md-sys-typescale-label-medium-line-height);
   }
   .md3e-btn--s {
-    height: 40px;
-    min-height: var(--md-sys-touch-target-min);
-    padding-inline: 16px;
+    --md-btn-h: var(--md3e-control-h);
+    --md-btn-pressed-r: var(--md-sys-shape-corner-small);
+    --md-sys-icon-size: 20px;
+    padding-inline: var(--md-sys-spacing-4);
     font-size: var(--md-sys-typescale-label-large-size);
+    line-height: var(--md-sys-typescale-label-large-line-height);
   }
   .md3e-btn--m {
-    height: 56px;
-    min-height: 56px;
-    padding-inline: 24px;
+    --md-btn-h: 56px;
+    --md-btn-pressed-r: var(--md-sys-shape-corner-medium);
+    --md-sys-icon-size: 24px;
+    padding-inline: var(--md-sys-spacing-6);
     font-size: var(--md-sys-typescale-title-medium-size);
+    line-height: var(--md-sys-typescale-title-medium-line-height);
   }
   .md3e-btn--l {
-    height: 96px;
-    min-height: 96px;
-    padding-inline: 48px;
+    --md-btn-h: 96px;
+    --md-btn-pressed-r: var(--md-sys-shape-corner-large);
+    --md-sys-icon-size: 32px;
+    padding-inline: var(--md-sys-spacing-8);
+    gap: var(--md-sys-spacing-3);
     font-size: var(--md-sys-typescale-headline-small-size);
+    line-height: var(--md-sys-typescale-headline-small-line-height);
+  }
+  .md3e-btn--xl {
+    --md-btn-h: 136px;
+    --md-btn-pressed-r: var(--md-sys-shape-corner-large);
+    --md-sys-icon-size: 40px;
+    padding-inline: var(--md-sys-spacing-10);
+    gap: var(--md-sys-spacing-4);
+    font-size: var(--md-sys-typescale-headline-medium-size);
+    line-height: var(--md-sys-typescale-headline-medium-line-height);
   }
 
-  /* Square shapes */
+  @media (min-width: 600px) {
+    .md3e-btn--l { padding-inline: var(--md-sys-spacing-12); }
+    .md3e-btn--xl { padding-inline: var(--md-sys-spacing-16); }
+  }
+
+  .md3e-btn--square.md3e-btn--xs,
   .md3e-btn--square.md3e-btn--s { border-radius: var(--md-sys-shape-corner-medium); }
   .md3e-btn--square.md3e-btn--m { border-radius: var(--md-sys-shape-corner-large); }
+  .md3e-btn--square.md3e-btn--l,
+  .md3e-btn--square.md3e-btn--xl { border-radius: var(--md-sys-shape-corner-extra-large); }
 
-  /* --- Split Button --- */
-  .split-btn {
-    display: inline-flex;
-    align-items: stretch;
-    height: 40px;
+  /* Icon Buttons (40px visual container, 48x48px ::before hit target, square morph on active/pressed) */
+  .md3e-icon-btn {
+    --md-btn-h: var(--md3e-control-h);
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: var(--md-btn-h);
+    height: var(--md-btn-h);
+    padding: 0;
+    border: none;
+    border-radius: calc(var(--md-btn-h) / 2);
+    background: transparent;
+    color: var(--md-sys-color-on-surface-variant);
+    --md-sys-icon-size: 24px;
+    cursor: pointer;
+    transition: border-radius var(--md-sys-motion-fast-spatial),
+                background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects),
+                transform var(--md-sys-motion-fast-spatial);
+  }
+  .md3e-icon-btn::before {
+    content: "";
+    position: absolute;
+    inset-block: calc((var(--md-btn-h) - var(--md-sys-touch-target-min)) / 2);
+    inset-inline: calc((var(--md-btn-h) - var(--md-sys-touch-target-min)) / 2);
+    min-width: var(--md-sys-touch-target-min);
     min-height: var(--md-sys-touch-target-min);
-    border-radius: var(--md-sys-shape-corner-full);
-    overflow: hidden;
+  }
+  .md3e-icon-btn::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-sys-motion-fast-effects);
+  }
+  .md3e-icon-btn:hover::after { opacity: var(--md-sys-state-hover-state-layer-opacity); }
+  .md3e-icon-btn:active::after { opacity: var(--md-sys-state-pressed-state-layer-opacity); }
+  .md3e-icon-btn:active { border-radius: var(--md-sys-shape-corner-small); transform: scale(0.95); }
+  .md3e-icon-btn:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+  .md3e-icon-btn--filled { background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-primary); }
+  .md3e-icon-btn--filled[aria-pressed="true"] {
     background: var(--md-sys-color-primary);
     color: var(--md-sys-color-on-primary);
+    border-radius: var(--md-sys-shape-corner-medium);
+    --md-sys-icon-fill: 1;
   }
-  .split-btn__action, .split-btn__trigger {
+  .md3e-icon-btn--tonal { background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface-variant); }
+  .md3e-icon-btn--tonal[aria-pressed="true"] {
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    border-radius: var(--md-sys-shape-corner-medium);
+    --md-sys-icon-fill: 1;
+  }
+  .md3e-icon-btn--outlined { box-shadow: inset 0 0 0 1px var(--md-sys-color-outline); }
+  .md3e-icon-btn--outlined[aria-pressed="true"] {
+    background: var(--md-sys-color-inverse-surface);
+    color: var(--md-sys-color-inverse-on-surface);
+    box-shadow: none;
+    border-radius: var(--md-sys-shape-corner-medium);
+    --md-sys-icon-fill: 1;
+  }
+  .md3e-icon-btn[aria-pressed="true"]:not(.md3e-icon-btn--filled):not(.md3e-icon-btn--tonal):not(.md3e-icon-btn--outlined) {
+    color: var(--md-sys-color-primary);
+    --md-sys-icon-fill: 1;
+  }
+
+  /* --- Split Button --- */
+  .split-btn-wrap {
+    position: relative;
+    display: inline-block;
+  }
+  .split-btn {
     display: inline-flex;
     align-items: center;
+    gap: 2px;
+  }
+  .split-btn__action,
+  .split-btn__trigger {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--md3e-control-h);
     border: none;
-    background: transparent;
-    color: inherit;
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
     cursor: pointer;
-    font-family: inherit;
+    font-family: var(--md-sys-typescale-plain-font);
     font-size: var(--md-sys-typescale-label-large-size);
+    line-height: var(--md-sys-typescale-label-large-line-height);
     font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
-    padding-inline: var(--md-sys-spacing-4);
+    --md-sys-icon-size: 20px;
+    transition: border-radius var(--md-sys-motion-fast-spatial),
+                background-color var(--md-sys-motion-fast-effects);
+  }
+  .split-btn__action::before {
+    content: "";
+    position: absolute;
+    inset-block: var(--md3e-control-hit-inset);
+    inset-inline: 0;
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+  }
+  .split-btn__trigger::before {
+    content: "";
+    position: absolute;
+    inset-block: var(--md3e-control-hit-inset);
+    inset-inline: -2px;
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+  }
+  .split-btn__action::after,
+  .split-btn__trigger::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-sys-motion-fast-effects);
+  }
+  .split-btn__action {
+    gap: var(--md-sys-spacing-2);
+    padding-inline-start: var(--md-sys-spacing-4);
+    padding-inline-end: var(--md-sys-spacing-3);
+    border-start-start-radius: var(--md-sys-shape-corner-large-increased);
+    border-end-start-radius: var(--md-sys-shape-corner-large-increased);
+    border-start-end-radius: var(--md-sys-shape-corner-extra-small);
+    border-end-end-radius: var(--md-sys-shape-corner-extra-small);
   }
   .split-btn__trigger {
-    padding-inline: var(--md-sys-spacing-2);
-    border-left: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+    width: 44px;
+    padding: 0;
+    border-start-start-radius: var(--md-sys-shape-corner-extra-small);
+    border-end-start-radius: var(--md-sys-shape-corner-extra-small);
+    border-start-end-radius: var(--md-sys-shape-corner-large-increased);
+    border-end-end-radius: var(--md-sys-shape-corner-large-increased);
   }
-  .split-btn__action:hover, .split-btn__trigger:hover {
-    background: color-mix(in srgb, currentColor 12%, transparent);
+  .split-btn__action:hover::after,
+  .split-btn__trigger:hover::after { opacity: var(--md-sys-state-hover-state-layer-opacity); }
+  .split-btn__action:active::after,
+  .split-btn__trigger:active::after { opacity: var(--md-sys-state-pressed-state-layer-opacity); }
+  .split-btn__action:is(:hover, :active) {
+    border-start-end-radius: var(--md-sys-shape-corner-small);
+    border-end-end-radius: var(--md-sys-shape-corner-small);
   }
-  .split-btn__action:focus-visible, .split-btn__trigger:focus-visible {
+  .split-btn__trigger:is(:hover, :active) {
+    border-start-start-radius: var(--md-sys-shape-corner-small);
+    border-end-start-radius: var(--md-sys-shape-corner-small);
+  }
+  .split-btn__trigger[aria-expanded="true"] {
+    border-radius: var(--md-sys-shape-corner-large-increased);
+  }
+  .split-btn__chevron {
+    transition: transform var(--md-sys-motion-fast-spatial);
+  }
+  .split-btn__trigger[aria-expanded="true"] .split-btn__chevron {
+    transform: rotate(180deg);
+  }
+  .split-btn__action:focus-visible,
+  .split-btn__trigger:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+    z-index: 1;
+  }
+
+  .split-menu {
+    position: absolute;
+    inset-block-start: calc(100% + var(--md-sys-spacing-2));
+    inset-inline-start: 0;
+    min-width: 200px;
+    max-width: calc(100vw - var(--md-sys-spacing-8));
+    padding: var(--md-sys-spacing-1);
+    background: var(--md-sys-color-surface-container);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-shape-corner-small);
+    box-shadow: var(--md-sys-elevation-level2);
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    transition: opacity var(--md-sys-motion-fast-effects),
+                transform var(--md-sys-motion-fast-spatial);
+  }
+  @starting-style {
+    .split-menu:not([hidden]) {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.96);
+    }
+  }
+  .split-menu[hidden] { display: none; }
+  .split-menu__item {
+    display: flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+    min-height: var(--md-sys-touch-target-min);
+    padding-inline: var(--md-sys-spacing-3);
+    border: none;
+    border-radius: var(--md-sys-shape-corner-extra-small);
+    background: transparent;
+    color: var(--md-sys-color-on-surface);
+    font: inherit;
+    font-size: var(--md-sys-typescale-label-large-size);
+    text-align: start;
+    cursor: pointer;
+  }
+  .split-menu__item:hover {
+    background: color-mix(in oklab, currentColor calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), transparent);
+  }
+  .split-menu__item:focus-visible {
     outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
     outline-offset: -2px;
   }
 
-  /* --- Button Group (Continuous Silhouette) --- */
+  /* --- Connected Button Group --- */
   .btn-group {
     display: inline-flex;
-    border-radius: var(--md-sys-shape-corner-medium);
-    border: 1px solid var(--md-sys-color-outline-variant);
-    overflow: hidden;
-    background: var(--md-sys-color-surface-container);
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
   }
   .btn-group__item {
+    position: relative;
     display: grid;
     place-items: center;
-    width: var(--md-sys-touch-target-min);
-    height: var(--md-sys-touch-target-min);
+    min-width: var(--md-sys-touch-target-min);
+    height: var(--md3e-control-h);
+    padding-inline: var(--md-sys-spacing-3);
     border: none;
-    background: transparent;
-    color: var(--md-sys-color-on-surface);
+    border-radius: var(--md-sys-shape-corner-small);
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface-variant);
+    --md-sys-icon-size: 20px;
     cursor: pointer;
-    transition: background-color var(--md-sys-motion-fast-effects);
+    transition: border-radius var(--md-sys-motion-fast-spatial),
+                background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects);
   }
-  .btn-group__item + .btn-group__item {
-    border-inline-start: 1px solid var(--md-sys-color-outline-variant);
+  .btn-group__item::before {
+    content: "";
+    position: absolute;
+    inset-block: var(--md3e-control-hit-inset);
+    inset-inline: 0;
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+  }
+  .btn-group__item::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-sys-motion-fast-effects);
+  }
+  .btn-group__item:first-child {
+    border-start-start-radius: var(--md-sys-shape-corner-large-increased);
+    border-end-start-radius: var(--md-sys-shape-corner-large-increased);
+  }
+  .btn-group__item:last-child {
+    border-start-end-radius: var(--md-sys-shape-corner-large-increased);
+    border-end-end-radius: var(--md-sys-shape-corner-large-increased);
+  }
+  .btn-group__item:active:not(:disabled) {
+    border-radius: var(--md-sys-shape-corner-extra-small);
   }
   .btn-group__item[aria-pressed="true"] {
     background: var(--md-sys-color-secondary-container);
     color: var(--md-sys-color-on-secondary-container);
+    border-radius: var(--md-sys-shape-corner-large-increased);
+    --md-sys-icon-fill: 1;
   }
-  .btn-group__item:hover {
-    background: color-mix(in srgb, currentColor 8%, transparent);
-  }
+  .btn-group__item:hover::after { opacity: var(--md-sys-state-hover-state-layer-opacity); }
   .btn-group__item:focus-visible {
     outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
-    outline-offset: -2px;
+    outline-offset: var(--md-sys-focus-ring-gap);
+    z-index: 1;
   }
 
-  /* --- Toggle Button with Shape Morph --- */
+  /* --- Toggle Button --- */
   .toggle-btn {
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: var(--md-sys-spacing-2);
-    min-height: var(--md-sys-touch-target-min);
+    height: var(--md3e-control-h);
     padding-inline: var(--md-sys-spacing-4);
     border: none;
     cursor: pointer;
-    font: inherit;
+    font-family: var(--md-sys-typescale-plain-font);
     font-size: var(--md-sys-typescale-label-large-size);
+    line-height: var(--md-sys-typescale-label-large-line-height);
+    --md-sys-icon-size: 20px;
     background: var(--md-sys-color-surface-container);
     color: var(--md-sys-color-on-surface-variant);
-    border-radius: var(--md-sys-shape-corner-full);
+    border-radius: var(--md-sys-shape-corner-large-increased);
     transition: border-radius var(--md-sys-motion-default-spatial),
                 background-color var(--md-sys-motion-fast-effects),
-                color var(--md-sys-motion-fast-effects);
+                color var(--md-sys-motion-fast-effects),
+                transform var(--md-sys-motion-fast-spatial);
+  }
+  .toggle-btn::before {
+    content: "";
+    position: absolute;
+    inset-block: var(--md3e-control-hit-inset);
+    inset-inline: 0;
+    min-height: var(--md-sys-touch-target-min);
+    min-width: var(--md-sys-touch-target-min);
+  }
+  .toggle-btn::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-sys-motion-fast-effects);
+  }
+  .toggle-btn:hover::after { opacity: var(--md-sys-state-hover-state-layer-opacity); }
+  .toggle-btn:active:not(:disabled) {
+    border-radius: var(--md-sys-shape-corner-small);
+    transform: scale(0.98);
   }
   .toggle-btn[aria-pressed="true"] {
     background: var(--md-sys-color-primary-container);
     color: var(--md-sys-color-on-primary-container);
     border-radius: var(--md-sys-shape-corner-medium);
     font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+    --md-sys-icon-fill: 1;
   }
   .toggle-btn:focus-visible {
     outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
     outline-offset: var(--md-sys-focus-ring-gap);
   }
 
-  /* --- Expressive Loading Indicator (Morphing Shape) --- */
-  .loading-box {
-    display: inline-grid;
-    place-items: center;
-    width: 48px;
-    height: 48px;
+  /* --- M3E Optical-Corner Cards (28px outer - 12px padding = 16px optical inner) --- */
+  .optical-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--md-sys-spacing-3);
+    margin-block: var(--md-sys-spacing-3);
   }
-  .loading-morph {
-    width: 32px;
-    height: 32px;
-    background: var(--md-sys-color-primary);
-    animation: shape-morph 2.4s ease-in-out infinite;
+  .optical-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--md-sys-spacing-2);
+    padding: var(--md-sys-spacing-3);
+    border: none;
+    border-radius: var(--md-sys-shape-corner-extra-large);
+    text-align: start;
+    font-family: var(--md-sys-typescale-plain-font);
+    cursor: pointer;
+    transition: box-shadow var(--md-sys-motion-fast-effects),
+                background-color var(--md-sys-motion-fast-effects),
+                transform var(--md-sys-motion-fast-spatial);
   }
-  @keyframes shape-morph {
-    0% {
-      border-radius: var(--md-sys-shape-corner-full);
-      transform: rotate(0deg) scale(1);
-      background: var(--md-sys-color-primary);
+  .optical-card:active { transform: scale(0.98); }
+  .optical-card:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+  .optical-card--elevated {
+    background: var(--md-sys-color-surface-container-low);
+    color: var(--md-sys-color-on-surface);
+    box-shadow: var(--md-sys-elevation-level1);
+  }
+  .optical-card--elevated:hover { box-shadow: var(--md-sys-elevation-level2); }
+  .optical-card--filled {
+    background: var(--md-sys-color-surface-container-highest);
+    color: var(--md-sys-color-on-surface);
+  }
+  .optical-card--outlined {
+    background: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    box-shadow: inset 0 0 0 1px var(--md-sys-color-outline-variant);
+  }
+  .optical-card[aria-pressed="true"] {
+    outline: 2px solid var(--md-sys-color-primary);
+  }
+  .optical-card__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--md-sys-spacing-3) var(--md-sys-spacing-4);
+    border-radius: calc(var(--md-sys-shape-corner-extra-large) - var(--md-sys-spacing-3));
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    font-size: var(--md-sys-typescale-title-small-size);
+    font-weight: var(--md-sys-typescale-title-small-emphasized-weight);
+  }
+  .optical-card__body {
+    padding-inline: var(--md-sys-spacing-1);
+    font-size: var(--md-sys-typescale-body-small-size);
+    line-height: var(--md-sys-typescale-body-small-line-height);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  /* --- Docked Toolbar Demo --- */
+  .toolbar-docked {
+    width: 100%;
+    height: 64px;
+    padding-inline: var(--md-sys-spacing-4);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    background: var(--md-sys-color-surface-container);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-shape-corner-large);
+  }
+
+  /* --- Desktop Visual Density (-1 Compact) preserving >= 48x48px touch targets --- */
+  @media (min-width: 840px) {
+    html[data-density="compact"] {
+      --md3e-control-h: 36px;
+      --md3e-control-hit-inset: -6px;
     }
-    25% {
-      border-radius: var(--md-sys-shape-corner-medium);
-      transform: rotate(90deg) scale(0.85);
-      background: var(--md-sys-color-secondary);
+    html[data-density="compact"] .section-card {
+      padding: var(--md-sys-spacing-5);
     }
-    50% {
-      border-radius: var(--md-sys-shape-corner-extra-large-increased);
-      transform: rotate(180deg) scale(1.05);
-      background: var(--md-sys-color-tertiary);
-    }
-    75% {
-      border-radius: 4px 28px 4px 28px;
-      transform: rotate(270deg) scale(0.9);
-      background: var(--md-sys-color-primary-container);
-    }
-    100% {
-      border-radius: var(--md-sys-shape-corner-full);
-      transform: rotate(360deg) scale(1);
-      background: var(--md-sys-color-primary);
+    html[data-density="compact"] .shell {
+      gap: var(--md-sys-spacing-4);
     }
   }
 
-  /* --- Floating Toolbar (Superseding bottom app bar) --- */
+  /* --- Floating Toolbar (64dp height; :not(.md3e-frosted-surface) avoids cascade override!) --- */
   .toolbar-floating {
     position: fixed;
-    inset-block-end: var(--md-sys-spacing-6);
-    inset-inline-start: 50%;
-    transform: translateX(-50%);
+    inset-block-end: calc(80px + env(safe-area-inset-bottom, 0px));
+    inset-inline-start: var(--md-sys-spacing-3);
     display: inline-flex;
     align-items: center;
-    gap: var(--md-sys-spacing-1);
-    height: 56px;
-    padding-inline: var(--md-sys-spacing-2);
-    background: var(--md-sys-color-surface-container-high);
+    gap: 0;
+    height: 64px;
+    max-width: calc(100vw - 88px);
+    padding-inline: var(--md-sys-spacing-1);
     color: var(--md-sys-color-on-surface);
     border-radius: var(--md-sys-shape-corner-full);
     box-shadow: var(--md-sys-elevation-level3);
     z-index: 100;
+    transition: background-color var(--md-sys-motion-fast-effects);
   }
+  .toolbar-floating:not(.md3e-frosted-surface) {
+    background: var(--md-sys-color-surface-container);
+  }
+
+  @media (min-width: 600px) {
+    .toolbar-floating {
+      inset-block-end: var(--md-sys-spacing-4);
+      inset-inline-start: 50%;
+      transform: translateX(-50%);
+      gap: var(--md-sys-spacing-1);
+      padding-inline: var(--md-sys-spacing-2);
+      max-width: calc(100vw - var(--md-sys-spacing-8));
+    }
+  }
+
   .toolbar-btn {
+    position: relative;
     display: grid;
     place-items: center;
-    width: var(--md-sys-touch-target-min);
-    height: var(--md-sys-touch-target-min);
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+    padding: 0;
     border: none;
     background: transparent;
     color: var(--md-sys-color-on-surface-variant);
     border-radius: var(--md-sys-shape-corner-full);
     cursor: pointer;
-    transition: background-color var(--md-sys-motion-fast-effects);
+    transition: background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects);
+  }
+  .toolbar-btn[aria-pressed="true"] {
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    --md-sys-icon-fill: 1;
   }
   .toolbar-btn:hover {
-    background: color-mix(in srgb, currentColor 8%, transparent);
+    background: color-mix(in oklab, currentColor calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), transparent);
     color: var(--md-sys-color-on-surface);
   }
   .toolbar-btn:focus-visible {
     outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
     outline-offset: var(--md-sys-focus-ring-gap);
+  }
+  .toolbar-btn--primary {
+    color: var(--md-sys-color-primary);
   }
   .toolbar-divider {
     width: 1px;
@@ -343,209 +1937,2193 @@
     margin-inline: var(--md-sys-spacing-1);
   }
 
-  /* Accessibility: prefers-reduced-motion path */
+  /* --- Snackbar Toast --- */
+  .md3e-snackbar {
+    position: fixed;
+    inset-block-end: calc(156px + env(safe-area-inset-bottom, 0px));
+    inset-inline-start: 50%;
+    transform: translate(-50%, 16px);
+    opacity: 0;
+    pointer-events: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-3);
+    min-height: 48px;
+    max-width: min(480px, calc(100vw - var(--md-sys-spacing-8)));
+    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-4);
+    border-radius: var(--md-sys-shape-corner-extra-small);
+    background: var(--md-sys-color-inverse-surface);
+    color: var(--md-sys-color-inverse-on-surface);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    box-shadow: var(--md-sys-elevation-level3);
+    z-index: 950;
+    transition: opacity var(--md-sys-motion-fast-effects),
+                transform var(--md-sys-motion-fast-spatial);
+  }
+  @media (min-width: 600px) {
+    .md3e-snackbar {
+      inset-block-end: calc(88px + env(safe-area-inset-bottom, 0px));
+    }
+  }
+  .md3e-snackbar.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+  }
+
+  /* --- FAB Menu (position: relative + z-index: 910 guarantees trigger/items paint ABOVE scrim 890!) --- */
+  .fab-scrim {
+    position: fixed;
+    inset: 0;
+    background: var(--md-sys-color-scrim);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-sys-motion-default-effects);
+    z-index: 890;
+  }
+  .fab-scrim.is-open {
+    opacity: 0.32;
+    pointer-events: auto;
+  }
+  .fab-menu-container {
+    position: fixed;
+    inset-block-end: calc(84px + env(safe-area-inset-bottom, 0px));
+    inset-inline-end: var(--md-sys-spacing-3);
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    gap: var(--md-sys-spacing-2);
+    z-index: 130;
+  }
+  .fab-menu-container.is-open {
+    z-index: 900;
+  }
+  @media (min-width: 600px) {
+    .fab-menu-container {
+      inset-block-end: var(--md-sys-spacing-4);
+      inset-inline-end: var(--md-sys-spacing-4);
+    }
+  }
+  .fab-trigger {
+    position: relative;
+    z-index: 910;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    border: none;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    box-shadow: var(--md-sys-elevation-level3);
+    transition: transform var(--md-sys-motion-default-spatial),
+                border-radius var(--md-sys-motion-default-spatial),
+                background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects);
+  }
+  .fab-trigger[aria-expanded="true"] {
+    border-radius: var(--md-sys-shape-corner-extra-large);
+    background: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+  }
+  .fab-trigger__icon {
+    transition: transform var(--md-sys-motion-default-spatial);
+  }
+  .fab-trigger[aria-expanded="true"] .fab-trigger__icon {
+    transform: rotate(45deg);
+  }
+  .fab-trigger:focus-visible,
+  .fab-menu__item:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+  .fab-menu {
+    position: relative;
+    z-index: 910;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--md-sys-spacing-2);
+    margin-block-end: var(--md-sys-spacing-1);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(12px) scale(0.95);
+    transform-origin: bottom right;
+    transition: opacity var(--md-sys-motion-fast-effects),
+                transform var(--md-sys-motion-default-spatial);
+  }
+  .fab-menu[aria-hidden="false"] {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
+  .fab-menu__item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+    height: 56px;
+    padding-inline: var(--md-sys-spacing-6);
+    border: none;
+    border-radius: var(--md-sys-shape-corner-extra-large);
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    font-family: var(--md-sys-typescale-plain-font);
+    font-size: var(--md-sys-typescale-title-medium-size);
+    line-height: var(--md-sys-typescale-title-medium-line-height);
+    font-weight: var(--md-sys-typescale-title-medium-weight);
+    box-shadow: var(--md-sys-elevation-level2);
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+    transition: opacity var(--md-sys-motion-fast-effects),
+                transform var(--md-sys-motion-default-spatial);
+  }
+  .fab-menu[aria-hidden="false"] .fab-menu__item {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  .fab-menu[aria-hidden="false"] .fab-menu__item:nth-last-child(2) {
+    transition-delay: calc(var(--md-sys-motion-fast-effects-duration) * 0.2);
+  }
+  .fab-menu[aria-hidden="false"] .fab-menu__item:nth-last-child(3) {
+    transition-delay: calc(var(--md-sys-motion-fast-effects-duration) * 0.4);
+  }
+
+  /* --- Resilient Offline / :not(:defined) Fallbacks for @material/web --- */
+  md-filled-tonal-button:not(:defined),
+  md-elevated-button:not(:defined),
+  md-outlined-button:not(:defined) {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--md-sys-spacing-2);
+    min-height: var(--md-sys-touch-target-min);
+    padding-inline: var(--md-sys-spacing-5);
+    border-radius: var(--md-sys-shape-corner-large-increased);
+    font-family: var(--md-sys-typescale-plain-font);
+    font-size: var(--md-sys-typescale-label-large-size);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+    cursor: pointer;
+  }
+  md-filled-tonal-button:not(:defined) {
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+  }
+  md-elevated-button:not(:defined) {
+    background: var(--md-sys-color-surface-container-low);
+    color: var(--md-sys-color-primary);
+    box-shadow: var(--md-sys-elevation-level1);
+  }
+  md-outlined-button:not(:defined) {
+    background: transparent;
+    color: var(--md-sys-color-primary);
+    border: 1px solid var(--md-sys-color-outline);
+  }
+  md-outlined-button.md3e-shape-square:not(:defined) {
+    border-radius: var(--md-sys-shape-corner-large);
+  }
+  md-fab {
+    position: relative;
+  }
+  md-fab:not(:defined) {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: 80px;
+    height: 80px;
+    border-radius: var(--md-sys-shape-corner-large-increased);
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    box-shadow: var(--md-sys-elevation-level3);
+    cursor: pointer;
+  }
+  md-icon:not(:defined) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Material Symbols Outlined";
+    font-size: var(--md-sys-icon-size);
+    line-height: 1;
+    font-style: normal;
+  }
+  md-switch:not(:defined) {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: 52px;
+    height: 32px;
+    padding: 4px;
+    border-radius: var(--md-sys-shape-corner-large);
+    border: 2px solid var(--md-sys-color-outline);
+    background: var(--md-sys-color-surface-container-highest);
+    cursor: pointer;
+    transition: background-color var(--md-sys-motion-fast-effects);
+  }
+  md-switch:not(:defined)::before {
+    content: "";
+    position: absolute;
+    inset-block: -8px;
+    inset-inline: 0;
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+  }
+  md-switch:not(:defined)::after {
+    content: "";
+    width: 16px;
+    height: 16px;
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--md-sys-color-outline);
+    transition: transform var(--md-sys-motion-fast-spatial);
+  }
+  md-switch[checked]:not(:defined) {
+    background: var(--md-sys-color-primary);
+    border-color: var(--md-sys-color-primary);
+  }
+  md-switch[checked]:not(:defined)::after {
+    width: 24px;
+    height: 24px;
+    background: var(--md-sys-color-on-primary);
+    transform: translateX(18px);
+  }
+  md-checkbox:not(:defined) {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: var(--md-sys-shape-corner-extra-small);
+    border: 2px solid var(--md-sys-color-on-surface-variant);
+    background: transparent;
+    cursor: pointer;
+  }
+  md-checkbox:not(:defined)::before {
+    content: "";
+    position: absolute;
+    inset: -14px;
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+  }
+  md-checkbox[checked]:not(:defined) {
+    background: var(--md-sys-color-primary);
+    border-color: var(--md-sys-color-primary);
+  }
+  md-checkbox[checked]:not(:defined)::after {
+    content: "\2713";
+    color: var(--md-sys-color-on-primary);
+    font-size: var(--md-sys-typescale-label-medium-size);
+    font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
+  }
+  md-outlined-text-field:not(:defined) {
+    display: block;
+    min-height: 56px;
+    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-3);
+    border: 1px solid var(--md-sys-color-outline);
+    border-radius: var(--md-sys-shape-corner-extra-small);
+    background: var(--md-sys-color-surface);
+  }
+  .mwc-fallback-input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--md-sys-color-on-surface);
+    font: inherit;
+    min-height: 32px;
+  }
+  .mwc-fallback-input:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+  md-slider:not(:defined) {
+    display: block;
+    min-height: var(--md-sys-touch-target-min);
+  }
+  .mwc-fallback-range {
+    width: 100%;
+    min-height: var(--md-sys-touch-target-min);
+    accent-color: var(--md-sys-color-primary);
+  }
+
+  /* --- Form & Misc Utilities --- */
+  .field-label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+    min-height: var(--md-sys-touch-target-min);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: var(--md-sys-typescale-body-medium-line-height);
+    cursor: pointer;
+  }
+  .slider-block {
+    flex: 1 1 240px;
+    min-width: 0;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-sys-spacing-1);
+  }
+  .slider-block__label {
+    font-size: var(--md-sys-typescale-label-medium-size);
+    line-height: var(--md-sys-typescale-label-medium-line-height);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+  .text-field-grow {
+    flex: 1 1 240px;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .inline-status {
+    font-size: var(--md-sys-typescale-label-large-size);
+    line-height: var(--md-sys-typescale-label-large-line-height);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  /* --- Reduced Motion, Reduced Transparency & Forced Colors --- */
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      animation: none !important;
-      transition: none !important;
+    html {
+      scroll-behavior: auto;
+    }
+    .section-card {
+      animation: none;
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .toolbar-floating.md3e-frosted-surface {
+      background: var(--md-sys-color-surface-container-high);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .shape-spotlight,
+    .shape-tile-preview {
+      forced-color-adjust: none;
+      background: Highlight;
+      color: HighlightText;
+    }
+    .choice-chip[aria-pressed="true"],
+    .toggle-btn[aria-pressed="true"],
+    .btn-group__item[aria-pressed="true"],
+    .nav-bar__item[aria-current="page"] .nav-bar__pill,
+    .nav-rail__item[aria-current="page"] .nav-rail__pill,
+    .nav-rail[data-rail-expanded="true"] .nav-rail__item[aria-current="page"] {
+      forced-color-adjust: none;
+      background: Highlight;
+      color: HighlightText;
+    }
+    .md3e-btn,
+    .choice-chip,
+    .header-chip,
+    .section-card,
+    .optical-card,
+    .toolbar-floating,
+    .toolbar-docked,
+    .nav-bar,
+    .nav-rail,
+    .side-sheet,
+    .nav-sheet {
+      border: 1px solid CanvasText;
+    }
+    :focus-visible {
+      outline: 3px solid Highlight;
     }
   }
 </style>
 </head>
 <body>
+<a class="skip-link md3e-visually-hidden" href="#main-content">Skip to content</a>
 
-<!-- Header / App Bar -->
-<header class="app-bar">
+<!-- Header / Top App Bar -->
+<header class="app-bar" id="app-bar">
   <div class="app-bar__start">
-    <button class="toolbar-btn" aria-label="Open navigation menu">
-      <span class="material-symbols-outlined">menu</span>
+    <button
+      type="button"
+      class="toolbar-btn"
+      id="nav-menu-btn"
+      aria-label="Toggle navigation drawer"
+      aria-expanded="false"
+      aria-controls="nav-sheet"
+      aria-keyshortcuts="["
+      title="Toggle navigation ([)"
+    >
+      <span class="material-symbols-outlined" id="nav-menu-icon" aria-hidden="true">menu</span>
     </button>
-    <h1>Material 3 Expressive (MD3E)</h1>
+    <h1>Material 3 Expressive</h1>
   </div>
   <div class="app-bar__end">
-    <!-- Theme & Scheme Controls -->
-    <md-text-button id="btn-theme-toggle" aria-label="Toggle theme">
-      <md-icon slot="icon">dark_mode</md-icon>
-      Dark Mode
-    </md-text-button>
-    <md-text-button id="btn-color-variant" aria-label="Toggle vibrant colors">
-      <md-icon slot="icon">palette</md-icon>
-      Vibrant
-    </md-text-button>
+    <button type="button" class="header-chip" id="btn-theme-toggle" aria-label="Theme: System">
+      <span class="material-symbols-outlined" id="theme-icon" aria-hidden="true">contrast</span>
+      <span id="theme-label">System</span>
+    </button>
+    <button type="button" class="header-chip" id="btn-color-variant" aria-label="Toggle vibrant palette" aria-pressed="false">
+      <span class="material-symbols-outlined" aria-hidden="true">palette</span>
+      <span id="variant-label">Vibrant</span>
+    </button>
+    <button type="button" class="header-chip header-chip--desktop-only" id="btn-density-toggle" aria-label="Toggle compact density" aria-pressed="false">
+      <span class="material-symbols-outlined" id="density-icon" aria-hidden="true">density_medium</span>
+      <span id="density-label">Standard</span>
+    </button>
+    <button
+      type="button"
+      class="header-chip"
+      id="btn-inspector-toggle"
+      aria-label="Toggle token inspector"
+      aria-expanded="false"
+      aria-controls="inspector-sheet"
+      aria-keyshortcuts="]"
+      title="Token Inspector (])"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">tune</span>
+      <span class="header-chip__label-secondary">Inspector</span>
+      <kbd class="kbd-hint" aria-hidden="true">]</kbd>
+    </button>
   </div>
 </header>
 
-<main class="shell">
+<!-- Modal Expanded Navigation Sheet (< 840px Drawer Fallback) -->
+<div class="nav-sheet-scrim" id="nav-sheet-scrim" aria-hidden="true"></div>
+<aside class="nav-sheet" id="nav-sheet" aria-label="Section navigation" aria-hidden="true" inert>
+  <div class="nav-sheet__header">
+    <strong>Navigation</strong>
+    <button type="button" class="toolbar-btn" id="nav-sheet-close" aria-label="Close navigation menu">
+      <span class="material-symbols-outlined" aria-hidden="true">close</span>
+    </button>
+  </div>
+  <a class="nav-sheet__link" href="#section-color" aria-current="page">
+    <span class="material-symbols-outlined" aria-hidden="true">palette</span>
+    Dynamic Colour Studio
+  </a>
+  <a class="nav-sheet__link" href="#section-shapes">
+    <span class="material-symbols-outlined" aria-hidden="true">category</span>
+    35 Shapes &amp; Loader
+  </a>
+  <a class="nav-sheet__link" href="#section-motion">
+    <span class="material-symbols-outlined" aria-hidden="true">speed</span>
+    Springs &amp; Frosted Chrome
+  </a>
+  <a class="nav-sheet__link" href="#section-buttons">
+    <span class="material-symbols-outlined" aria-hidden="true">smart_button</span>
+    Buttons &amp; 5-Size Scale
+  </a>
+  <a class="nav-sheet__link" href="#section-expressive">
+    <span class="material-symbols-outlined" aria-hidden="true">animation</span>
+    Expressive Components
+  </a>
+  <a class="nav-sheet__link" href="#section-mwc">
+    <span class="material-symbols-outlined" aria-hidden="true">widgets</span>
+    Material Web Bridge
+  </a>
+</aside>
 
-  <!-- Section 1: Button Hierarchy & 5 Sizes -->
-  <section class="section-card">
-    <h2>1. Button Hierarchy & MD3E 5-Size Scale</h2>
-    <p>Use filled buttons for high-emphasis actions. Five sizes (XS 32dp, S 40dp, M 56dp, L 96dp, XL 136dp) and square shapes.</p>
-    
-    <div class="demo-row">
-      <button class="md3e-btn md3e-btn--filled md3e-btn--s">Filled (Primary)</button>
-      <button class="md3e-btn md3e-btn--tonal md3e-btn--s">Tonal</button>
-      <button class="md3e-btn md3e-btn--outlined md3e-btn--s">Outlined</button>
-      <button class="md3e-btn md3e-btn--filled md3e-btn--xs">Extra Small (32)</button>
-      <button class="md3e-btn md3e-btn--tonal md3e-btn--m">Medium (56)</button>
-      <button class="md3e-btn md3e-btn--filled md3e-btn--s md3e-btn--square">Square (12r)</button>
-      <button class="md3e-btn md3e-btn--tonal md3e-btn--m md3e-btn--square">Square M (16r)</button>
+<!-- Adaptive App Frame -->
+<div class="app-frame" id="app-frame">
+  <!-- Persistent Expandable Navigation Rail (Medium 600px+ Collapsed / Desktop 840px+ 80<->220px) -->
+  <nav class="nav-rail" id="nav-rail" aria-label="Primary sections" data-rail-expanded="false">
+    <button type="button" class="nav-rail__compose" id="rail-compose-btn" aria-label="New action">
+      <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+      <span class="nav-rail__compose-label">Compose</span>
+    </button>
+    <div class="nav-rail__items">
+      <a class="nav-rail__item" href="#section-color" aria-current="page">
+        <span class="nav-rail__pill"><span class="material-symbols-outlined" aria-hidden="true">palette</span></span>
+        <span>Colour</span>
+      </a>
+      <a class="nav-rail__item" href="#section-shapes">
+        <span class="nav-rail__pill"><span class="material-symbols-outlined" aria-hidden="true">category</span></span>
+        <span>Shapes</span>
+      </a>
+      <a class="nav-rail__item" href="#section-motion">
+        <span class="nav-rail__pill"><span class="material-symbols-outlined" aria-hidden="true">speed</span></span>
+        <span>Motion</span>
+      </a>
+      <a class="nav-rail__item" href="#section-buttons">
+        <span class="nav-rail__pill"><span class="material-symbols-outlined" aria-hidden="true">smart_button</span></span>
+        <span>Buttons</span>
+      </a>
+      <a class="nav-rail__item" href="#section-expressive">
+        <span class="nav-rail__pill"><span class="material-symbols-outlined" aria-hidden="true">animation</span></span>
+        <span>Expressive</span>
+      </a>
+      <a class="nav-rail__item" href="#section-mwc">
+        <span class="nav-rail__pill"><span class="material-symbols-outlined" aria-hidden="true">widgets</span></span>
+        <span>Web Bridge</span>
+      </a>
     </div>
-  </section>
+    <div class="nav-rail__footer">
+      <kbd class="kbd-hint">[</kbd>
+      <span>Collapse rail</span>
+    </div>
+  </nav>
 
-  <!-- Section 2: Expressive Components (Split Button, Button Group, Toggle Button, Morphing Loader) -->
-  <section class="section-card">
-    <h2>2. New Expressive Components (May 2025+)</h2>
-    <p>Components introduced in MD3E to enhance expression, continuous silhouettes, and shape morphing.</p>
+  <main class="shell" id="main-content" tabindex="-1">
 
-    <div class="demo-row">
-      <!-- Split Button -->
-      <div class="split-btn">
-        <button class="split-btn__action" type="button">
-          <span class="material-symbols-outlined" style="font-size: 18px; margin-right: 6px;">send</span>
-          Publish
-        </button>
-        <button class="split-btn__trigger" aria-label="More options" type="button">
-          <span class="material-symbols-outlined">arrow_drop_down</span>
-        </button>
-      </div>
+    <!-- Section 1: Dynamic Colour Studio, Typography & Icons -->
+    <section class="section-card section-card--wide" id="section-color">
+      <h2>1. Dynamic Colour Studio &amp; Adaptive Type</h2>
+      <p>Live multi-seed dynamic palettes (<code>md3e-palettes.css</code>), hue/chroma scheme variants, 3 contrast levels (Standard / Medium / High), true dark surface separation (N6 vs N10), and optical icon calibration.</p>
 
-      <!-- Button Group -->
-      <div class="btn-group" role="group" aria-label="Alignment">
-        <button class="btn-group__item" aria-label="Align left" aria-pressed="true">
-          <span class="material-symbols-outlined">format_align_left</span>
-        </button>
-        <button class="btn-group__item" aria-label="Align center" aria-pressed="false">
-          <span class="material-symbols-outlined">format_align_center</span>
-        </button>
-        <button class="btn-group__item" aria-label="Align right" aria-pressed="false">
-          <span class="material-symbols-outlined">format_align_right</span>
-        </button>
-      </div>
-
-      <!-- Toggle Button with Shape Morph -->
-      <button class="toggle-btn" aria-pressed="false" id="demo-toggle" aria-label="Save bookmark">
-        <span class="material-symbols-outlined">bookmark</span>
-        <span>Toggle Morph</span>
-      </button>
-
-      <!-- Expressive Loading Indicator -->
-      <div style="display: inline-flex; align-items: center; gap: 8px;">
-        <div class="loading-box" role="status" aria-label="Loading...">
-          <div class="loading-morph"></div>
+      <div class="studio-controls">
+        <div class="control-cluster">
+          <span class="control-cluster__title">Theme (<code>data-theme</code>)</span>
+          <div class="choice-row" role="group" aria-label="Color theme" id="theme-picker">
+            <button type="button" class="choice-chip" data-theme-choice="system" aria-pressed="true">System</button>
+            <button type="button" class="choice-chip" data-theme-choice="dark" aria-pressed="false">Dark</button>
+            <button type="button" class="choice-chip" data-theme-choice="light" aria-pressed="false">Light</button>
+          </div>
         </div>
-        <span style="font-size: var(--md-sys-typescale-label-large-size); color: var(--md-sys-color-on-surface-variant);">
-          Shape Loader
+
+        <div class="control-cluster">
+          <span class="control-cluster__title">Seed Colour (<code>data-seed</code>)</span>
+          <div class="choice-row" role="group" aria-label="Seed colour" id="seed-picker">
+            <button type="button" class="choice-chip" data-seed-choice="purple" aria-pressed="true"><span class="seed-swatch" data-seed="purple"></span>Purple</button>
+            <button type="button" class="choice-chip" data-seed-choice="ocean" aria-pressed="false"><span class="seed-swatch" data-seed="ocean"></span>Ocean</button>
+            <button type="button" class="choice-chip" data-seed-choice="emerald" aria-pressed="false"><span class="seed-swatch" data-seed="emerald"></span>Emerald</button>
+            <button type="button" class="choice-chip" data-seed-choice="amber" aria-pressed="false"><span class="seed-swatch" data-seed="amber"></span>Amber</button>
+            <button type="button" class="choice-chip" data-seed-choice="rose" aria-pressed="false"><span class="seed-swatch" data-seed="rose"></span>Rose</button>
+            <button type="button" class="choice-chip" data-seed-choice="teal" aria-pressed="false"><span class="seed-swatch" data-seed="teal"></span>Teal</button>
+            <button type="button" class="choice-chip" id="seed-chip-custom" data-seed-choice="custom" aria-pressed="false" hidden><span class="seed-swatch" id="seed-swatch-custom"></span><span id="seed-label-custom">Custom</span></button>
+          </div>
+        </div>
+
+        <div class="control-cluster">
+          <span class="control-cluster__title">Scheme Variant (<code>data-color-variant</code>)</span>
+          <div class="choice-row" role="group" aria-label="Color variant" id="variant-picker">
+            <button type="button" class="choice-chip" data-variant-choice="" aria-pressed="true">Baseline</button>
+            <button type="button" class="choice-chip" data-variant-choice="tonal-spot" aria-pressed="false">Tonal Spot</button>
+            <button type="button" class="choice-chip" data-variant-choice="expressive" aria-pressed="false">Expressive</button>
+            <button type="button" class="choice-chip" data-variant-choice="vibrant" aria-pressed="false">Vibrant</button>
+            <button type="button" class="choice-chip" data-variant-choice="neutral" aria-pressed="false">Neutral</button>
+            <button type="button" class="choice-chip" data-variant-choice="monochrome" aria-pressed="false">Mono</button>
+          </div>
+        </div>
+
+        <div class="control-cluster">
+          <span class="control-cluster__title">Contrast Level (<code>data-contrast</code>)</span>
+          <div class="choice-row" role="group" aria-label="Contrast level" id="contrast-picker">
+            <button type="button" class="choice-chip" data-contrast-choice="" aria-pressed="true">Standard</button>
+            <button type="button" class="choice-chip" data-contrast-choice="medium" aria-pressed="false">Medium</button>
+            <button type="button" class="choice-chip" data-contrast-choice="high" aria-pressed="false">High</button>
+          </div>
+        </div>
+
+        <div class="control-cluster">
+          <span class="control-cluster__title">Desktop Visual Density (<code>data-density</code>)</span>
+          <div class="choice-row" role="group" aria-label="Visual density" id="density-picker">
+            <button type="button" class="choice-chip" data-density-choice="standard" aria-pressed="true">Standard (0)</button>
+            <button type="button" class="choice-chip" data-density-choice="compact" aria-pressed="false">Compact (-1)</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="image-studio" aria-label="Wallpaper colour extraction and theme CSS export">
+        <div class="image-studio__header">
+          <span class="control-cluster__title">Wallpaper / Image Dynamic Extraction (<code>QuantizerCelebi + Score + SPEC_2025</code>)</span>
+          <div class="choice-row">
+            <span class="copy-wrap">
+              <button type="button" class="md3e-btn md3e-btn--tonal md3e-btn--s" id="btn-copy-theme-css" command="--copy" commandfor="generated-theme-css" aria-label="Copy generated Material theme CSS">
+                <span class="material-symbols-outlined" id="copy-theme-icon" aria-hidden="true">content_copy</span>
+                <span>Copy CSS</span>
+              </button>
+              <span class="copy-tip" role="status" id="copy-theme-tip"></span>
+            </span>
+            <button type="button" class="md3e-btn md3e-btn--outlined md3e-btn--s" id="btn-download-theme-css">
+              <span class="material-symbols-outlined" aria-hidden="true">download</span>
+              <span>Download .css</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="image-studio__main">
+          <input type="file" id="image-theme-input" name="theme_image" accept="image/*" class="visually-hidden" aria-describedby="image-theme-hint">
+          <label for="image-theme-input" class="image-drop-zone" id="image-drop-zone">
+            <span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>
+            <span>Upload or drop image</span>
+          </label>
+          <img id="image-theme-preview" class="image-preview-thumb" alt="Uploaded source image preview" hidden>
+          <label for="custom-seed-color" class="custom-color-label">
+            <span>Custom Hex</span>
+            <input type="color" id="custom-seed-color" name="custom_seed_color" class="custom-color-picker" value="#6750A4">
+          </label>
+          <button type="button" class="md3e-btn md3e-btn--outlined md3e-btn--s" data-demo-wallpaper="sunset">Sunset Wallpaper</button>
+          <button type="button" class="md3e-btn md3e-btn--outlined md3e-btn--s" data-demo-wallpaper="forest">Forest Wallpaper</button>
+          <button type="button" class="md3e-btn md3e-btn--outlined md3e-btn--s" data-demo-wallpaper="cyber">Cyber Wallpaper</button>
+        </div>
+
+        <span class="inline-status" id="image-theme-hint">Upload PNG/JPG/WebP or pick a demo wallpaper — runs official MCU QuantizerCelebi (Wu + Wsmeans) + Score locally in browser.</span>
+        <div class="choice-row" id="extracted-candidates" role="group" aria-label="Extracted wallpaper seed candidates"></div>
+        <pre id="generated-theme-css-wrap" class="visually-hidden" aria-hidden="true"><code id="generated-theme-css"></code></pre>
+      </div>
+
+      <div class="surface-ladder" aria-label="Computed surface and accent swatches">
+        <div class="swatch-tile swatch-tile--lowest" data-swatch-var="--md-sys-color-surface-container-lowest">
+          <span class="swatch-tile__name">Lowest</span>
+          <span class="swatch-tile__hex"></span>
+        </div>
+        <div class="swatch-tile swatch-tile--surface" data-swatch-var="--md-sys-color-surface">
+          <span class="swatch-tile__name">Surface</span>
+          <span class="swatch-tile__hex"></span>
+        </div>
+        <div class="swatch-tile swatch-tile--low" data-swatch-var="--md-sys-color-surface-container-low">
+          <span class="swatch-tile__name">Low</span>
+          <span class="swatch-tile__hex"></span>
+        </div>
+        <div class="swatch-tile swatch-tile--container" data-swatch-var="--md-sys-color-surface-container">
+          <span class="swatch-tile__name">Container</span>
+          <span class="swatch-tile__hex"></span>
+        </div>
+        <div class="swatch-tile swatch-tile--high" data-swatch-var="--md-sys-color-surface-container-high">
+          <span class="swatch-tile__name">High</span>
+          <span class="swatch-tile__hex"></span>
+        </div>
+        <div class="swatch-tile swatch-tile--highest" data-swatch-var="--md-sys-color-surface-container-highest">
+          <span class="swatch-tile__name">Highest</span>
+          <span class="swatch-tile__hex"></span>
+        </div>
+        <div class="swatch-tile swatch-tile--primary" data-swatch-var="--md-sys-color-primary-container">
+          <span class="swatch-tile__name">Primary Ctr</span>
+          <span class="swatch-tile__hex"></span>
+        </div>
+        <div class="swatch-tile swatch-tile--secondary" data-swatch-var="--md-sys-color-secondary-container">
+          <span class="swatch-tile__name">Secondary Ctr</span>
+          <span class="swatch-tile__hex"></span>
+        </div>
+        <div class="swatch-tile swatch-tile--tertiary" data-swatch-var="--md-sys-color-tertiary-container">
+          <span class="swatch-tile__name">Tertiary Ctr</span>
+          <span class="swatch-tile__hex"></span>
+        </div>
+      </div>
+
+      <div class="type-icon-strip">
+        <div class="type-specimen" id="type-specimen" data-emphasized="false">
+          <div class="demo-row">
+            <span class="control-cluster__title">Typography Scale &amp; Emphasized Axis</span>
+            <button type="button" class="choice-chip" id="btn-type-emphasized" aria-pressed="false">Emphasized Type</button>
+          </div>
+          <div class="type-specimen__sample">Expressive Headline Medium (28px)</div>
+          <span class="inline-status" id="type-status">Baseline weight + GRAD 0 (Roboto Flex)</span>
+        </div>
+
+        <div class="type-specimen">
+          <span class="control-cluster__title">Material Symbols Optical Axes (<code>FILL</code>, <code>opsz</code>, dark <code>GRAD -25</code>)</span>
+          <div class="icon-calibration">
+            <span class="icon-calibration__item">
+              <span class="material-symbols-outlined" aria-hidden="true">favorite</span>
+              <span>Outline (FILL 0)</span>
+            </span>
+            <span class="icon-calibration__item icon-calibration__item--filled">
+              <span class="material-symbols-outlined" aria-hidden="true">favorite</span>
+              <span>Active (FILL 1)</span>
+            </span>
+            <span class="icon-calibration__item icon-calibration__item--large">
+              <span class="material-symbols-outlined" aria-hidden="true">explore</span>
+              <span>32px opsz</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Official 35 MaterialShapes & 7-Polygon Morphing LoadingIndicator -->
+    <section class="section-card section-card--wide" id="section-shapes">
+      <h2>2. Official 35 MaterialShapes &amp; 7-Polygon Loading Indicator</h2>
+      <p>Ported from AOSP <code>MaterialShapes.kt</code> &amp; <code>LoadingIndicator.kt</code> into <code>md3e-shapes.css</code>: all 35 normalized polygon masks plus the true 7-shape morphing loader.</p>
+
+      <div class="demo-row">
+        <div class="md3e-loading-indicator" id="loader-default" role="status" aria-label="Loading 7-polygon default">
+          <svg class="md3e-loading-indicator__svg" viewBox="0 0 100 100" aria-hidden="true">
+            <path class="md3e-loading-indicator__path" d="M49.96 9.61C52.69 9.6 54.19 12.58 55.63 14.9C57.07 17.22 58.7 20.12 61.42 19.94C64.14 19.75 66.51 18.03 69.05 17.04C71.6 16.04 74.92 17.33 75.4 20.01C75.87 22.7 75.05 25.45 74.95 28.18C74.84 30.9 77.36 32.73 80.02 33.37C82.67 34.02 85.84 33.98 87.6 36.07C89.36 38.15 87.94 41.17 86.18 43.25C84.42 45.34 81.82 47.24 81.81 49.97C81.8 52.7 84.41 54.61 86.18 56.69C87.95 58.77 89.38 61.77 87.63 63.87C85.88 65.96 82.7 65.94 80.05 66.59C77.4 67.24 74.85 69.05 74.96 71.78C75.07 74.5 75.91 77.25 75.45 79.94C74.98 82.63 71.66 83.92 69.11 82.94C66.57 81.96 64.19 80.26 61.47 80.06C58.75 79.86 57.11 82.76 55.68 85.08C54.25 87.4 52.76 90.39 50.04 90.39C47.31 90.4 45.81 87.42 44.37 85.1C42.93 82.78 41.3 79.88 38.58 80.06C35.86 80.25 33.49 81.97 30.95 82.96C28.4 83.96 25.08 82.67 24.6 79.99C24.13 77.3 24.95 74.55 25.05 71.82C25.16 69.1 22.64 67.27 19.98 66.63C17.33 65.98 14.16 66.02 12.4 63.93C10.64 61.85 12.06 58.83 13.82 56.75C15.58 54.66 18.18 52.75 18.19 50.02C18.2 47.3 15.59 45.39 13.82 43.31C12.05 41.23 10.62 38.22 12.37 36.13C14.12 34.04 17.3 34.06 19.95 33.41C22.6 32.76 25.16 30.95 25.04 28.22C24.92 25.5 24.09 22.75 24.55 20.06C25.02 17.37 28.34 16.08 30.89 17.06C33.43 18.04 35.81 19.74 38.53 19.94C41.25 20.14 42.89 17.25 44.32 14.92C45.75 12.6 47.23 9.61 49.96 9.61Z" />
+          </svg>
+        </div>
+        <div class="md3e-loading-indicator md3e-loading-indicator--contained" id="loader-contained" role="status" aria-label="Loading 7-polygon contained">
+          <svg class="md3e-loading-indicator__svg" viewBox="0 0 100 100" aria-hidden="true">
+            <path class="md3e-loading-indicator__path" d="M49.96 9.61C52.69 9.6 54.19 12.58 55.63 14.9C57.07 17.22 58.7 20.12 61.42 19.94C64.14 19.75 66.51 18.03 69.05 17.04C71.6 16.04 74.92 17.33 75.4 20.01C75.87 22.7 75.05 25.45 74.95 28.18C74.84 30.9 77.36 32.73 80.02 33.37C82.67 34.02 85.84 33.98 87.6 36.07C89.36 38.15 87.94 41.17 86.18 43.25C84.42 45.34 81.82 47.24 81.81 49.97C81.8 52.7 84.41 54.61 86.18 56.69C87.95 58.77 89.38 61.77 87.63 63.87C85.88 65.96 82.7 65.94 80.05 66.59C77.4 67.24 74.85 69.05 74.96 71.78C75.07 74.5 75.91 77.25 75.45 79.94C74.98 82.63 71.66 83.92 69.11 82.94C66.57 81.96 64.19 80.26 61.47 80.06C58.75 79.86 57.11 82.76 55.68 85.08C54.25 87.4 52.76 90.39 50.04 90.39C47.31 90.4 45.81 87.42 44.37 85.1C42.93 82.78 41.3 79.88 38.58 80.06C35.86 80.25 33.49 81.97 30.95 82.96C28.4 83.96 25.08 82.67 24.6 79.99C24.13 77.3 24.95 74.55 25.05 71.82C25.16 69.1 22.64 67.27 19.98 66.63C17.33 65.98 14.16 66.02 12.4 63.93C10.64 61.85 12.06 58.83 13.82 56.75C15.58 54.66 18.18 52.75 18.19 50.02C18.2 47.3 15.59 45.39 13.82 43.31C12.05 41.23 10.62 38.22 12.37 36.13C14.12 34.04 17.3 34.06 19.95 33.41C22.6 32.76 25.16 30.95 25.04 28.22C24.92 25.5 24.09 22.75 24.55 20.06C25.02 17.37 28.34 16.08 30.89 17.06C33.43 18.04 35.81 19.74 38.53 19.94C41.25 20.14 42.89 17.25 44.32 14.92C45.75 12.6 47.23 9.61 49.96 9.61Z" />
+          </svg>
+        </div>
+        <button type="button" class="choice-chip" id="btn-loader-pause">
+          <span class="material-symbols-outlined" id="loader-pause-icon" aria-hidden="true">pause</span>
+          <span id="loader-pause-label">Pause loaders</span>
+        </button>
+        <span class="inline-status" id="live-status" role="status" aria-live="polite">7-Polygon Loading Indicator (48dp / 38dp)</span>
+      </div>
+
+      <div class="shape-stage" id="shape-stage" data-shadow-wrap="true">
+        <span class="md3e-shape-shadow-wrap">
+          <div class="md3e-shape md3e-shape-cookie-9-sided shape-spotlight" id="shape-spotlight">
+            <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+          </div>
         </span>
+        <div class="shape-spotlight__meta">
+          <strong id="shape-spotlight-title">cookie-9-sided</strong>
+          <code id="shape-spotlight-class">.md3e-shape.md3e-shape-cookie-9-sided</code>
+        </div>
+        <button type="button" class="choice-chip" id="btn-shape-shadow" aria-pressed="true">Shadow Wrap</button>
       </div>
+
+      <div class="shape-grid" id="shape-grid" role="group" aria-label="Official 35 MaterialShapes presets"></div>
+    </section>
+
+    <!-- Section 3: Motion Alignment & Optional Frosted Depth -->
+    <section class="section-card section-card--wide" id="section-motion">
+      <h2>3. Motion Alignment &amp; Optional Frosted Depth</h2>
+      <p>Switch between Expressive &amp; Standard schemes, CSS <code>linear()</code> vs Official Web <code>cubic-bezier</code>, test velocity-preserving retargeting with <code>md3e-spring.js</code>, or toggle Android-16-inspired frosted chrome on the floating toolbar.</p>
+
+      <div class="demo-row">
+        <div class="choice-row" role="group" aria-label="Motion scheme">
+          <button type="button" class="choice-chip" data-motion-choice="expressive" aria-pressed="true">Expressive Spring</button>
+          <button type="button" class="choice-chip" data-motion-choice="standard" aria-pressed="false">Standard Spring</button>
+        </div>
+        <div class="choice-row" role="group" aria-label="Motion driver">
+          <button type="button" class="choice-chip" data-driver-choice="linear" aria-pressed="true">linear() Oscillator</button>
+          <button type="button" class="choice-chip" data-driver-choice="bezier" aria-pressed="false">Official Web Bezier</button>
+        </div>
+        <div class="choice-row" role="group" aria-label="Spring speed">
+          <button type="button" class="choice-chip" data-speed-choice="fast" aria-pressed="false">Fast</button>
+          <button type="button" class="choice-chip" data-speed-choice="default" aria-pressed="true">Default</button>
+          <button type="button" class="choice-chip" data-speed-choice="slow" aria-pressed="false">Slow</button>
+        </div>
+        <button type="button" class="toggle-btn" id="btn-frosted-toolbar" aria-pressed="false">
+          <span class="material-symbols-outlined" aria-hidden="true">blur_on</span>
+          <span>Frosted Toolbar</span>
+        </button>
+      </div>
+
+      <div class="demo-row">
+        <button type="button" class="md3e-btn md3e-btn--tonal md3e-btn--s" data-puck-target="0">Start</button>
+        <button type="button" class="md3e-btn md3e-btn--tonal md3e-btn--s" data-puck-target="0.5">Middle</button>
+        <button type="button" class="md3e-btn md3e-btn--tonal md3e-btn--s" data-puck-target="1">End (Retarget mid-flight!)</button>
+        <span class="inline-status" id="spring-telemetry">v = 0 px/s</span>
+      </div>
+
+      <div class="spring-track" id="spring-track" title="Click anywhere to retarget velocity-preserving spring">
+        <div class="spring-puck" id="spring-puck">
+          <span class="material-symbols-outlined" aria-hidden="true">bolt</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: Button Hierarchy, 5 Sizes, Icon Buttons & Disabled State -->
+    <section class="section-card section-card--wide" id="section-buttons">
+      <h2>4. Button Hierarchy &amp; MD3E 5-Size Scale</h2>
+      <p>Keep one primary <code>filled</code> action in focus per view, preserve exact 32/40/56/96/136dp visual heights with 48dp hit targets, and pair square tension, icon toggle buttons, and proper M3E disabled states.</p>
+
+      <div class="subsection-label">5 Emphasis Variants &amp; M3E Disabled States (12% container / 38% ink)</div>
+      <div class="demo-row">
+        <button type="button" class="md3e-btn md3e-btn--filled md3e-btn--s" data-demo-btn="Filled Primary">
+          <span class="material-symbols-outlined" aria-hidden="true">check</span>
+          Filled Primary (40)
+        </button>
+        <button type="button" class="md3e-btn md3e-btn--tonal md3e-btn--s" data-demo-btn="Tonal">Tonal (40)</button>
+        <button type="button" class="md3e-btn md3e-btn--elevated md3e-btn--s" data-demo-btn="Elevated">Elevated (40)</button>
+        <button type="button" class="md3e-btn md3e-btn--outlined md3e-btn--s" data-demo-btn="Outlined">Outlined (40)</button>
+        <button type="button" class="md3e-btn md3e-btn--text md3e-btn--s" data-demo-btn="Text">Text (40)</button>
+        <button type="button" class="md3e-btn md3e-btn--filled md3e-btn--s" disabled>Disabled Filled</button>
+        <button type="button" class="md3e-btn md3e-btn--elevated md3e-btn--s" disabled>Disabled Elevated</button>
+      </div>
+
+      <div class="subsection-label">5-Size Scale (XS 32 / S 40 / M 56 / L 96 / XL 136) &amp; Icon Buttons</div>
+      <div class="demo-row">
+        <button type="button" class="md3e-btn md3e-btn--tonal md3e-btn--xs" data-demo-btn="Extra Small 32dp">Extra Small (32)</button>
+        <button type="button" class="md3e-btn md3e-btn--tonal md3e-btn--s md3e-btn--square" data-demo-btn="Square S">Square S (12r)</button>
+        <button type="button" class="md3e-btn md3e-btn--tonal md3e-btn--m" data-demo-btn="Medium 56dp">
+          <span class="material-symbols-outlined" aria-hidden="true">bolt</span>
+          Medium (56)
+        </button>
+        <button type="button" class="md3e-btn md3e-btn--outlined md3e-btn--m md3e-btn--square" data-demo-btn="Square M">Square M (16r)</button>
+        <button type="button" class="md3e-btn md3e-btn--tonal md3e-btn--l" data-demo-btn="Large 96dp">Large (96)</button>
+        <button type="button" class="md3e-btn md3e-btn--elevated md3e-btn--xl" data-demo-btn="XL 136dp">XL (136)</button>
+      </div>
+
+      <div class="demo-row">
+        <button type="button" class="md3e-icon-btn" aria-label="Favorite standard icon toggle" aria-pressed="false">
+          <span class="material-symbols-outlined" aria-hidden="true">favorite</span>
+        </button>
+        <button type="button" class="md3e-icon-btn md3e-icon-btn--filled" aria-label="Star filled icon toggle" aria-pressed="true">
+          <span class="material-symbols-outlined" aria-hidden="true">star</span>
+        </button>
+        <button type="button" class="md3e-icon-btn md3e-icon-btn--tonal" aria-label="Bookmark tonal icon toggle" aria-pressed="false">
+          <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
+        </button>
+        <button type="button" class="md3e-icon-btn md3e-icon-btn--outlined" aria-label="Lock outlined icon toggle" aria-pressed="false">
+          <span class="material-symbols-outlined" aria-hidden="true">lock</span>
+        </button>
+        <span class="inline-status" id="buttons-status">Click any button or icon toggle above</span>
+      </div>
+    </section>
+
+    <!-- Section 5: Expressive Components, Cards & Docked Toolbar -->
+    <section class="section-card section-card--wide" id="section-expressive">
+      <h2>5. Expressive Components, Cards &amp; Toolbars</h2>
+      <p>Split buttons with 2dp separation, single &amp; multi-select connected groups, bounded pill-to-square toggle morphing, M3E optical-corner cards (28dp outer − 12dp inset = 16dp inner), and Docked Toolbar.</p>
+
+      <div class="demo-row">
+        <div class="split-btn-wrap">
+          <div class="split-btn">
+            <button class="split-btn__action" type="button" id="split-action">
+              <span class="material-symbols-outlined" aria-hidden="true">send</span>
+              <span>Publish</span>
+            </button>
+            <button
+              class="split-btn__trigger"
+              id="split-trigger"
+              type="button"
+              aria-label="More publishing options"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-controls="split-menu"
+            >
+              <span class="material-symbols-outlined split-btn__chevron" aria-hidden="true">keyboard_arrow_down</span>
+            </button>
+          </div>
+          <div class="split-menu" id="split-menu" role="menu" hidden>
+            <button type="button" class="split-menu__item" role="menuitem">Schedule release</button>
+            <button type="button" class="split-menu__item" role="menuitem">Save as draft</button>
+            <button type="button" class="split-menu__item" role="menuitem">Share preview link</button>
+          </div>
+        </div>
+
+        <div class="btn-group" role="group" aria-label="Text alignment" data-group-mode="single">
+          <button type="button" class="btn-group__item" aria-label="Align left" aria-pressed="true" data-group-val="Left">
+            <span class="material-symbols-outlined" aria-hidden="true">format_align_left</span>
+          </button>
+          <button type="button" class="btn-group__item" aria-label="Align center" aria-pressed="false" data-group-val="Center">
+            <span class="material-symbols-outlined" aria-hidden="true">format_align_center</span>
+          </button>
+          <button type="button" class="btn-group__item" aria-label="Align right" aria-pressed="false" data-group-val="Right">
+            <span class="material-symbols-outlined" aria-hidden="true">format_align_right</span>
+          </button>
+        </div>
+
+        <div class="btn-group" role="group" aria-label="Text formatting" data-group-mode="multi">
+          <button type="button" class="btn-group__item" aria-label="Bold" aria-pressed="true" data-group-val="Bold">
+            <span class="material-symbols-outlined" aria-hidden="true">format_bold</span>
+          </button>
+          <button type="button" class="btn-group__item" aria-label="Italic" aria-pressed="false" data-group-val="Italic">
+            <span class="material-symbols-outlined" aria-hidden="true">format_italic</span>
+          </button>
+          <button type="button" class="btn-group__item" aria-label="Underline" aria-pressed="false" data-group-val="Underline">
+            <span class="material-symbols-outlined" aria-hidden="true">format_underlined</span>
+          </button>
+        </div>
+
+        <button type="button" class="toggle-btn" aria-pressed="false" id="demo-toggle">
+          <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
+          <span id="demo-toggle-label">Save bookmark</span>
+        </button>
+
+        <span class="inline-status" id="expressive-status">Align: Left | Format: Bold</span>
+      </div>
+
+      <div class="subsection-label">M3E Cards (Elevated, Filled, Outlined — Optical 16px Inner Corners)</div>
+      <div class="optical-card-grid">
+        <button type="button" class="optical-card optical-card--elevated" aria-pressed="false" data-card-variant="Elevated Card">
+          <span class="optical-card__inner">
+            <span>Elevated Card</span>
+            <span class="material-symbols-outlined" aria-hidden="true">layers</span>
+          </span>
+          <span class="optical-card__body"><code>surface-container-low</code> + elevation level 1-&gt;2 with matched optical inner inset.</span>
+        </button>
+        <button type="button" class="optical-card optical-card--filled" aria-pressed="false" data-card-variant="Filled Card">
+          <span class="optical-card__inner">
+            <span>Filled Card</span>
+            <span class="material-symbols-outlined" aria-hidden="true">style</span>
+          </span>
+          <span class="optical-card__body"><code>surface-container-highest</code> without stroke, pairing 28px shell and 16px child inset.</span>
+        </button>
+        <button type="button" class="optical-card optical-card--outlined" aria-pressed="false" data-card-variant="Outlined Card">
+          <span class="optical-card__inner">
+            <span>Outlined Card</span>
+            <span class="material-symbols-outlined" aria-hidden="true">check_box_outline_blank</span>
+          </span>
+          <span class="optical-card__body"><code>surface</code> + crisp <code>outline-variant</code> perimeter for dense catalog grids.</span>
+        </button>
+      </div>
+
+      <div class="subsection-label">Docked Toolbar (64dp Full-Width Chrome)</div>
+      <div class="toolbar-docked" role="toolbar" aria-label="Section docked actions">
+        <button type="button" class="toolbar-btn" aria-label="Docked inbox" data-toolbar-action="Docked: Inbox">
+          <span class="material-symbols-outlined" aria-hidden="true">inbox</span>
+        </button>
+        <button type="button" class="toolbar-btn" aria-label="Docked calendar" data-toolbar-action="Docked: Calendar">
+          <span class="material-symbols-outlined" aria-hidden="true">calendar_today</span>
+        </button>
+        <button type="button" class="toolbar-btn" aria-label="Docked folders" data-toolbar-action="Docked: Folders">
+          <span class="material-symbols-outlined" aria-hidden="true">folder</span>
+        </button>
+        <button type="button" class="toolbar-btn toolbar-btn--primary" aria-label="Docked quick add" data-toolbar-action="Docked: New Item">
+          <span class="material-symbols-outlined" aria-hidden="true">add_box</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Section 6: Official @material/web Bridge (Online CDN + Offline Resilient Fallback) -->
+    <section class="section-card section-card--wide" id="section-mwc">
+      <h2>6. @material/web Bridge</h2>
+      <p>Google's Web Components wired to MD3E roles, 5-size classes, square shapes, and Medium FAB tokens via <code>md3e-material-web.css</code>, with seamless progressive fallback when offline.</p>
+
+      <div class="demo-row">
+        <md-filled-tonal-button class="md3e-size-s" id="mwc-tonal-btn">
+          <md-icon slot="icon" aria-hidden="true">cloud_upload</md-icon>
+          MWC Small (40)
+        </md-filled-tonal-button>
+
+        <md-elevated-button class="md3e-size-m" id="mwc-elevated-btn">
+          <md-icon slot="icon" aria-hidden="true">star</md-icon>
+          MWC Medium (56)
+        </md-elevated-button>
+
+        <md-outlined-button class="md3e-size-m md3e-shape-square" id="mwc-outlined-btn">
+          <md-icon slot="icon" aria-hidden="true">crop_square</md-icon>
+          MWC Square
+        </md-outlined-button>
+
+        <md-fab class="md3e-fab-medium" id="mwc-fab" aria-label="Compose message">
+          <md-icon slot="icon" aria-hidden="true">edit</md-icon>
+        </md-fab>
+      </div>
+
+      <div class="demo-row">
+        <label class="field-label">
+          <md-switch id="mwc-switch" checked aria-label="Wi-Fi"></md-switch>
+          <span>Wi-Fi</span>
+        </label>
+
+        <label class="field-label">
+          <md-checkbox id="mwc-checkbox" checked aria-label="Notifications"></md-checkbox>
+          <span>Notifications</span>
+        </label>
+
+        <span class="inline-status" id="mwc-status" role="status">Initializing @material/web…</span>
+      </div>
+
+      <div class="demo-row">
+        <md-outlined-text-field
+          class="text-field-grow"
+          id="mwc-text-field"
+          label="Workspace Name"
+          value="antigravity-project"
+        ></md-outlined-text-field>
+
+        <div class="slider-block">
+          <label class="slider-block__label" for="volume-slider">Volume (<span id="volume-readout">75</span>%)</label>
+          <md-slider id="volume-slider" value="75" aria-label="Volume"></md-slider>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toggleable Desktop Side Sheet / Mobile Bottom Sheet Live Token Inspector -->
+  <div class="side-sheet-scrim" id="side-sheet-scrim" aria-hidden="true"></div>
+  <aside class="side-sheet" id="inspector-sheet" aria-label="Live CSS token inspector" aria-hidden="true" inert>
+    <div class="side-sheet__header">
+      <h2 class="side-sheet__title">Live Token Inspector</h2>
+      <button type="button" class="toolbar-btn" id="inspector-close" aria-label="Close inspector">
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
     </div>
-  </section>
-
-  <!-- Section 3: Official @material/web Web Components styled with MD3E Tokens -->
-  <section class="section-card">
-    <h2>3. Official @material/web Components Bridge</h2>
-    <p>Google's official web components seamlessly adopting MD3E token roles, shapes, and sizes via <code>md3e-material-web.css</code>.</p>
-
+    <p class="inline-status">Live synchronized HTML state &amp; resolved color tokens. Press <kbd class="kbd-hint">]</kbd> to toggle.</p>
+    <dl class="inspector-list" id="inspector-attrs">
+      <dt>Window Size Class</dt><dd id="insp-breakpoint">Compact</dd>
+      <dt>data-theme</dt><dd id="insp-theme">system</dd>
+      <dt>data-seed</dt><dd id="insp-seed">purple</dd>
+      <dt>data-color-variant</dt><dd id="insp-variant">baseline</dd>
+      <dt>data-contrast</dt><dd id="insp-contrast">standard</dd>
+      <dt>data-density</dt><dd id="insp-density">standard</dd>
+      <dt>data-motion-scheme</dt><dd id="insp-motion">expressive</dd>
+    </dl>
+    <dl class="inspector-list" id="inspector-colors">
+      <dt>--md-sys-color-primary</dt><dd id="insp-hex-primary"></dd>
+      <dt>--md-sys-color-on-primary</dt><dd id="insp-hex-on-primary"></dd>
+      <dt>--md-sys-color-surface</dt><dd id="insp-hex-surface"></dd>
+      <dt>--md-sys-color-surface-container-low</dt><dd id="insp-hex-low"></dd>
+      <dt>--md-sys-color-secondary-container</dt><dd id="insp-hex-secondary"></dd>
+      <dt>--md-sys-color-tertiary</dt><dd id="insp-hex-tertiary"></dd>
+    </dl>
     <div class="demo-row">
-      <!-- MWC Buttons with MD3E Size Classes -->
-      <md-filled-button class="md3e-size-s">
-        <md-icon slot="icon">cloud_upload</md-icon>
-        MWC Small (40)
-      </md-filled-button>
-
-      <md-filled-tonal-button class="md3e-size-m">
-        <md-icon slot="icon">star</md-icon>
-        MWC Medium (56)
-      </md-filled-tonal-button>
-
-      <md-outlined-button class="md3e-size-m md3e-shape-square">
-        <md-icon slot="icon">crop_square</md-icon>
-        MWC Square
-      </md-outlined-button>
-
-      <!-- Medium FAB (80dp, corner 20dp) -->
-      <md-fab class="md3e-fab-medium" aria-label="Compose message">
-        <md-icon slot="icon">edit</md-icon>
-      </md-fab>
-
-      <!-- Standard Selection Controls -->
-      <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px;">
-        <md-switch checked aria-label="Airplane mode"></md-switch>
-        <span>Wi-Fi</span>
-      </label>
-
-      <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px;">
-        <md-checkbox checked aria-label="Option A"></md-checkbox>
-        <span>Notifications</span>
-      </label>
+      <button type="button" class="md3e-btn md3e-btn--tonal md3e-btn--s" id="btn-inspector-reset">Reset defaults</button>
     </div>
+  </aside>
+</div>
 
-    <!-- Inputs & Sliders -->
-    <div class="demo-row" style="margin-top: 16px;">
-      <md-outlined-text-field label="Workspace Name" value="antigravity-project" style="flex: 1; min-width: 240px;"></md-filled-text-field>
-      <div style="flex: 1; min-width: 240px;">
-        <span style="font-size: 12px; color: var(--md-sys-color-on-surface-variant);">Volume / Slider</span>
-        <md-slider value="75" aria-label="Volume slider"></md-slider>
-      </div>
-    </div>
-  </section>
-
-</main>
-
-<!-- Floating Toolbar (Expressive alternative to the baseline bottom app bar) -->
-<nav class="toolbar-floating" aria-label="Floating toolbar">
-  <button class="toolbar-btn" aria-label="Home">
-    <span class="material-symbols-outlined">home</span>
-  </button>
-  <button class="toolbar-btn" aria-label="Search">
-    <span class="material-symbols-outlined">search</span>
-  </button>
-  <div class="toolbar-divider" role="separator"></div>
-  <button class="toolbar-btn" aria-label="Favorite">
-    <span class="material-symbols-outlined">favorite</span>
-  </button>
-  <button class="toolbar-btn" aria-label="Share">
-    <span class="material-symbols-outlined">share</span>
-  </button>
-  <div class="toolbar-divider" role="separator"></div>
-  <button class="toolbar-btn" style="color: var(--md-sys-color-primary);" aria-label="Add new">
-    <span class="material-symbols-outlined">add_circle</span>
-  </button>
+<!-- Compact Bottom Navigation Bar (< 600px) -->
+<nav class="nav-bar" id="nav-bar" aria-label="Compact navigation">
+  <a class="nav-bar__item" href="#section-color" aria-current="page">
+    <span class="nav-bar__pill"><span class="material-symbols-outlined" aria-hidden="true">palette</span></span>
+    <span>Colour</span>
+  </a>
+  <a class="nav-bar__item" href="#section-shapes">
+    <span class="nav-bar__pill"><span class="material-symbols-outlined" aria-hidden="true">category</span></span>
+    <span>Shapes</span>
+  </a>
+  <a class="nav-bar__item" href="#section-motion">
+    <span class="nav-bar__pill"><span class="material-symbols-outlined" aria-hidden="true">speed</span></span>
+    <span>Motion</span>
+  </a>
+  <a class="nav-bar__item" href="#section-buttons">
+    <span class="nav-bar__pill"><span class="material-symbols-outlined" aria-hidden="true">smart_button</span></span>
+    <span>Buttons</span>
+  </a>
+  <a class="nav-bar__item" href="#section-expressive">
+    <span class="nav-bar__pill"><span class="material-symbols-outlined" aria-hidden="true">animation</span></span>
+    <span>UI</span>
+  </a>
+  <a class="nav-bar__item" href="#section-mwc">
+    <span class="nav-bar__pill"><span class="material-symbols-outlined" aria-hidden="true">widgets</span></span>
+    <span>Web</span>
+  </a>
 </nav>
 
-<script>
-  // Dark mode toggle
+<!-- Floating Toolbar (Superseding deprecated bottom app bar) -->
+<div class="toolbar-floating" id="floating-toolbar" role="toolbar" aria-label="Quick actions">
+  <button type="button" class="toolbar-btn" aria-label="Home" data-toolbar-action="Floating: Home">
+    <span class="material-symbols-outlined" aria-hidden="true">home</span>
+  </button>
+  <button type="button" class="toolbar-btn" aria-label="Search" data-toolbar-action="Floating: Search">
+    <span class="material-symbols-outlined" aria-hidden="true">search</span>
+  </button>
+  <div class="toolbar-divider" role="separator" aria-orientation="vertical"></div>
+  <button type="button" class="toolbar-btn" id="toolbar-fav-btn" aria-label="Favorite" aria-pressed="false" data-toolbar-action="Floating: Favorite">
+    <span class="material-symbols-outlined" aria-hidden="true">favorite</span>
+  </button>
+  <button type="button" class="toolbar-btn" aria-label="Share" data-toolbar-action="Floating: Share">
+    <span class="material-symbols-outlined" aria-hidden="true">share</span>
+  </button>
+  <div class="toolbar-divider" role="separator" aria-orientation="vertical"></div>
+  <button type="button" class="toolbar-btn toolbar-btn--primary" aria-label="Add new" data-toolbar-action="Floating: Quick Create">
+    <span class="material-symbols-outlined" aria-hidden="true">add_circle</span>
+  </button>
+</div>
+
+<!-- Snackbar Status Toast -->
+<div class="md3e-snackbar" id="md3e-snackbar" role="status" aria-live="polite"></div>
+
+<!-- Interactive FAB Menu -->
+<div class="fab-menu-container">
+  <div class="fab-scrim" id="fab-scrim" aria-hidden="true"></div>
+  <button
+    type="button"
+    class="fab-trigger"
+    id="fab-trigger"
+    aria-label="Open actions menu"
+    aria-haspopup="menu"
+    aria-expanded="false"
+    aria-controls="fab-menu"
+  >
+    <span class="material-symbols-outlined fab-trigger__icon" aria-hidden="true">add</span>
+  </button>
+  <div class="fab-menu" id="fab-menu" role="menu" aria-label="Quick create" aria-hidden="true" inert>
+    <button type="button" class="fab-menu__item" role="menuitem" id="fab-item-upload">
+      <span class="material-symbols-outlined" aria-hidden="true">upload_file</span>
+      <span>Upload image</span>
+    </button>
+    <button type="button" class="fab-menu__item" role="menuitem">
+      <span class="material-symbols-outlined" aria-hidden="true">note_add</span>
+      <span>New document</span>
+    </button>
+    <button type="button" class="fab-menu__item" role="menuitem" id="fab-item-inspector">
+      <span class="material-symbols-outlined" aria-hidden="true">tune</span>
+      <span>Open Inspector</span>
+    </button>
+  </div>
+</div>
+
+<script type="module">
+  import { createSpringAnimator, resolveSpringPreset } from '../tokens/md3e-spring.js';
+  import {
+    applyDynamicSeed,
+    clearDynamicSeed,
+    extractSeedsFromImage,
+    normalizeHex,
+    renderStandaloneCss,
+  } from '../tokens/md3e-dynamic-color.js';
+
+  const PRESET_SEED_HEX = {
+    purple: '#6750A4',
+    ocean: '#0B57D0',
+    emerald: '#146C2E',
+    amber: '#8F4C00',
+    rose: '#9C4146',
+    teal: '#006A6A',
+  };
+
+  let activeCustomHex = null;
+  let lastCopiedAnnouncement = '';
+  let copyTimer = null;
+
+  const root = document.documentElement;
+  const appBar = document.getElementById('app-bar');
+  const mainEl = document.getElementById('main-content');
+  const navRail = document.getElementById('nav-rail');
+  const navBar = document.getElementById('nav-bar');
+  const statusEl = document.getElementById('live-status');
+  const snackbarEl = document.getElementById('md3e-snackbar');
+  const colorSchemeMeta = document.querySelector('meta[name="color-scheme"]');
+  const osDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+  const seedChipCustom = document.getElementById('seed-chip-custom');
+  const seedSwatchCustom = document.getElementById('seed-swatch-custom');
+  const seedLabelCustom = document.getElementById('seed-label-custom');
+  const customSeedColor = document.getElementById('custom-seed-color');
+  const imageInput = document.getElementById('image-theme-input');
+  const imageDropZone = document.getElementById('image-drop-zone');
+  const imagePreview = document.getElementById('image-theme-preview');
+  const imageHint = document.getElementById('image-theme-hint');
+  const candidatesContainer = document.getElementById('extracted-candidates');
+  const generatedCssEl = document.getElementById('generated-theme-css');
+  const copyCssBtn = document.getElementById('btn-copy-theme-css');
+  const copyCssIcon = document.getElementById('copy-theme-icon');
+  const copyCssTip = document.getElementById('copy-theme-tip');
+  const downloadCssBtn = document.getElementById('btn-download-theme-css');
+
+  let snackbarTimer = null;
+  function showToast(msg) {
+    statusEl.textContent = msg;
+    snackbarEl.textContent = msg;
+    snackbarEl.classList.add('is-visible');
+    clearTimeout(snackbarTimer);
+    snackbarTimer = setTimeout(() => {
+      snackbarEl.classList.remove('is-visible');
+    }, 2600);
+  }
+
+  function rgbToHex(rgb) {
+    const m = rgb.match(/\d+/g);
+    if (!m || m.length < 3) return rgb;
+    return '#' + m.slice(0, 3).map((x) => Number(x).toString(16).padStart(2, '0').toUpperCase()).join('');
+  }
+
+  function resolveTokenHex(varName) {
+    const probe = document.createElement('span');
+    probe.style.position = 'fixed';
+    probe.style.visibility = 'hidden';
+    probe.style.backgroundColor = `var(${varName})`;
+    document.body.appendChild(probe);
+    const hex = rgbToHex(getComputedStyle(probe).backgroundColor);
+    probe.remove();
+    return hex;
+  }
+
+  function getBreakpointLabel() {
+    const w = window.innerWidth;
+    if (w < 600) return `Compact (${w}px < 600)`;
+    if (w < 840) return `Medium (${w}px)`;
+    if (w < 1200) return `Expanded (${w}px)`;
+    if (w < 1600) return `Large (${w}px)`;
+    return `XLarge (${w}px)`;
+  }
+
+  function getActiveSeedHex() {
+    if (root.dataset.seed === 'custom' && activeCustomHex) return activeCustomHex;
+    return PRESET_SEED_HEX[root.dataset.seed || 'purple'] || '#6750A4';
+  }
+
+  function updateExportCss() {
+    const activeHex = getActiveSeedHex();
+    const variant = root.dataset.colorVariant || 'expressive';
+    generatedCssEl.textContent = renderStandaloneCss(activeHex, { variant, specVersion: '2025' });
+  }
+
+  function syncCustomControlsUI() {
+    if (activeCustomHex) {
+      seedChipCustom.hidden = false;
+      seedSwatchCustom.style.background = activeCustomHex;
+      seedLabelCustom.textContent = activeCustomHex;
+    } else {
+      seedChipCustom.hidden = true;
+      seedSwatchCustom.style.background = '';
+      seedLabelCustom.textContent = 'Custom';
+    }
+    const isCustomActive = root.dataset.seed === 'custom';
+    candidatesContainer.querySelectorAll('[data-cand-hex]').forEach((btn) => {
+      btn.setAttribute('aria-pressed', String(isCustomActive && btn.dataset.candHex === activeCustomHex));
+    });
+  }
+
+  function refreshSwatches() {
+    document.querySelectorAll('[data-swatch-var]').forEach((el) => {
+      const hexEl = el.querySelector('.swatch-tile__hex');
+      if (hexEl) {
+        hexEl.textContent = resolveTokenHex(el.dataset.swatchVar);
+      }
+    });
+    // Update Live Token Inspector
+    document.getElementById('insp-breakpoint').textContent = getBreakpointLabel();
+    document.getElementById('insp-theme').textContent = root.dataset.theme || `system (${osDarkQuery.matches ? 'dark' : 'light'})`;
+    document.getElementById('insp-seed').textContent = root.dataset.seed === 'custom'
+      ? `custom (${activeCustomHex || ''})`
+      : (root.dataset.seed || 'purple');
+    document.getElementById('insp-variant').textContent = root.dataset.colorVariant || 'baseline';
+    document.getElementById('insp-contrast').textContent = root.dataset.contrast || 'standard';
+    document.getElementById('insp-density').textContent = root.dataset.density || 'standard';
+    document.getElementById('insp-motion').textContent = `${root.dataset.motionScheme || 'expressive'} / ${root.dataset.motionDriver || 'linear'}`;
+
+    document.getElementById('insp-hex-primary').textContent = resolveTokenHex('--md-sys-color-primary');
+    document.getElementById('insp-hex-on-primary').textContent = resolveTokenHex('--md-sys-color-on-primary');
+    document.getElementById('insp-hex-surface').textContent = resolveTokenHex('--md-sys-color-surface');
+    document.getElementById('insp-hex-low').textContent = resolveTokenHex('--md-sys-color-surface-container-low');
+    document.getElementById('insp-hex-secondary').textContent = resolveTokenHex('--md-sys-color-secondary-container');
+    document.getElementById('insp-hex-tertiary').textContent = resolveTokenHex('--md-sys-color-tertiary');
+    updateExportCss();
+  }
+
+  // --- Bidirectional Theme Sync (Header <-> Section 1 <-> <meta name="color-scheme"> <-> OS listener) ---
   const themeBtn = document.getElementById('btn-theme-toggle');
+  const themeLabel = document.getElementById('theme-label');
+  const themeIcon = document.getElementById('theme-icon');
+  const themeModes = ['system', 'dark', 'light'];
+  const themeIconMap = { system: 'contrast', dark: 'dark_mode', light: 'light_mode' };
+
+  function applyTheme(mode) {
+    const normalized = themeModes.includes(mode) ? mode : 'system';
+    if (normalized === 'system') {
+      delete root.dataset.theme;
+      if (colorSchemeMeta) colorSchemeMeta.content = 'light dark';
+    } else {
+      root.dataset.theme = normalized;
+      if (colorSchemeMeta) colorSchemeMeta.content = normalized;
+    }
+    const title = normalized.charAt(0).toUpperCase() + normalized.slice(1);
+    themeLabel.textContent = title;
+    themeIcon.textContent = themeIconMap[normalized];
+    themeBtn.setAttribute('aria-label', `Theme: ${title}`);
+    document.querySelectorAll('[data-theme-choice]').forEach((btn) => {
+      btn.setAttribute('aria-pressed', String(btn.dataset.themeChoice === normalized));
+    });
+    refreshSwatches();
+  }
+
   themeBtn.addEventListener('click', () => {
-    const isDark = document.documentElement.dataset.theme === 'dark';
-    document.documentElement.dataset.theme = isDark ? 'light' : 'dark';
+    const cur = root.dataset.theme || 'system';
+    const next = themeModes[(themeModes.indexOf(cur) + 1) % themeModes.length];
+    applyTheme(next);
+  });
+  document.querySelectorAll('[data-theme-choice]').forEach((btn) => {
+    btn.addEventListener('click', () => applyTheme(btn.dataset.themeChoice));
+  });
+  osDarkQuery.addEventListener('change', () => refreshSwatches());
+
+  // --- Bidirectional Variant Sync ---
+  const topVariantBtn = document.getElementById('btn-color-variant');
+  function applyVariant(variant) {
+    const v = variant || '';
+    if (!v) {
+      delete root.dataset.colorVariant;
+    } else {
+      root.dataset.colorVariant = v;
+    }
+    topVariantBtn.setAttribute('aria-pressed', String(v === 'vibrant'));
+    document.querySelectorAll('[data-variant-choice]').forEach((btn) => {
+      btn.setAttribute('aria-pressed', String(btn.dataset.variantChoice === v));
+    });
+    refreshSwatches();
+  }
+
+  topVariantBtn.addEventListener('click', () => {
+    applyVariant(root.dataset.colorVariant === 'vibrant' ? '' : 'vibrant');
+  });
+  document.querySelectorAll('[data-variant-choice]').forEach((btn) => {
+    btn.addEventListener('click', () => applyVariant(btn.dataset.variantChoice));
   });
 
-  // Vibrant color variant toggle
-  const variantBtn = document.getElementById('btn-color-variant');
-  variantBtn.addEventListener('click', () => {
-    const isVibrant = document.documentElement.dataset.colorVariant === 'vibrant';
-    if (isVibrant) {
-      delete document.documentElement.dataset.colorVariant;
+  // --- Seed & Contrast Pickers + Image Extraction ---
+  function applyCustomSeedHex(hex, { toastMsg = '' } = {}) {
+    const norm = normalizeHex(hex);
+    activeCustomHex = norm;
+    applyDynamicSeed(norm, { specVersion: '2025' });
+    customSeedColor.value = norm;
+    document.querySelectorAll('[data-seed-choice]').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b.dataset.seedChoice === 'custom'));
+    });
+    syncCustomControlsUI();
+    refreshSwatches();
+    if (toastMsg) showToast(toastMsg);
+  }
+
+  function applySeed(seed) {
+    if (seed === 'custom' && activeCustomHex) {
+      applyCustomSeedHex(activeCustomHex);
+      return;
+    }
+    const s = seed && PRESET_SEED_HEX[seed] ? seed : 'purple';
+    if (s === 'purple') {
+      delete root.dataset.seed;
     } else {
-      document.documentElement.dataset.colorVariant = 'vibrant';
+      root.dataset.seed = s;
+    }
+    customSeedColor.value = PRESET_SEED_HEX[s];
+    document.querySelectorAll('[data-seed-choice]').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b.dataset.seedChoice === s));
+    });
+    syncCustomControlsUI();
+    refreshSwatches();
+  }
+  document.querySelectorAll('[data-seed-choice]').forEach((btn) => {
+    btn.addEventListener('click', () => applySeed(btn.dataset.seedChoice));
+  });
+
+  customSeedColor.addEventListener('input', (e) => {
+    applyCustomSeedHex(e.target.value);
+  });
+
+  function renderCandidateButtons(candidates) {
+    candidatesContainer.innerHTML = '';
+    candidates.forEach((cand, idx) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'choice-chip';
+      btn.dataset.candHex = cand.hex;
+      btn.title = `Candidate #${idx + 1}: Hue ${cand.hue} deg, Chroma ${cand.chroma}, Tone ${cand.tone}`;
+      const swatch = document.createElement('span');
+      swatch.className = 'seed-swatch';
+      swatch.style.background = cand.hex;
+      const label = document.createElement('span');
+      label.textContent = `${idx === 0 ? '#1 Top ' : `#${idx + 1} `}${cand.hex}`;
+      btn.append(swatch, label);
+      btn.addEventListener('click', () => {
+        applyCustomSeedHex(cand.hex, { toastMsg: `Applied extracted seed ${cand.hex}` });
+      });
+      candidatesContainer.appendChild(btn);
+    });
+  }
+
+  async function processImageSource(source, label, previewUrl = '') {
+    imageHint.textContent = `Extracting palette from ${label}...`;
+    let tempUrl = '';
+    try {
+      if (source instanceof Blob) {
+        tempUrl = URL.createObjectURL(source);
+        imagePreview.src = tempUrl;
+        imagePreview.hidden = false;
+      } else if (previewUrl) {
+        imagePreview.src = previewUrl;
+        imagePreview.hidden = false;
+      }
+      const result = await extractSeedsFromImage(source, { maxDimension: 128, desired: 4 });
+      renderCandidateButtons(result.candidates);
+      imageHint.textContent = `Extracted ${result.candidates.length} candidate(s) from ${label} (${result.width}x${result.height} -> ${result.sampledWidth}x${result.sampledHeight}) | Top seed: ${result.primarySeed}`;
+      applyCustomSeedHex(result.primarySeed, { toastMsg: `Extracted Material seed ${result.primarySeed} from ${label}` });
+    } catch (err) {
+      imageHint.textContent = `Could not decode image (${err?.message || 'unknown error'})`;
+      showToast('Failed to extract colour from image');
+    } finally {
+      if (tempUrl) {
+        const u = tempUrl;
+        imagePreview.addEventListener('load', () => URL.revokeObjectURL(u), { once: true });
+      }
+    }
+  }
+
+  imageInput.addEventListener('change', () => {
+    const file = imageInput.files?.[0];
+    imageInput.value = '';
+    if (file) {
+      processImageSource(file, file.name);
     }
   });
 
-  // Toggle button demo
-  const toggleBtn = document.getElementById('demo-toggle');
-  toggleBtn.addEventListener('click', () => {
-    const pressed = toggleBtn.getAttribute('aria-pressed') === 'true';
-    toggleBtn.setAttribute('aria-pressed', String(!pressed));
-  });
-
-  // Button group selection demo
-  document.querySelectorAll('.btn-group__item').forEach(btn => {
-    btn.addEventListener('click', () => {
-      btn.parentElement.querySelectorAll('.btn-group__item').forEach(b => b.setAttribute('aria-pressed', 'false'));
-      btn.setAttribute('aria-pressed', 'true');
+  ['dragenter', 'dragover'].forEach((evt) => {
+    imageDropZone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      imageDropZone.dataset.dragover = 'true';
     });
   });
+  ['dragleave', 'drop'].forEach((evt) => {
+    imageDropZone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      delete imageDropZone.dataset.dragover;
+      if (evt === 'drop') {
+        const file = [...(e.dataTransfer?.files || [])].find((f) => f.type.startsWith('image/'));
+        if (file) processImageSource(file, file.name);
+      }
+    });
+  });
+
+  function makeDemoWallpaper(kind) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 240;
+    canvas.height = 160;
+    const ctx = canvas.getContext('2d');
+    const g = ctx.createLinearGradient(0, 0, 240, 160);
+    if (kind === 'sunset') {
+      g.addColorStop(0, '#FF5722');
+      g.addColorStop(0.55, '#FFB300');
+      g.addColorStop(1, '#311B92');
+    } else if (kind === 'forest') {
+      g.addColorStop(0, '#1B5E20');
+      g.addColorStop(0.55, '#00897B');
+      g.addColorStop(1, '#C0CA33');
+    } else {
+      g.addColorStop(0, '#00BCD4');
+      g.addColorStop(0.55, '#6200EA');
+      g.addColorStop(1, '#FF1744');
+    }
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 240, 160);
+    ctx.fillStyle = kind === 'sunset' ? '#00897B' : (kind === 'forest' ? '#F9A825' : '#00E676');
+    ctx.beginPath();
+    ctx.arc(178, 52, 34, 0, Math.PI * 2);
+    ctx.fill();
+    return canvas;
+  }
+
+  document.querySelectorAll('[data-demo-wallpaper]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const kind = btn.dataset.demoWallpaper;
+      const canvas = makeDemoWallpaper(kind);
+      processImageSource(canvas, `${kind} wallpaper`, canvas.toDataURL('image/png'));
+    });
+  });
+
+  // --- Copy CSS & Download CSS (modern-web-guidance copy-button + legacy fallback) ---
+  function reportCopyOutcome(button, ok) {
+    clearTimeout(copyTimer);
+    button.removeAttribute('data-copied');
+    button.removeAttribute('data-failed');
+    copyCssIcon.textContent = ok ? 'check' : 'error';
+    let msg = ok ? 'Copied' : 'Copy failed';
+    if (msg === lastCopiedAnnouncement) msg += '\u00A0';
+    lastCopiedAnnouncement = msg;
+    copyCssTip.textContent = '';
+    void button.offsetWidth;
+    button.setAttribute(ok ? 'data-copied' : 'data-failed', '');
+    requestAnimationFrame(() => { copyCssTip.textContent = msg; });
+    copyTimer = setTimeout(() => {
+      button.removeAttribute('data-copied');
+      button.removeAttribute('data-failed');
+      copyCssIcon.textContent = 'content_copy';
+      copyCssTip.textContent = '';
+    }, 2000);
+  }
+
+  function legacyCopyText(text) {
+    const field = Object.assign(document.createElement('textarea'), { value: text });
+    field.setAttribute('readonly', '');
+    field.style.cssText = 'position:fixed;inset-block-start:0;opacity:0';
+    document.body.append(field);
+    field.select();
+    try {
+      return document.execCommand('copy');
+    } finally {
+      field.remove();
+    }
+  }
+
+  async function performCopyCommand(button, targetEl) {
+    const text = (targetEl?.textContent || targetEl?.innerText || '').trim();
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      reportCopyOutcome(button, true);
+      showToast(`Copied theme CSS (${getActiveSeedHex()})`);
+    } catch {
+      if (legacyCopyText(text)) {
+        reportCopyOutcome(button, true);
+        showToast(`Copied theme CSS (${getActiveSeedHex()})`);
+      } else {
+        reportCopyOutcome(button, false);
+      }
+    }
+  }
+
+  if ('CommandEvent' in window) {
+    document.addEventListener('command', (event) => {
+      if (event.command === '--copy' && event.source === copyCssBtn) {
+        performCopyCommand(event.source, event.target);
+      }
+    }, true);
+  } else {
+    copyCssBtn.addEventListener('click', () => {
+      performCopyCommand(copyCssBtn, generatedCssEl);
+    });
+  }
+
+  downloadCssBtn.addEventListener('click', () => {
+    const cssText = generatedCssEl.textContent;
+    const blob = new Blob([cssText], { type: 'text/css;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `md3e-theme-${getActiveSeedHex().slice(1).toLowerCase()}.css`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast(`Downloaded md3e-theme-${getActiveSeedHex().slice(1).toLowerCase()}.css`);
+  });
+
+  function applyContrast(lvl) {
+    const c = lvl || '';
+    if (!c) {
+      delete root.dataset.contrast;
+    } else {
+      root.dataset.contrast = c;
+    }
+    document.querySelectorAll('[data-contrast-choice]').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b.dataset.contrastChoice === c));
+    });
+    refreshSwatches();
+  }
+  document.querySelectorAll('[data-contrast-choice]').forEach((btn) => {
+    btn.addEventListener('click', () => applyContrast(btn.dataset.contrastChoice));
+  });
+
+  // --- Bidirectional Visual Density Sync (#btn-density-toggle <-> #density-picker) ---
+  const topDensityBtn = document.getElementById('btn-density-toggle');
+  const densityLabel = document.getElementById('density-label');
+  const densityIcon = document.getElementById('density-icon');
+  function applyDensity(mode) {
+    const compact = mode === 'compact';
+    if (compact) {
+      root.dataset.density = 'compact';
+    } else {
+      delete root.dataset.density;
+    }
+    topDensityBtn.setAttribute('aria-pressed', String(compact));
+    densityLabel.textContent = compact ? 'Compact' : 'Standard';
+    densityIcon.textContent = compact ? 'density_small' : 'density_medium';
+    document.querySelectorAll('[data-density-choice]').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b.dataset.densityChoice === (compact ? 'compact' : 'standard')));
+    });
+    refreshSwatches();
+  }
+  topDensityBtn.addEventListener('click', () => {
+    applyDensity(root.dataset.density === 'compact' ? 'standard' : 'compact');
+  });
+  document.querySelectorAll('[data-density-choice]').forEach((btn) => {
+    btn.addEventListener('click', () => applyDensity(btn.dataset.densityChoice));
+  });
+
+  // Typography Emphasized Toggle
+  const btnTypeEmph = document.getElementById('btn-type-emphasized');
+  const typeSpecimen = document.getElementById('type-specimen');
+  const typeStatus = document.getElementById('type-status');
+  btnTypeEmph.addEventListener('click', () => {
+    const next = btnTypeEmph.getAttribute('aria-pressed') !== 'true';
+    btnTypeEmph.setAttribute('aria-pressed', String(next));
+    typeSpecimen.dataset.emphasized = String(next);
+    typeStatus.textContent = next
+      ? 'Emphasized 500/700 weight + GRAD 50 (zero layout reflow)'
+      : 'Baseline weight + GRAD 0 (Roboto Flex)';
+  });
+
+  // --- Section 2: 35-Shape Gallery, Shadow Wrap Toggle & Loader Pause Control ---
+  const SHAPE_NAMES = [
+    'circle', 'square', 'slanted', 'arch', 'fan', 'arrow', 'semi-circle',
+    'oval', 'pill', 'triangle', 'diamond', 'clam-shell', 'pentagon', 'gem',
+    'sunny', 'very-sunny', 'cookie-4-sided', 'cookie-6-sided', 'cookie-7-sided',
+    'cookie-9-sided', 'cookie-12-sided', 'ghostish', 'clover-4-leaf', 'clover-8-leaf',
+    'burst', 'soft-burst', 'boom', 'soft-boom', 'flower', 'puffy', 'puffy-diamond',
+    'pixel-circle', 'pixel-triangle', 'bun', 'heart',
+  ];
+  const shapeGrid = document.getElementById('shape-grid');
+  const spotlight = document.getElementById('shape-spotlight');
+  const spotlightTitle = document.getElementById('shape-spotlight-title');
+  const spotlightClass = document.getElementById('shape-spotlight-class');
+  const shapeStage = document.getElementById('shape-stage');
+
+  SHAPE_NAMES.forEach((name) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'shape-tile-btn';
+    btn.setAttribute('aria-label', `Shape ${name}`);
+    btn.setAttribute('aria-pressed', String(name === 'cookie-9-sided'));
+    const shapeDiv = document.createElement('span');
+    shapeDiv.className = `md3e-shape md3e-shape-${name} shape-tile-preview`;
+    shapeDiv.setAttribute('aria-hidden', 'true');
+    btn.appendChild(shapeDiv);
+    btn.addEventListener('click', () => {
+      spotlight.className = `md3e-shape md3e-shape-${name} shape-spotlight`;
+      spotlightTitle.textContent = name;
+      spotlightClass.textContent = `.md3e-shape.md3e-shape-${name}`;
+      shapeGrid.querySelectorAll('.shape-tile-btn').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+      btn.setAttribute('aria-pressed', 'true');
+      showToast(`Shape spotlight: ${name}`);
+    });
+    shapeGrid.appendChild(btn);
+  });
+
+  const btnShapeShadow = document.getElementById('btn-shape-shadow');
+  btnShapeShadow.addEventListener('click', () => {
+    const next = btnShapeShadow.getAttribute('aria-pressed') !== 'true';
+    btnShapeShadow.setAttribute('aria-pressed', String(next));
+    shapeStage.dataset.shadowWrap = String(next);
+  });
+
+  const btnLoaderPause = document.getElementById('btn-loader-pause');
+  const loaderPauseIcon = document.getElementById('loader-pause-icon');
+  const loaderPauseLabel = document.getElementById('loader-pause-label');
+  const loaders = [document.getElementById('loader-default'), document.getElementById('loader-contained')];
+  let loadersPaused = false;
+  btnLoaderPause.addEventListener('click', () => {
+    loadersPaused = !loadersPaused;
+    loaders.forEach((el) => el.classList.toggle('is-paused', loadersPaused));
+    loaderPauseIcon.textContent = loadersPaused ? 'play_arrow' : 'pause';
+    loaderPauseLabel.textContent = loadersPaused ? 'Resume loaders' : 'Pause loaders';
+    statusEl.textContent = loadersPaused ? 'Loading indicators paused' : '7-Polygon Loading Indicator active';
+  });
+
+  // --- Section 3: Motion Lab & Velocity-Preserving JS Spring ---
+  const puck = document.getElementById('spring-puck');
+  const track = document.getElementById('spring-track');
+  const telemetry = document.getElementById('spring-telemetry');
+  let targetFraction = 0;
+  let activeSpeed = 'default';
+
+  function getMaxTravel() {
+    return Math.max(0, track.clientWidth - puck.offsetWidth - 16);
+  }
+
+  const puckSpring = createSpringAnimator({
+    initialValue: 0,
+    ...resolveSpringPreset(activeSpeed, 'spatial', root),
+    onUpdate(px, vel) {
+      puck.style.transform = `translateX(${px.toFixed(2)}px)`;
+      const roundedVel = Math.round(vel) || 0;
+      telemetry.textContent = `v = ${roundedVel} px/s`;
+    },
+    onComplete() {
+      telemetry.textContent = 'v = 0 px/s';
+    },
+  });
+
+  function movePuckToFraction(fraction) {
+    targetFraction = Math.max(0, Math.min(1, fraction));
+    const preset = resolveSpringPreset(activeSpeed, 'spatial', root);
+    puckSpring.configure(preset);
+    puckSpring.setTarget(targetFraction * getMaxTravel());
+  }
+
+  window.addEventListener('resize', () => {
+    puckSpring.snap(targetFraction * getMaxTravel());
+    telemetry.textContent = 'v = 0 px/s';
+    syncResponsiveNavMode();
+    refreshSwatches();
+  });
+
+  document.querySelectorAll('[data-puck-target]').forEach((btn) => {
+    btn.addEventListener('click', () => movePuckToFraction(Number(btn.dataset.puckTarget)));
+  });
+
+  track.addEventListener('click', (e) => {
+    const rect = track.getBoundingClientRect();
+    const frac = (e.clientX - rect.left - puck.offsetWidth / 2) / Math.max(1, getMaxTravel());
+    movePuckToFraction(frac);
+  });
+
+  document.querySelectorAll('[data-motion-choice]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const scheme = btn.dataset.motionChoice;
+      root.dataset.motionScheme = scheme;
+      document.querySelectorAll('[data-motion-choice]').forEach((b) => {
+        b.setAttribute('aria-pressed', String(b.dataset.motionChoice === scheme));
+      });
+      puckSpring.configure(resolveSpringPreset(activeSpeed, 'spatial', root));
+      refreshSwatches();
+    });
+  });
+
+  document.querySelectorAll('[data-driver-choice]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const driver = btn.dataset.driverChoice;
+      if (driver === 'bezier') {
+        root.dataset.motionDriver = 'bezier';
+      } else {
+        delete root.dataset.motionDriver;
+      }
+      document.querySelectorAll('[data-driver-choice]').forEach((b) => {
+        b.setAttribute('aria-pressed', String(b.dataset.driverChoice === driver));
+      });
+      refreshSwatches();
+    });
+  });
+
+  document.querySelectorAll('[data-speed-choice]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      activeSpeed = btn.dataset.speedChoice;
+      document.querySelectorAll('[data-speed-choice]').forEach((b) => {
+        b.setAttribute('aria-pressed', String(b.dataset.speedChoice === activeSpeed));
+      });
+      puckSpring.configure(resolveSpringPreset(activeSpeed, 'spatial', root));
+    });
+  });
+
+  const frostedBtn = document.getElementById('btn-frosted-toolbar');
+  const floatingToolbar = document.getElementById('floating-toolbar');
+  frostedBtn.addEventListener('click', () => {
+    const active = frostedBtn.getAttribute('aria-pressed') === 'true';
+    frostedBtn.setAttribute('aria-pressed', String(!active));
+    floatingToolbar.classList.toggle('md3e-frosted-surface', !active);
+    showToast(!active ? 'Frosted translucent chrome enabled' : 'Opaque surface container chrome restored');
+  });
+
+  // --- Adaptive Navigation & Modal Inert Controller (Desktop Rail <-> Mobile Drawer/Bottom Inspector) ---
+  const navMenuBtn = document.getElementById('nav-menu-btn');
+  const navMenuIcon = document.getElementById('nav-menu-icon');
+  const navSheet = document.getElementById('nav-sheet');
+  const navSheetScrim = document.getElementById('nav-sheet-scrim');
+  const navSheetClose = document.getElementById('nav-sheet-close');
+  const inspectorToggleBtn = document.getElementById('btn-inspector-toggle');
+  const inspectorSheet = document.getElementById('inspector-sheet');
+  const inspectorCloseBtn = document.getElementById('inspector-close');
+  const sideSheetScrim = document.getElementById('side-sheet-scrim');
+  const fabContainer = document.querySelector('.fab-menu-container');
+  const fabTrigger = document.getElementById('fab-trigger');
+  const floatingChromeEls = [floatingToolbar, fabContainer];
+  let railExpandedDesktop = window.innerWidth >= 1200;
+
+  function syncModalInert() {
+    const isModalViewport = window.innerWidth < 840;
+    const navOpen = !navSheet.inert;
+    const inspectorModalOpen = isModalViewport && !inspectorSheet.inert;
+    const anyModal = navOpen || inspectorModalOpen;
+    appBar.inert = anyModal;
+    mainEl.inert = anyModal;
+    navRail.inert = anyModal;
+    navBar.inert = anyModal;
+    floatingChromeEls.forEach((el) => { if (el) el.inert = anyModal; });
+  }
+
+  function syncResponsiveNavMode() {
+    const isDesktop = window.innerWidth >= 840;
+    if (isDesktop) {
+      if (!navSheet.inert) setNavSheetOpen(false);
+      navRail.dataset.railExpanded = String(railExpandedDesktop);
+      navMenuBtn.setAttribute('aria-controls', 'nav-rail');
+      navMenuBtn.setAttribute('aria-expanded', String(railExpandedDesktop));
+      navMenuIcon.textContent = railExpandedDesktop ? 'menu_open' : 'menu';
+    } else {
+      navRail.dataset.railExpanded = 'false';
+      navMenuBtn.setAttribute('aria-controls', 'nav-sheet');
+      const sheetOpen = !navSheet.inert;
+      navMenuBtn.setAttribute('aria-expanded', String(sheetOpen));
+      navMenuIcon.textContent = sheetOpen ? 'menu_open' : 'menu';
+    }
+    syncModalInert();
+  }
+
+  function closeFabIfExpanded() {
+    if (fabTrigger.getAttribute('aria-expanded') === 'true') {
+      setFabMenuOpen(false);
+    }
+  }
+
+  function setNavSheetOpen(open, { restoreFocus = false } = {}) {
+    if (open) {
+      closeFabIfExpanded();
+      if (!inspectorSheet.inert) setInspectorOpen(false);
+    }
+    navMenuBtn.setAttribute('aria-expanded', String(open));
+    navMenuIcon.textContent = open ? 'menu_open' : 'menu';
+    navSheet.setAttribute('aria-hidden', String(!open));
+    navSheet.inert = !open;
+    navSheet.classList.toggle('is-open', open);
+    navSheetScrim.classList.toggle('is-open', open);
+    syncModalInert();
+    if (open) {
+      navSheetClose.focus();
+    } else if (restoreFocus) {
+      navMenuBtn.focus();
+    }
+  }
+
+  function toggleNavigationChrome() {
+    if (window.innerWidth >= 840) {
+      railExpandedDesktop = !railExpandedDesktop;
+      syncResponsiveNavMode();
+    } else {
+      setNavSheetOpen(navSheet.inert);
+    }
+  }
+
+  navMenuBtn.addEventListener('click', toggleNavigationChrome);
+  navSheetClose.addEventListener('click', () => setNavSheetOpen(false, { restoreFocus: true }));
+  navSheetScrim.addEventListener('click', () => setNavSheetOpen(false));
+  navSheet.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setNavSheetOpen(false, { restoreFocus: true });
+  });
+  navSheet.querySelectorAll('.nav-sheet__link').forEach((link) => {
+    link.addEventListener('click', () => setNavSheetOpen(false));
+  });
+
+  document.getElementById('rail-compose-btn').addEventListener('click', () => {
+    showToast('Rail Compose action triggered');
+  });
+
+  // Sync active page indicator across Rail, Bottom Bar, and Sheet
+  const allNavLinks = document.querySelectorAll('.nav-rail__item, .nav-bar__item, .nav-sheet__link');
+  function setActiveSection(hash) {
+    allNavLinks.forEach((link) => {
+      if (link.getAttribute('href') === hash) {
+        link.setAttribute('aria-current', 'page');
+      } else {
+        link.removeAttribute('aria-current');
+      }
+    });
+  }
+  allNavLinks.forEach((link) => {
+    link.addEventListener('click', () => setActiveSection(link.getAttribute('href')));
+  });
+
+  if ('IntersectionObserver' in window) {
+    const sectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActiveSection(`#${entry.target.id}`);
+        }
+      });
+    }, { rootMargin: '-25% 0px -65% 0px' });
+    document.querySelectorAll('main > section[id]').forEach((sec) => sectionObserver.observe(sec));
+  }
+
+  // --- Side Sheet Inspector (#inspector-sheet) ---
+  function setInspectorOpen(open, { restoreFocus = false } = {}) {
+    if (open && window.innerWidth < 840) {
+      closeFabIfExpanded();
+    }
+    inspectorToggleBtn.setAttribute('aria-expanded', String(open));
+    inspectorSheet.setAttribute('aria-hidden', String(!open));
+    inspectorSheet.inert = !open;
+    inspectorSheet.classList.toggle('is-open', open);
+    sideSheetScrim.classList.toggle('is-open', open);
+    syncModalInert();
+    if (open) {
+      refreshSwatches();
+      if (window.innerWidth < 840) inspectorCloseBtn.focus();
+    } else if (restoreFocus) {
+      inspectorToggleBtn.focus();
+    }
+  }
+  inspectorToggleBtn.addEventListener('click', () => setInspectorOpen(inspectorSheet.inert));
+  inspectorCloseBtn.addEventListener('click', () => setInspectorOpen(false, { restoreFocus: true }));
+  sideSheetScrim.addEventListener('click', () => setInspectorOpen(false));
+  document.getElementById('btn-inspector-reset').addEventListener('click', () => {
+    activeCustomHex = null;
+    clearDynamicSeed();
+    candidatesContainer.innerHTML = '';
+    imagePreview.hidden = true;
+    imagePreview.removeAttribute('src');
+    imageHint.textContent = 'Upload PNG/JPG/WebP or pick a demo wallpaper — runs official MCU QuantizerCelebi (Wu + Wsmeans) + Score locally in browser.';
+    applyTheme('system');
+    applySeed('purple');
+    applyVariant('');
+    applyContrast('');
+    applyDensity('standard');
+    showToast('Reset studio tokens to defaults');
+  });
+
+  // --- Section 4 Interactions ---
+  const buttonsStatus = document.getElementById('buttons-status');
+  document.querySelectorAll('[data-demo-btn]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const label = btn.dataset.demoBtn;
+      buttonsStatus.textContent = `Activated: ${label}`;
+      showToast(`Button clicked: ${label}`);
+    });
+  });
+  document.querySelectorAll('.md3e-icon-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const next = btn.getAttribute('aria-pressed') !== 'true';
+      btn.setAttribute('aria-pressed', String(next));
+      buttonsStatus.textContent = `${btn.getAttribute('aria-label')}: ${next ? 'ON' : 'OFF'}`;
+    });
+  });
+
+  // --- Section 5 Interactions: Split Button, Connected Groups, Toggle, Cards, Toolbars ---
+  const expressiveStatus = document.getElementById('expressive-status');
+  function updateGroupSummary() {
+    const alignBtn = document.querySelector('[data-group-mode="single"] [aria-pressed="true"]');
+    const formatBtns = [...document.querySelectorAll('[data-group-mode="multi"] [aria-pressed="true"]')];
+    const align = alignBtn ? alignBtn.dataset.groupVal : 'Left';
+    const formats = formatBtns.length ? formatBtns.map((b) => b.dataset.groupVal).join(', ') : 'None';
+    expressiveStatus.textContent = `Align: ${align} | Format: ${formats}`;
+  }
+
+  document.querySelectorAll('.btn-group').forEach((group) => {
+    const mode = group.dataset.groupMode || 'single';
+    group.querySelectorAll('.btn-group__item').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (mode === 'multi') {
+          btn.setAttribute('aria-pressed', String(btn.getAttribute('aria-pressed') !== 'true'));
+        } else {
+          group.querySelectorAll('.btn-group__item').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+          btn.setAttribute('aria-pressed', 'true');
+        }
+        updateGroupSummary();
+      });
+    });
+  });
+
+  const toggleBtn = document.getElementById('demo-toggle');
+  const toggleLabel = document.getElementById('demo-toggle-label');
+  toggleBtn.addEventListener('click', () => {
+    const next = toggleBtn.getAttribute('aria-pressed') !== 'true';
+    toggleBtn.setAttribute('aria-pressed', String(next));
+    toggleLabel.textContent = next ? 'Bookmarked' : 'Save bookmark';
+    showToast(next ? 'Saved bookmark' : 'Removed bookmark');
+  });
+
+  document.querySelectorAll('.optical-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const wasActive = card.getAttribute('aria-pressed') === 'true';
+      document.querySelectorAll('.optical-card').forEach((c) => c.setAttribute('aria-pressed', 'false'));
+      card.setAttribute('aria-pressed', String(!wasActive));
+      showToast(!wasActive ? `Selected ${card.dataset.cardVariant}` : `Cleared ${card.dataset.cardVariant}`);
+    });
+  });
+
+  document.querySelectorAll('[data-toolbar-action]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.id === 'toolbar-fav-btn') {
+        const next = btn.getAttribute('aria-pressed') !== 'true';
+        btn.setAttribute('aria-pressed', String(next));
+        showToast(next ? 'Added to favorites' : 'Removed from favorites');
+      } else {
+        showToast(btn.dataset.toolbarAction);
+      }
+    });
+  });
+
+  // Split button menu with full keyboard arrow navigation
+  const splitTrigger = document.getElementById('split-trigger');
+  const splitMenu = document.getElementById('split-menu');
+  const splitItems = [...splitMenu.querySelectorAll('.split-menu__item')];
+
+  function setSplitMenuOpen(open, { restoreFocus = false } = {}) {
+    splitTrigger.setAttribute('aria-expanded', String(open));
+    splitMenu.hidden = !open;
+    if (open) {
+      splitItems[0]?.focus();
+    } else if (restoreFocus) {
+      splitTrigger.focus();
+    }
+  }
+  splitTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setSplitMenuOpen(splitMenu.hidden);
+  });
+  splitMenu.addEventListener('keydown', (e) => {
+    const i = splitItems.indexOf(document.activeElement);
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setSplitMenuOpen(false, { restoreFocus: true });
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      splitItems[(i + 1) % splitItems.length]?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      splitItems[(i - 1 + splitItems.length) % splitItems.length]?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      splitItems[0]?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      splitItems[splitItems.length - 1]?.focus();
+    }
+  });
+  splitItems.forEach((item) => {
+    item.addEventListener('click', () => {
+      showToast(`Selected: ${item.textContent}`);
+      setSplitMenuOpen(false, { restoreFocus: true });
+    });
+  });
+  document.getElementById('split-action').addEventListener('click', () => {
+    showToast('Published immediately');
+  });
+  document.addEventListener('click', (e) => {
+    if (!splitMenu.hidden && !e.target.closest('.split-btn-wrap')) {
+      setSplitMenuOpen(false);
+    }
+  });
+
+  // --- FAB Menu ---
+  const fabMenu = document.getElementById('fab-menu');
+  const fabScrim = document.getElementById('fab-scrim');
+  const fabItems = [...fabMenu.querySelectorAll('[role="menuitem"]')];
+
+  function setFabMenuOpen(open, { focusFirst = false, restoreFocus = false } = {}) {
+    fabTrigger.setAttribute('aria-expanded', String(open));
+    fabTrigger.setAttribute('aria-label', open ? 'Close actions menu' : 'Open actions menu');
+    fabMenu.setAttribute('aria-hidden', String(!open));
+    fabMenu.inert = !open;
+    fabScrim.classList.toggle('is-open', open);
+    fabContainer?.classList.toggle('is-open', open);
+    if (open && focusFirst && fabItems[0]) {
+      fabItems[0].focus();
+    } else if (!open && restoreFocus) {
+      fabTrigger.focus();
+    }
+  }
+  fabTrigger.addEventListener('click', (e) => {
+    const isOpen = fabTrigger.getAttribute('aria-expanded') === 'true';
+    setFabMenuOpen(!isOpen, { focusFirst: e.detail === 0 && !isOpen });
+  });
+  fabScrim.addEventListener('click', () => setFabMenuOpen(false));
+  fabMenu.addEventListener('keydown', (e) => {
+    const i = fabItems.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      fabItems[(i + 1) % fabItems.length]?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      fabItems[(i - 1 + fabItems.length) % fabItems.length]?.focus();
+    } else if (e.key === 'Tab' && i === fabItems.length - 1 && !e.shiftKey) {
+      setFabMenuOpen(false);
+    }
+  });
+  fabItems.forEach((item) => {
+    item.addEventListener('click', () => {
+      if (item.id === 'fab-item-inspector') {
+        setFabMenuOpen(false);
+        setInspectorOpen(true);
+      } else if (item.id === 'fab-item-upload') {
+        setFabMenuOpen(false);
+        document.getElementById('section-color')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        imageInput.click();
+      } else {
+        showToast(`FAB action: ${item.textContent.trim()}`);
+        setFabMenuOpen(false, { restoreFocus: true });
+      }
+    });
+  });
+
+  // Global keyboard shortcuts ([ = rail/nav, ] = inspector, Escape = close topmost overlay)
+  document.addEventListener('keydown', (e) => {
+    const target = e.composedPath()[0];
+    const inEditable = target instanceof Element && target.matches(':read-write, select, input, textarea');
+    if (e.key === 'Escape') {
+      if (fabTrigger.getAttribute('aria-expanded') === 'true') {
+        e.preventDefault();
+        setFabMenuOpen(false, { restoreFocus: true });
+        return;
+      }
+      if (!splitMenu.hidden) {
+        e.preventDefault();
+        setSplitMenuOpen(false, { restoreFocus: true });
+        return;
+      }
+      if (!inspectorSheet.inert) {
+        e.preventDefault();
+        setInspectorOpen(false, { restoreFocus: true });
+        return;
+      }
+    }
+    if (inEditable || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === '[' && window.innerWidth >= 840) {
+      e.preventDefault();
+      toggleNavigationChrome();
+    } else if (e.key === ']') {
+      e.preventDefault();
+      setInspectorOpen(inspectorSheet.inert);
+    }
+  });
+
+  // --- Section 6: Resilient @material/web CDN Loader + Offline Progressive Fallbacks ---
+  const mwcStatus = document.getElementById('mwc-status');
+  const mwcSwitch = document.getElementById('mwc-switch');
+  const mwcCheckbox = document.getElementById('mwc-checkbox');
+  const mwcTextField = document.getElementById('mwc-text-field');
+  const mwcSlider = document.getElementById('volume-slider');
+  const volumeReadout = document.getElementById('volume-readout');
+
+  function activateMwcFallback() {
+    mwcStatus.textContent = 'Offline resilient fallback active';
+    if (!customElements.get('md-switch')) {
+      [mwcSwitch, mwcCheckbox].forEach((el) => {
+        el.setAttribute('tabindex', '0');
+        el.setAttribute('role', el === mwcSwitch ? 'switch' : 'checkbox');
+        el.setAttribute('aria-checked', String(el.hasAttribute('checked')));
+        const toggle = () => {
+          const next = el.getAttribute('aria-checked') !== 'true';
+          el.setAttribute('aria-checked', String(next));
+          el.toggleAttribute('checked', next);
+          mwcStatus.textContent = `${el.getAttribute('aria-label')}: ${next ? 'ON' : 'OFF'}`;
+        };
+        el.addEventListener('click', toggle);
+        el.addEventListener('keydown', (e) => {
+          if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            toggle();
+          }
+        });
+      });
+
+      document.querySelectorAll('md-filled-tonal-button, md-elevated-button, md-outlined-button, md-fab').forEach((btn) => {
+        btn.setAttribute('tabindex', '0');
+        btn.setAttribute('role', 'button');
+        btn.addEventListener('click', () => showToast(`${btn.getAttribute('aria-label') || btn.textContent.trim()} clicked`));
+      });
+
+      if (!mwcTextField.querySelector('input')) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'mwc-fallback-input';
+        input.value = mwcTextField.getAttribute('value') || '';
+        input.setAttribute('aria-label', mwcTextField.getAttribute('label') || 'Workspace Name');
+        input.addEventListener('input', () => {
+          mwcTextField.setAttribute('value', input.value);
+          mwcStatus.textContent = `Workspace: ${input.value}`;
+        });
+        mwcTextField.appendChild(input);
+      }
+
+      if (!mwcSlider.querySelector('input')) {
+        const range = document.createElement('input');
+        range.type = 'range';
+        range.min = '0';
+        range.max = '100';
+        range.className = 'mwc-fallback-range';
+        range.value = mwcSlider.getAttribute('value') || '75';
+        range.setAttribute('aria-label', mwcSlider.getAttribute('aria-label') || 'Volume');
+        range.addEventListener('input', () => {
+          mwcSlider.setAttribute('value', range.value);
+          volumeReadout.textContent = range.value;
+        });
+        mwcSlider.appendChild(range);
+      }
+    }
+  }
+
+  function wireMwcLiveListeners() {
+    mwcStatus.textContent = '@material/web CDN live';
+    mwcSwitch.addEventListener('change', () => {
+      mwcStatus.textContent = `Wi-Fi: ${mwcSwitch.selected ? 'ON' : 'OFF'}`;
+    });
+    mwcCheckbox.addEventListener('change', () => {
+      mwcStatus.textContent = `Notifications: ${mwcCheckbox.checked ? 'ON' : 'OFF'}`;
+    });
+    mwcTextField.addEventListener('input', () => {
+      mwcStatus.textContent = `Workspace: ${mwcTextField.value}`;
+    });
+    mwcSlider.addEventListener('input', () => {
+      volumeReadout.textContent = String(mwcSlider.value);
+    });
+    document.querySelectorAll('#section-mwc md-filled-tonal-button, #section-mwc md-elevated-button, #section-mwc md-outlined-button, #section-mwc md-fab').forEach((btn) => {
+      btn.addEventListener('click', () => showToast(`${btn.getAttribute('aria-label') || btn.textContent.trim()} clicked`));
+    });
+  }
+
+  (async () => {
+    try {
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('CDN timeout')), 4000));
+      await Promise.race([import('https://esm.run/@material/web/all.js'), timeout]);
+      if (customElements.get('md-switch')) {
+        // Remove fallback inputs if MWC upgraded cleanly
+        mwcTextField.querySelector('.mwc-fallback-input')?.remove();
+        mwcSlider.querySelector('.mwc-fallback-range')?.remove();
+        wireMwcLiveListeners();
+      } else {
+        activateMwcFallback();
+      }
+    } catch {
+      activateMwcFallback();
+    }
+  })();
+
+  syncResponsiveNavMode();
+  refreshSwatches();
 </script>
 
 </body>

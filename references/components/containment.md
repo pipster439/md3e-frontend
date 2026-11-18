@@ -59,6 +59,8 @@ Outlined card:
 
 **Notes.** No explicit do/don't, caution, or "not recommended" statement appears on this page.
 
+- **Optical inner corners (from `references/shape.md`):** When nesting rounded media thumbnails or inner containers inside a card, subtract container padding from the card's outer radius (`outer − padding = inner`; for example, a `16dp` or `28dp` expressive hero card with `12–16dp` padding uses `4dp` or `12dp` inner corners rather than duplicating the outer corner radius).
+
 ---
 
 ## Dialogs
@@ -304,6 +306,8 @@ Modal side sheet — "Modal side sheet padding and size measurements":
 Delta between the two variants: the modal sheet adds **Start padding with icon — 16dp**, which the standard sheet does not list. All other rows are identical.
 
 **Notes.** No explicit do/don't or "not recommended" statement appears on this page.
+
+- **Desktop breakpoint swap (from `references/layout.md`):** On `Expanded` (`>= 840px`) and above, swap transient **Bottom Sheets** for **Side Sheets** (`400px` max-width) inside the multi-pane `surface-container` desktop shell (`24px` pane corners and `--md-sys-layout-pane-gap: 24px`), with `Escape` dismissal and focus return.
 
 ---
 

@@ -18,6 +18,8 @@ files, ~3,700 lines total, covering all 36 components:
 | `components/selection.md` | Checkbox · Chips · Radio button · Switch · Sliders |
 | `components/text-input.md` | Text fields · Date pickers · Time pickers |
 
+For ready-to-copy HTML/CSS/JS implementations of the Expressive components absent from `@material/web` (toolbars, split button, connected/standard button groups, FAB menu, 7-polygon loading indicator, toggle buttons, search bar, badges, carousel, responsive nav rail, clock dial, 35-shape containers & frosted chrome), see [`components/expressive-recipes.md`](components/expressive-recipes.md).
+
 Read the group file for the component you are building. Do not work from
 memory — several of the values below exist nowhere else in a form you could
 guess (the square-button corner radius is not the round-button one, and the
@@ -42,7 +44,7 @@ navigation bar · navigation rail · progress indicators · sliders · carousel
 Each gained more configuration, more shape options, emphasized text and
 Expressive motion. Two structural changes matter beyond styling:
 
-- The baseline **bottom app bar is no longer recommended** in Expressive. Consider a **docked toolbar** (same job,
+- The **bottom app bar is deprecated**. Use a **docked toolbar** (same job,
   shorter, more flexible) or a **floating toolbar** (more actions, freer
   placement).
 - The **loading indicator** replaces most uses of the indeterminate circular
@@ -54,22 +56,21 @@ Other deprecations worth knowing, found on the spec pages:
 - **Baseline lists are "not recommended"** — use expressive lists.
 - **Baseline navigation bar / rail** configurations are superseded by the
   flexible Expressive ones.
-- The **small FAB (40dp)** and **surface FAB** remain available but are no longer recommended; a medium FAB
+- The **small FAB (40dp)** and **surface FAB** are deprecated; a medium FAB
   (80dp) was added.
 
 ## Button emphasis, in order
 
 `filled` → `filled tonal` → `elevated` → `outlined` → `text`
 
-Use filled buttons for the actions needing strongest emphasis. The right count
-depends on the view and task; there is no universal one-per-view limit.
+**Recommended hierarchy (skill default):** use `filled` sparingly—ideally **at most one `filled` primary action per view or prominent surface**—so visual priority remains unmistakable. (Official button guidelines treat this as strong hierarchy guidance rather than a ban when separate independent regions genuinely need primary actions.)
 
 | Variant | Container | Content | Use for |
 |---|---|---|---|
-| Filled | `primary` | `on-primary` | High-emphasis action |
+| Filled | `primary` | `on-primary` | The one primary action |
 | Filled tonal | `secondary-container` | `on-secondary-container` | Secondary action beside a filled button |
 | Elevated | `surface-container-low` | `primary` | Medium emphasis on a coloured or busy background |
-| Outlined | transparent + `outline` | `on-surface-variant` | Medium emphasis, neutral |
+| Outlined | transparent + `outline-variant` | `on-surface-variant` | Medium emphasis, neutral |
 | Text | transparent | `primary` | Lowest emphasis: dialog actions, inline links |
 
 Toggle buttons (new in Expressive) use **different** colour roles from the
@@ -103,9 +104,8 @@ The two shapes must share the same pressed radius. Small button padding changed
 in the Expressive update: **16dp** is now recommended, 24dp is the M3 value and
 is no longer recommended.
 
-On touch-first layouts, check that extra-small and small controls have an
-adequate effective tap area. Android recommends 48dp; Web WCAG 2.2 AA has a
-24 CSS px target criterion with stated exceptions.
+Extra small and small are below the 48dp minimum, so those controls must expand
+their tap area rather than their box.
 
 ## Other frequently needed values
 
@@ -159,8 +159,7 @@ shape: round when unselected becomes square when selected, and if the unselected
 resting shape is square then the selected one should be round. Filter and input
 chips gained shape morphing in the Expressive update.
 
-Spatial springs are a good default for Material-style shape morphs. Verify the
-motion's purpose and reduced-motion behaviour in the browser.
+Drive every morph with a spatial spring, never a hand-written transition.
 
 ## Web implementation reality check
 
@@ -170,8 +169,8 @@ motion's purpose and reduced-motion behaviour in the browser.
   `md-switch`, `md-linear-progress`, `md-circular-progress`. It is in
   maintenance mode — no new Expressive components are being added to it.
 - Split button, button group, toolbar, FAB menu and loading indicator have **no**
-  `@material/web` element. Build them from tokens and the measurements in the
-  group files, and treat the result as a spec-aligned approximation.
+  `@material/web` element. Build them from tokens, [`components/expressive-recipes.md`](components/expressive-recipes.md),
+  and the measurements in the group files, treating the result as a spec-aligned approximation.
 - React / Vue / Svelte have no official Material library. Use CSS custom
   properties plus thin wrapper components.
 - Per-component tokens follow `--md-<component>-<part>-<property>`

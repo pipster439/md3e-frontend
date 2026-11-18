@@ -4,9 +4,8 @@ Source: <https://m3.material.io/foundations/layout/breakpoints>
 
 ## Breakpoints
 
-Five width classes use four thresholds. They are useful starting points on
-Android and the web; adapt thresholds to the available space and content. Design
-for the breakpoint, **not only** for a specific device — available
+Five breakpoints (formerly "window size classes"). They apply to Android and
+web. Design for the breakpoint, **never** for a specific device — available
 space is dynamic (split screen, unfold, resize) and changes during a session.
 
 | Breakpoint | Width | Typical context |
@@ -60,7 +59,7 @@ Ask five questions, in order:
 
 ## Canonical layouts
 
-Three useful canonical layouts from the spec. Use one when it fits the content:
+Three layouts the spec names. Pick one per view instead of inventing a grid:
 
 - **List-detail** — a list pane plus a detail pane. Expanded and above.
 - **Supporting pane** — a primary pane with a secondary supporting pane for
@@ -68,16 +67,56 @@ Three useful canonical layouts from the spec. Use one when it fits the content:
 - **Feed** — a scrollable feed that reflows its column count with the
   breakpoint.
 
-## Grid, margins, gutters
+## Grid, margins, gutters, and pane gaps
 
-| Breakpoint | Columns | Margin | Gutter |
-|---|---|---|---|
-| Compact | 4 | 16 | 16 |
-| Medium | 8 | 24 | 24 |
-| Expanded | 12 | 24 | 24 |
+| Breakpoint | Width | Columns | Margin | Gutter | Pane gap (multi-pane) |
+|---|---|---|---|---|---|
+| Compact | `< 600px` | 4 | 16dp | 16dp | — (single pane) |
+| Medium | `600–839px` | 8 | 24dp | 24dp | 24dp (when 2-pane) |
+| Expanded | `840–1199px` | 12 | 24dp | 24dp | 24dp |
+| Large | `1200–1599px` | 12 | 24dp | 24dp | 24dp |
+| Extra-large | `>= 1600px` | 12 | 24dp | 24dp | 24dp |
 
-Tokens: `--md-sys-layout-margin-*`, `--md-sys-layout-gutter-*`. Spacing uses a
-4px base grid — `--md-sys-spacing-1` (4px) through `--md-sys-spacing-20` (80px).
+Tokens: `--md-sys-breakpoint-compact` (`600px`), `--md-sys-breakpoint-medium` (`840px`),
+`--md-sys-breakpoint-expanded` (`1200px`), `--md-sys-breakpoint-large` (`1600px`),
+`--md-sys-breakpoint-extra-large` (`1600px`), `--md-sys-layout-margin-compact` (`16px`),
+`--md-sys-layout-margin-medium` (`24px`), `--md-sys-layout-margin-expanded` (`24px`),
+`--md-sys-layout-margin-large` (`24px`), `--md-sys-layout-margin-extra-large` (`24px`),
+`--md-sys-layout-gutter-*`, `--md-sys-layout-pane-gap` (`24px`), and
+`--md-sys-layout-measure-max` (`68ch`).
+Spacing uses a 4px base grid — `--md-sys-spacing-1` (4px) through `--md-sys-spacing-20` (80px),
+with `--md-sys-spacing-6` (`24px`) / `--md-sys-layout-pane-gap` as the standard gap between adjacent panes.
+
+## Desktop & Wide-Screen Optimization (`Expanded 840px+` / `Large 1200px+` / `Extra-large 1600px+`)
+
+Desktop viewports (`>= 840px`, especially `Large 1200–1599px` and `Extra-large >= 1600px`) are not stretched mobile screens — structure the workspace deliberately around wide-screen ergonomics:
+
+1. **Collapsible <-> Standard Expanded Navigation Rail (never a bottom bar on desktop):**
+   - Never keep a bottom Navigation Bar on `Expanded` (`>= 840px`) or larger viewports.
+   - Use a persistent **Navigation Rail** that toggles between **Collapsed** (`--md-sys-nav-rail-width-collapsed: 80px` compact desktop rail; M3E spec allows up to `96dp` for vertical pills) and **Standard Expanded** (`--md-sys-nav-rail-width-expanded: 220px`, within the `220–360dp` official range, displaying horizontal indicator pills with inline labels + a docked Extended FAB / primary action in the rail header).
+   - **Default expanded on `Large >= 1200px`**, collapsible via the top-left `menu` / `menu_open` trigger or keyboard shortcut, and sliding as a modal rail sheet on `< 840px`. See [`components/navigation.md`](components/navigation.md#navigation-rail).
+
+2. **Multi-pane desktop shell & prose measure cap:**
+   - Frame the desktop app shell on `--md-sys-color-surface-container` with scrollable content panes on `surface` or `surface-container-lowest`, `24px` (`var(--md-sys-shape-corner-extra-large)` / `corner-large`–`extra-large`) rounded pane corners, and `--md-sys-layout-pane-gap` (`24px`) separation between adjacent panes.
+   - Use `1–2` panes at `Expanded`/`Large` (`840–1599px`) and `2–3` panes at `Extra-large` (`>= 1600px`), matching List-detail or Supporting-pane canonical layouts.
+   - Cap body prose containers to `max-width: var(--md-sys-layout-measure-max, 68ch)` so readable line lengths never stretch across `1440px–1920px` monitors.
+
+3. **Desktop Visual Density (`0`, `-1`, `-2`):**
+   - Apply official M3 density steps to tighten desktop information density without shrinking readable copy or icons:
+     - Standard (`0`, default): `--md-sys-density-step: 0; --md-sys-density-offset: 0px;`
+     - Compact (`data-density="compact"` or `"-1"`): `--md-sys-density-step: -1; --md-sys-density-offset: -4px;`
+     - Dense (`data-density="dense"` or `"-2"`): `--md-sys-density-step: -2; --md-sys-density-offset: -8px;`
+   - Density adjusts container heights (buttons, inputs, list items) while preserving `--md-sys-typescale-*` sizes, `--md-sys-icon-size`, and invisible `48×48px` hit targets (`::before` touch area).
+
+4. **Fine-pointer ergonomics, keyboard shortcuts & themed scrollbars:**
+   - Gate pointer-only hover enhancements and subtle `<kbd>` shortcut hints behind `@media (hover: hover) and (pointer: fine)` so touch devices stay uncluttered.
+   - Support keyboard navigation across toolbars/menus/rails with **roving `tabindex`**, **`aria-keyshortcuts`** on primary triggers (ignoring bare single-key shortcuts when focus is inside `<input>`, `<textarea>`, `<select>`, or `[contenteditable]`), and **`Escape`** to close popovers, FAB menus, and sheets with focus restoration.
+   - Style desktop scrollbars with `scrollbar-color: var(--md3e-scrollbar-thumb, var(--md-sys-color-outline)) transparent; scrollbar-width: thin;` (using `--md-sys-color-outline` `>= 4.3:1` contrast rather than `outline-variant`, with `prefers-contrast: more`, `pointer: coarse`, `forced-colors: active`, and `@supports not (scrollbar-color: auto)` fallbacks handled in `md3e-tokens.css`).
+
+5. **Canonical desktop component swaps & Floating Toolbar clearance:**
+   - Swap mobile **Bottom Sheets** (`< 840px`) for **Side Sheets** (`400px` max-width on `>= 840px`; see [`components/containment.md`](components/containment.md#side-sheets)).
+   - Swap contextual **Simple Dialogs** for anchored **Menus** where desktop pointer precision makes inline selection faster.
+   - Always reserve bottom scroll clearance (`padding-block-end: 112px` or equivalent bottom inset) on the main scrollable pane whenever a fixed **Floating Toolbar** or **FAB** is active so bottom cards and actions are never occluded at max scroll.
 
 ## Component flexibility (Expressive)
 

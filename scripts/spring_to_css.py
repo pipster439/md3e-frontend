@@ -89,6 +89,24 @@ LEGACY_DURATIONS: dict[str, int] = {
     "extralong1": 700, "extralong2": 800, "extralong3": 900, "extralong4": 1000,
 }
 
+# Official M3 Expressive Web cubic-bezier approximations (duration_ms, curve).
+# Used when CSS linear() is unsupported so fallback retains expressive feel.
+# Reference: https://m3.material.io/styles/motion/overview/specs
+OFFICIAL_WEB_CUBIC_BEZIERS: dict[tuple[str, str, str], tuple[int, str]] = {
+    ("expressive", "spatial", "fast"): (350, "cubic-bezier(0.42, 1.67, 0.21, 0.90)"),
+    ("expressive", "spatial", "default"): (500, "cubic-bezier(0.38, 1.21, 0.22, 1.00)"),
+    ("expressive", "spatial", "slow"): (650, "cubic-bezier(0.39, 1.29, 0.35, 0.98)"),
+    ("expressive", "effects", "fast"): (150, "cubic-bezier(0.31, 0.94, 0.34, 1.00)"),
+    ("expressive", "effects", "default"): (200, "cubic-bezier(0.34, 0.80, 0.34, 1.00)"),
+    ("expressive", "effects", "slow"): (300, "cubic-bezier(0.34, 0.88, 0.34, 1.00)"),
+    ("standard", "spatial", "fast"): (350, "cubic-bezier(0.27, 1.06, 0.18, 1.00)"),
+    ("standard", "spatial", "default"): (500, "cubic-bezier(0.27, 1.06, 0.18, 1.00)"),
+    ("standard", "spatial", "slow"): (750, "cubic-bezier(0.27, 1.06, 0.18, 1.00)"),
+    ("standard", "effects", "fast"): (150, "cubic-bezier(0.31, 0.94, 0.34, 1.00)"),
+    ("standard", "effects", "default"): (200, "cubic-bezier(0.34, 0.80, 0.34, 1.00)"),
+    ("standard", "effects", "slow"): (300, "cubic-bezier(0.34, 0.88, 0.34, 1.00)"),
+}
+
 
 def spring_position(damping: float, stiffness: float, t: float) -> float:
     """Unit-step response of a damped harmonic oscillator (mass = 1).
@@ -167,8 +185,8 @@ def build_token_map() -> dict[str, dict[str, str]]:
     return out
 
 
-def fallback_easing(kind: str) -> str:
-    return LEGACY_EASINGS["linear"] if kind == "spatial" else LEGACY_EASINGS["standard-decelerate"]
+def fallback_curve(scheme: str, kind: str, speed: str) -> tuple[int, str]:
+    return OFFICIAL_WEB_CUBIC_BEZIERS[(scheme, kind, speed)]
 
 
 def render_css() -> str:
@@ -197,7 +215,7 @@ def render_css() -> str:
     add(" * the bounce that defines Expressive motion survives the trip to the web.")
     add(" *")
     add(" *   use  : transition: transform var(--md-sys-motion-default-spatial);")
-    add(" *   CSS timing is also valid when a spring is not the right fit.")
+    add(" *   never: transition: transform 300ms ease-in-out;")
     add(" *")
     add(" * Reference: https://m3.material.io/styles/motion/overview/specs")
     add(" * ========================================================================== */")
@@ -206,7 +224,7 @@ def render_css() -> str:
     add("  /* --- Motion scheme selector -------------------------------------------")
     add("   * The scheme is applied at product level, never baked into a token name.")
     add("   * Swap the attribute to change how the whole product feels.")
-    add("   *   <html data-motion-scheme=\"expressive\">  <- prominent UI and hero motion")
+    add("   *   <html data-motion-scheme=\"expressive\">  <- Material's recommendation")
     add("   *   <html data-motion-scheme=\"standard\">    <- utilitarian products")
     add("   * -------------------------------------------------------------------- */")
     add("  --md-sys-motion-scheme: expressive;")
@@ -231,43 +249,97 @@ def render_css() -> str:
         add(f":root, [data-motion-scheme=\"{scheme}\"] {{"
               if scheme == "expressive" else
               f"[data-motion-scheme=\"{scheme}\"] {{")
+        if scheme == "standard":
+            add("  --md-sys-motion-scheme: standard;")
+            add("")
         for kind in TYPES:
             add(f"  /* {kind}: "
                 + ("position, size, rotation, corner radius - overshoots and bounces"
                    if kind == "spatial" else
                    "colour, opacity - must not overshoot") + " */")
             for speed in SPEEDS:
-                add(f"  --md-sys-motion-{speed}-{kind}: "
-                    f"{meta[f'{scheme}-{speed}-{kind}'][0]}ms "
-                    f"{generated[scheme][f'{speed}-{kind}']};")
+                ms = meta[f"{scheme}-{speed}-{kind}"][0]
+                curve = generated[scheme][f"{speed}-{kind}"]
+                b_ms, b_curve = fallback_curve(scheme, kind, speed)
+                add(f"  --md-sys-motion-{speed}-{kind}-duration: {ms}ms;")
+                add(f"  --md-sys-motion-{speed}-{kind}-easing: {curve};")
+                add(f"  --md-sys-motion-{speed}-{kind}: {ms}ms {curve};")
+                add(f"  --md-sys-motion-{speed}-{kind}-bezier-duration: {b_ms}ms;")
+                add(f"  --md-sys-motion-{speed}-{kind}-bezier-easing: {b_curve};")
+                add(f"  --md-sys-motion-{speed}-{kind}-bezier: {b_ms}ms {b_curve};")
             add("")
         add("}")
         add("")
 
+    add("/* --- Official Web cubic-bezier driver opt-in ----------------------------")
+    add(" * Switch any subtree or <html> with `data-motion-driver=\"bezier\"` to use")
+    add(" * m3.material.io's published single-overshoot Web cubic-bezier curves (350/")
+    add(" * 500/650ms) instead of sampled linear() springs.")
+    add(" * ----------------------------------------------------------------------- */")
+    for scheme in ("expressive", "standard"):
+        selector = (
+            "[data-motion-driver=\"bezier\"],\n[data-motion-scheme=\"expressive\"][data-motion-driver=\"bezier\"]"
+            if scheme == "expressive"
+            else "[data-motion-scheme=\"standard\"][data-motion-driver=\"bezier\"]"
+        )
+        add(f"{selector} {{")
+        for kind in TYPES:
+            for speed in SPEEDS:
+                b_ms, b_curve = fallback_curve(scheme, kind, speed)
+                add(f"  --md-sys-motion-{speed}-{kind}-duration: {b_ms}ms;")
+                add(f"  --md-sys-motion-{speed}-{kind}-easing: {b_curve};")
+                add(f"  --md-sys-motion-{speed}-{kind}: {b_ms}ms {b_curve};")
+        add("}")
+        add("")
+
     add("/* --- Graceful degradation ------------------------------------------------")
-    add(" * Engines without linear() fall back to the legacy curves. Motion still")
-    add(" * reads correctly; it simply loses the bounce.")
+    add(" * Engines without linear() fall back to M3E's official Web cubic-bezier")
+    add(" * curves so motion retains expressive shape without linear() support.")
     add(" * ----------------------------------------------------------------------- */")
     add("@supports not (transition-timing-function: linear(0, 1)) {")
-    add("  :root {")
-    for kind in TYPES:
-        for speed in SPEEDS:
-            add(f"    --md-sys-motion-{speed}-{kind}: "
-                f"{400 if speed == 'default' else (200 if speed == 'fast' else 600)}ms "
-                f"{fallback_easing(kind)};")
-    add("  }")
+    for scheme in ("expressive", "standard"):
+        selector = (
+            ":root, [data-motion-scheme=\"expressive\"]"
+            if scheme == "expressive"
+            else "[data-motion-scheme=\"standard\"]"
+        )
+        add(f"  {selector} {{")
+        for kind in TYPES:
+            for speed in SPEEDS:
+                ms, curve = fallback_curve(scheme, kind, speed)
+                add(f"    --md-sys-motion-{speed}-{kind}-duration: {ms}ms;")
+                add(f"    --md-sys-motion-{speed}-{kind}-easing: {curve};")
+                add(f"    --md-sys-motion-{speed}-{kind}: {ms}ms {curve};")
+        add("  }")
     add("}")
     add("")
     add("/* --- Reduced motion ------------------------------------------------------")
-    add(" * Honour the OS setting. Keep a short cross-fade so state changes remain")
-    add(" * legible; remove every spatial spring that moves or scales the UI.")
+    add(" * Honour the OS setting. Spatial movement drops to 0ms; effects keep a")
+    add(" * brief 120ms linear cross-fade so state changes remain perceptible.")
     add(" * ----------------------------------------------------------------------- */")
     add("@media (prefers-reduced-motion: reduce) {")
-    add("  :root {")
+    add("  :root,")
+    add("  [data-motion-scheme=\"expressive\"],")
+    add("  [data-motion-scheme=\"standard\"],")
+    add("  [data-motion-driver=\"bezier\"],")
+    add("  [data-motion-scheme=\"expressive\"][data-motion-driver=\"bezier\"],")
+    add("  [data-motion-scheme=\"standard\"][data-motion-driver=\"bezier\"] {")
     for kind in TYPES:
         for speed in SPEEDS:
-            add(f"    --md-sys-motion-{speed}-{kind}: 100ms "
-                f"{'linear' if kind == 'spatial' else LEGACY_EASINGS['linear']};")
+            if kind == "spatial":
+                add(f"    --md-sys-motion-{speed}-{kind}-duration: 0ms;")
+                add(f"    --md-sys-motion-{speed}-{kind}-easing: linear;")
+                add(f"    --md-sys-motion-{speed}-{kind}: 0ms linear;")
+                add(f"    --md-sys-motion-{speed}-{kind}-bezier-duration: 0ms;")
+                add(f"    --md-sys-motion-{speed}-{kind}-bezier-easing: linear;")
+                add(f"    --md-sys-motion-{speed}-{kind}-bezier: 0ms linear;")
+            else:
+                add(f"    --md-sys-motion-{speed}-{kind}-duration: 120ms;")
+                add(f"    --md-sys-motion-{speed}-{kind}-easing: {LEGACY_EASINGS['linear']};")
+                add(f"    --md-sys-motion-{speed}-{kind}: 120ms {LEGACY_EASINGS['linear']};")
+                add(f"    --md-sys-motion-{speed}-{kind}-bezier-duration: 120ms;")
+                add(f"    --md-sys-motion-{speed}-{kind}-bezier-easing: {LEGACY_EASINGS['linear']};")
+                add(f"    --md-sys-motion-{speed}-{kind}-bezier: 120ms {LEGACY_EASINGS['linear']};")
     add("  }")
     add("}")
     add("")

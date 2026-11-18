@@ -3,11 +3,9 @@
 Source: Official Google Material Web Components repository (<https://github.com/material-components/material-web>)
 Package: `@material/web` (npm) / `https://esm.run/@material/web/` (CDN)
 
-Material Web is Google's official Web Components implementation of Material Design 3 and is in maintenance mode. It uses Custom Elements, Shadow DOM and CSS Custom Properties.
+Material Web is Google's official, production-ready Web Components implementation of Material Design 3. It is built on standard Web Components (Custom Elements, Shadow DOM, CSS Custom Properties, and `::part`).
 
-Because `@material/web` was developed against baseline M3, this guide offers
-optional Expressive styling and recipes. Its CSS overrides are approximations,
-not an official Expressive implementation or a guarantee of component parity.
+Because `@material/web` was developed against baseline M3 and placed into maintenance mode prior to the full Material 3 Expressive (May 2025+) release, **this guide and skill bridge the gap**: how to style `@material/web` to adhere to MD3E, and how to supplement it with the missing Expressive components.
 
 ---
 
@@ -17,15 +15,15 @@ not an official Expressive implementation or a guarantee of component parity.
 |---|---|---|---|
 | **Buttons** | `<md-filled-button>`<br>`<md-outlined-button>`<br>`<md-elevated-button>`<br>`<md-filled-tonal-button>`<br>`<md-text-button>` | Baseline M3 (40dp height, pill shape) | **Yes**: Needs MD3E 5-size support (32/40/56/96/136dp), square button shape (12/16/28dp), and pressed shape morphing. |
 | **Icon Buttons** | `<md-icon-button>`<br>`<md-filled-icon-button>`<br>`<md-filled-tonal-icon-button>`<br>`<md-outlined-icon-button>` | Baseline M3 | **Yes**: Needs 5-size support and shape morph. |
-| **Floating Action Button** | `<md-fab>`<br>`<md-branded-fab>` | Standard 56dp & small 40dp | Small FAB (40dp) remains available but is no longer recommended in Expressive; consider Standard (56dp) or Medium (80dp). Check corner radius against the component spec. |
+| **Floating Action Button** | `<md-fab>`<br>`<md-branded-fab>` | Standard 56dp & small 40dp | **Yes**: Small FAB (40dp) is **deprecated**; use Standard (56dp) or Medium (80dp). Needs corner radius update (16/20/28dp). |
 | **Split Button** | *None* | **New in MD3E** | **Build from recipe**: Use `references/components/expressive-recipes.md`. |
 | **Button Groups** | *None* | **New in MD3E** | **Build from recipe**: Use `references/components/expressive-recipes.md`. |
 | **FAB Menu** | *None* | **New in MD3E** | **Build from recipe**: Use `references/components/expressive-recipes.md`. |
-| **Toolbars** | *None* | **New in MD3E** | **Build from recipe**: Docked & floating toolbars are Expressive alternatives to the baseline bottom app bar. |
+| **Toolbars** | *None* | **New in MD3E** | **Build from recipe**: Docked & floating toolbars replace deprecated bottom app bar. |
 | **Loading Indicator** | *None* (only linear/circular progress) | **New in MD3E** | **Build from recipe**: Morphing shape loader for waits < 5s. |
 | **Text Fields** | `<md-filled-text-field>`<br>`<md-outlined-text-field>` | Standard M3 | Compatible. Set MD3E typography & corner tokens. |
 | **Select** | `<md-filled-select>`<br>`<md-outlined-select>` | Standard M3 | Compatible. Inherits MD3E tokens. |
-| **Selection Controls** | `<md-checkbox>`<br>`<md-radio>`<br>`<md-switch>`<br>`<md-slider>` | Standard M3 | Apply theme roles, then verify states and contrast; the bridge alone does not establish Expressive parity. |
+| **Selection Controls** | `<md-checkbox>`<br>`<md-radio>`<br>`<md-switch>`<br>`<md-slider>` | Standard M3 | Fully compliant when styled with MD3E color roles and state layers. |
 | **Chips** | `<md-chip-set>`<br>`<md-assist-chip>`<br>`<md-filter-chip>`<br>`<md-input-chip>`<br>`<md-suggestion-chip>` | Standard M3 | Compatible. Add shape morphing on selection. |
 | **Menus & Dialogs** | `<md-menu>`, `<md-menu-item>`<br>`<md-dialog>` | Standard M3 | Compatible. Apply MD3E surface container roles. |
 | **Lists** | `<md-list>`, `<md-list-item>` | Baseline M3 | Add Expressive list styling (rounded container, emphasized label). |
@@ -71,16 +69,22 @@ import '@material/web/divider/divider.js';
 
 ### Option B: CDN / Native ES Modules (No build step required)
 
-Add Material Symbols font and ESM imports directly to `<head>`:
+Add `<meta name="color-scheme" content="light dark">`, Google Fonts `preconnect`, and Material Symbols with `&display=block` directly to `<head>`, then link or copy the token stylesheets:
 
 ```html
-<!-- Material Symbols Icons font -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+<meta name="color-scheme" content="light dark">
 
-<!-- MD3E Token Layer & Material Web Bridge -->
-<link rel="stylesheet" href="/styles/md3e-tokens.css">
-<link rel="stylesheet" href="/styles/md3e-motion.css">
-<link rel="stylesheet" href="/styles/md3e-material-web.css">
+<!-- Material Symbols Icons font (&display=block prevents raw ligature FOUT; axes MUST be alphabetical) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:FILL,GRAD,opsz,wght@0..1,-50..200,20..48,100..700&display=block">
+
+<!-- MD3E Token Layer & Material Web Bridge (copy from assets/tokens/ into your project) -->
+<link rel="stylesheet" href="./tokens/md3e-tokens.css">
+<!-- Optional: <link rel="stylesheet" href="./tokens/md3e-palettes.css"> -->
+<!-- Optional: <link rel="stylesheet" href="./tokens/md3e-shapes.css"> -->
+<link rel="stylesheet" href="./tokens/md3e-motion.css">
+<link rel="stylesheet" href="./tokens/md3e-material-web.css">
 
 <!-- Load Material Web Components -->
 <script type="module">
@@ -145,39 +149,55 @@ Baseline `@material/web` only renders 40dp buttons. With `md3e-material-web.css`
 <md-filled-button class="md3e-size-xl">XL Action</md-filled-button>
 ```
 
-Under the hood, these classes set the component tokens:
+Under the hood, these classes set the component tokens (and bounded `height / 2` container shapes so pressed corner morphs animate smoothly):
 ```css
 .md3e-size-m {
+  --md-sys-icon-size: 24px;
+  --md-sys-icon-opsz: 24;
   --md-filled-button-container-height: 56px;
+  --md-filled-button-container-shape: var(--md-sys-shape-corner-extra-large);
   --md-filled-button-leading-space: 24px;
   --md-filled-button-trailing-space: 24px;
   --md-filled-button-icon-size: 24px;
   --md-filled-button-label-text-size: var(--md-sys-typescale-title-medium-size);
+  --md-filled-button-label-text-line-height: var(--md-sys-typescale-title-medium-line-height);
 }
 ```
 
-### 4.2 Square Button Shapes on `<md-filled-button>`
-In MD3E, buttons can be round (pill) or square (12dp/16dp/28dp corner):
+### 4.2 Square Button Shapes & Icon Button Widths
+In MD3E, buttons can be round (pill) or square (`12dp`/`16dp`/`28dp` corner), and icon buttons support default, narrow (`.md3e-width-narrow`), and wide (`.md3e-width-wide`) widths:
 
 ```html
 <!-- Square Medium Button (16dp corner) -->
 <md-filled-button class="md3e-size-m md3e-shape-square">Square Button</md-filled-button>
+
+<!-- Wide Small Icon Button (52x40dp container, 24dp icon) -->
+<md-filled-tonal-icon-button class="md3e-size-s md3e-width-wide" aria-label="Favorite">
+  <md-icon aria-hidden="true">favorite</md-icon>
+</md-filled-tonal-icon-button>
 ```
 
-### 4.3 Medium FAB (80dp)
-Small FAB (40dp) remains available but is no longer recommended in MD3E. Consider Standard (56dp) or Medium (80dp):
+### 4.3 Standard (56dp), Medium (80dp) & Large (96dp) FAB & Density
+Small FAB (40dp) is deprecated/no longer recommended in MD3E (though `md3e-material-web.css` includes `.md3e-fab-small` / `size="small"` with a 48×48px `::before` hit area for legacy compatibility). Prefer Standard (56dp), Medium (80dp), or Large (96dp):
 
 ```html
-<!-- Standard FAB (56dp, 16dp corner) -->
+<!-- Standard FAB (56dp, 16dp corner, 24dp icon) -->
 <md-fab aria-label="Add item">
-  <md-icon slot="icon">add</md-icon>
+  <md-icon slot="icon" aria-hidden="true">add</md-icon>
 </md-fab>
 
-<!-- Medium FAB (80dp, 20dp corner) -->
+<!-- Medium FAB (80dp, 20dp corner, 28dp icon) -->
 <md-fab class="md3e-fab-medium" aria-label="Compose">
-  <md-icon slot="icon">edit</md-icon>
+  <md-icon slot="icon" aria-hidden="true">edit</md-icon>
+</md-fab>
+
+<!-- Large FAB (96dp, 28dp corner, 36dp icon) -->
+<md-fab class="md3e-fab-large" aria-label="Create project">
+  <md-icon slot="icon" aria-hidden="true">add_box</md-icon>
 </md-fab>
 ```
+
+Set `<html data-density="compact">` (`-1`, `-4px` offset) or `data-density="dense"` (`-2`, `-8px` offset) to compact button, text field, and list container heights on dense desktop workspaces — `md3e-material-web.css` adjusts heights automatically while keeping `48×48px` `::before` hit areas intact.
 
 ---
 
@@ -195,7 +215,7 @@ import '@material/web/icon/icon.js';
 export function ActionButton() {
   return (
     <md-filled-button onClick={() => console.log('Clicked!')}>
-      <md-icon slot="icon">send</md-icon>
+      <md-icon slot="icon" aria-hidden="true">send</md-icon>
       Send Message
     </md-filled-button>
   );
@@ -259,7 +279,7 @@ Usage in Vue templates:
 ```vue
 <template>
   <md-filled-button @click="handleClick">
-    <md-icon slot="icon">check</md-icon>
+    <md-icon slot="icon" aria-hidden="true">check</md-icon>
     Confirm
   </md-filled-button>
 </template>
@@ -287,7 +307,7 @@ Svelte natively supports Custom Elements without any special wrapper:
 </script>
 
 <md-filled-button on:click={() => alert('Svelte clicked')}>
-  <md-icon slot="icon">thumb_up</md-icon>
+  <md-icon slot="icon" aria-hidden="true">thumb_up</md-icon>
   Like
 </md-filled-button>
 ```
@@ -327,7 +347,8 @@ For public landing pages, SSR layouts, and SEO-critical content, use pure semant
 |---|---|---|
 | `style="background: #6750A4"` on `<md-filled-button>` | Shadow DOM encapsulation ignores external background styling on custom element container. | Use component tokens: `style="--md-filled-button-container-color: var(--md-sys-color-primary)"`. |
 | `<md-icon-button>` without `aria-label` | Screen readers cannot deduce icon button intent. | Always add `aria-label="Action description"`. |
-| Small pointer target on controls | The effective hit area may be difficult to activate. WCAG 2.2 AA uses 24 CSS px with exceptions; Android recommends 48dp. | Inspect the rendered hit area and spacing; enlarge it where needed. |
-| Using a baseline small FAB (40dp) | Still available, but no longer recommended in Expressive. | Consider `<md-fab>` (56dp) or `<md-fab class="md3e-fab-medium">` (80dp). |
-| Uppercase labels used for every action | May obscure the intended type hierarchy or readability. | Prefer sentence case for Material-style labels; respect brand and language conventions. |
-| Missing icon font when using text ligatures | Ligature names may render as literal text. | Include the chosen icon font or use SVG icons. |
+| Sub-48px touch target on small controls | Violates WCAG 2.5.5 and MD3E accessibility rule. | Touch target defaults to 48px; do not set `height: 32px` on `<md-icon-button>` without maintaining the 48px click target. |
+| Using deprecated small FAB (40dp) | Small FAB was removed in MD3E in favor of Standard 56dp and Medium 80dp. | `<md-fab>` (56dp) or `<md-fab class="md3e-fab-medium">` (80dp). |
+| Mixing M2 uppercase text | All labels in `@material/web` must be sentence-case. | Never set `text-transform: uppercase`. |
+| `<md-icon>` without `aria-hidden="true"` inside labelled button | Screen readers announce raw snake_case ligatures (`"cloud underscore upload"`). | Add `aria-hidden="true"` on decorative `<md-icon slot="icon" aria-hidden="true">` when the button already has text or `aria-label`. |
+| Missing `&display=block` / stylesheet on Material Symbols | Icons flash or render as literal text strings like `"search"` or `"close"`. | Include Google Fonts Material Symbols with `&display=block`, or use inline `<svg>` in offline builds (`references/icons.md`). |

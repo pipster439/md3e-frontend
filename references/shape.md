@@ -14,18 +14,17 @@ component size, in M3 any component can take any step.
 | `corner-none` | 0px | Full-bleed content, deliberate square tension |
 | `corner-extra-small` | 4px | Chips (legacy), menus, snackbars, tooltips |
 | `corner-small` | 8px | Text fields, small controls |
-| `corner-medium` | 12px | Cards, small FABs |
-| `corner-large` | 16px | FABs, navigation drawer, large containers |
-| `corner-large-increased` | 20px | **Expressive** — emphasis without going full pill |
-| `corner-extra-large` | 28px | Dialogs, bottom sheets, search bars |
-| `corner-extra-large-increased` | 32px | **Expressive** — large FABs, hero containers |
+| `corner-medium` | 12px | Cards, square XS/S buttons |
+| `corner-large` | 16px | Regular FAB (56dp), navigation drawer, square M buttons, large containers |
+| `corner-large-increased` | 20px | **Expressive** — medium FAB (80dp), 40dp pill buttons, emphasis without full pill |
+| `corner-extra-large` | 28px | Dialogs, bottom sheets, large FAB (96dp), square L/XL buttons |
+| `corner-extra-large-increased` | 32px | **Expressive** — hero containers, emphasis without going full pill |
 | `corner-extra-extra-large` | 48px | **Expressive** — hero moments |
 | `corner-full` | fully rounded | Buttons, chips, badges, avatars |
 
-`corner-full` is useful for pill-like component corners. `border-radius: 50%`
-is valid CSS for a circle on a square box and can intentionally produce an
-ellipse on a non-square box. Choose by the intended geometry; a percentage
-radius is not automatically a Material violation.
+`corner-full` replaces the old "50% of the component size" trick. Use the
+token, not `border-radius: 50%` — `50%` produces an ellipse on a non-square
+box, which is a bug, not a shape.
 
 The three "increased" steps are new in M3E and exist purely to give you
 emphasis without jumping straight to a pill.
@@ -44,20 +43,31 @@ faces the inner corner of the last one.
 
 Both symmetric and asymmetric shapes draw from the same ten-step scale.
 
-## Shape library (35 shapes)
+## Shape library (35 official `MaterialShapes` presets)
 
 For decorative moments: image crops, avatar masks, loading indicators, empty
-states. Categories, all normalised to a unit square and morphable:
+states. All **35** official presets from `androidx.compose.material3.MaterialShapes`
+are pre-generated into `assets/tokens/md3e-shapes.css` (and reproducible via
+`python scripts/shapes_to_css.py --emit-css assets/tokens/md3e-shapes.css`):
 
-- **Basic** — circle, square, triangle, diamond, oval, rectangle, pentagon,
-  semi-circle, pill, slanted
-- **Expressive / organic** — heart, flower, ghostish, bun, arrow, fan, gem
-- **Cookie and star** — cookie4Sided, cookie6Sided, cookie7Sided,
-  cookie9Sided, cookie12Sided, sunny, verySunny, burst, softBurst, boom,
-  softBoom
-- **Clover and nature** — clover4Leaf, clover8Leaf, puffy, puffyDiamond,
-  arch, clamShell
-- **Pixel** — pixelCircle, pixelTriangle
+- **Basic (10)** — `circle`, `square`, `slanted`, `arch`, `fan`, `arrow`,
+  `semi-circle`, `oval`, `pill`, `triangle`
+- **Geometric & organic (8)** — `diamond`, `clam-shell`, `pentagon`, `gem`,
+  `ghostish`, `bun`, `heart`, `flower`
+- **Cookie & star (11)** — `sunny`, `very-sunny`, `cookie-4-sided`,
+  `cookie-6-sided`, `cookie-7-sided`, `cookie-9-sided`, `cookie-12-sided`,
+  `burst`, `soft-burst`, `boom`, `soft-boom`
+- **Clover & nature (4)** — `clover-4-leaf`, `clover-8-leaf`, `puffy`,
+  `puffy-diamond`
+- **Pixel (2)** — `pixel-circle`, `pixel-triangle`
+
+Use `.md3e-shape` paired with `.md3e-shape-<name>` (which sets both
+`-webkit-mask-image` and `mask-image`, plus an `@supports` rounded-corner
+fallback). When a masked polygon needs a drop shadow, wrap it in
+`.md3e-shape-shadow-wrap` (`filter: drop-shadow(...)` rather than `box-shadow`,
+which casts a rectangle). Do not use `MD3E` CSS mask presets behind dense body
+copy; keep them on avatars, media crops, and the `LoadingIndicator` (`SoftBurst ->
+Cookie9Sided -> Pentagon -> Pill -> Sunny -> Cookie4Sided -> Oval`).
 
 Rules from the spec:
 
@@ -87,8 +97,10 @@ Drive morphs with a **spatial** spring (corner radius and size are spatial
 properties, so the spring overshoots and bounces).
 
 ```css
+/* Use the bounded half-height radius (16px on a 32px chip) instead of 9999px
+   when animating border-radius so the spring curve does not clamp and snap. */
 .chip { transition: border-radius var(--md-sys-motion-default-spatial); }
-.chip[aria-pressed="true"] { border-radius: var(--md-sys-shape-corner-full); }
+.chip[aria-pressed="true"] { border-radius: var(--md-sys-shape-corner-large); }
 .chip[aria-pressed="false"] { border-radius: var(--md-sys-shape-corner-small); }
 ```
 
@@ -102,8 +114,8 @@ directs attention. Use it to:
 - draw attention to one element
 - improve the composition
 
-Break from the surrounding shape language selectively so the contrast reads as
-intentional rather than inconsistent.
+Break from the surrounding shape language for exactly one element — that is how
+tension reads as intentional rather than inconsistent.
 
 ## Optical roundness
 
@@ -120,7 +132,7 @@ outer radius − padding = inner radius
 | Do | Don't |
 |---|---|
 | Pick steps from the ten-step scale | Invent `border-radius: 10px` |
-| Use `corner-full` for pills and circles where it fits | Assume every `50%` radius is wrong |
+| Use `corner-full` for pills and circles | `border-radius: 50%` |
 | Use the "increased" steps for emphasis | Jump straight to a pill when you want a little emphasis |
 | Add tension deliberately, on one element | Mix round and square randomly |
 | Adjust nested radii for optical roundness | Give parent and child the same radius |

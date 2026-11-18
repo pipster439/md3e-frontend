@@ -6,7 +6,7 @@ A value shown as `—` was not present in the rendered text (the spec presents i
 **Expressive changes to flag first:**
 
 - **Toolbars are new in M3 Expressive** (docked and floating); there is no toolbar in M3.
-- **The baseline bottom app bar is no longer recommended in favour of toolbars** — the guidance says, "It should be replaced with the docked toolbar, which is very similar and more flexible."
+- **The bottom app bar is deprecated in favour of toolbars** — explicitly, "It should be replaced with the docked toolbar, which is very similar and more flexible."
 - The baseline (M3) medium and large app bars, the baseline navigation bar, the baseline navigation rail, and the navigation drawer are all **no longer recommended** in M3 Expressive.
 - The baseline (divided) search style is **not recommended**; use the contained style.
 
@@ -457,6 +457,7 @@ Configurations — "Common arrangements of elements within a navigation rail": w
 - "Expanded behavior: Hide when collapsed" is new — `Not available` in M3.
 - "The navigation item's target area always spans the full width of the nav rail, even if the item container hugs its contents."
 - The rail distinguishes label colour by item orientation: `Secondary (vertical), On secondary container (horizontal)`.
+- **Desktop & wide-screen ergonomics (see [`references/layout.md`](../layout.md#desktop--wide-screen-optimization-expanded-840px--large-1200px--extra-large-1600px)):** On `Expanded` (`>= 840px`) and above, never retain a bottom Navigation Bar; pair a collapsible rail (`--md-sys-nav-rail-width-collapsed: 80px` compact web token; `96dp` spec diagram) with the **Standard Expanded** rail (`--md-sys-nav-rail-width-expanded: 220px`, horizontal pills + docked Extended FAB in the rail header, **default expanded at `Large >= 1200px`**). Provide a keyboard shortcut (`aria-keyshortcuts`) + roving `tabindex`, and reserve `padding-block-end: 112px` bottom scroll clearance when a fixed Floating Toolbar is present.
 
 ---
 
