@@ -884,6 +884,10 @@ console.log(JSON.stringify({ cands: ext.candidates.map((c) => c.hex), schemes })
         self.assertRegex(html, r'<input\b[^>]*id="image-theme-input"[^>]*class="visually-hidden"')
         self.assertRegex(html, r'\.visually-hidden\s*\{[^}]*clip-path:\s*inset\(50%\)')
         self.assertRegex(html, r'<button\b[^>]*id="btn-copy-theme-css"[^>]*command="--copy"[^>]*commandfor="generated-theme-css"')
+        self.assertNotIn('type="color"', html)
+        self.assertIn('id="md3e-color-popover"', html)
+        self.assertIn('command="toggle-popover"', html)
+        self.assertIn('id="hct-plane-canvas"', html)
 
 
 class PhaseFourAndDesktopBentoTests(unittest.TestCase):

@@ -1360,6 +1360,12 @@ function calculateHourFromPointer(dialElement, clientX, clientY) {
 }
 ```
 
+### 11.2 Anchored HCT Seed Color Picker (Never Raw `<input type="color">`)
+
+> [!CAUTION]
+> **Never expose a bare native `<input type="color">` control in an M3E interface**: On Chromium/Windows/macOS desktop browsers, native color inputs spawn an unstyled OS color dialog (`0px` sharp rectangle corners, fixed `#3B3B3B` background, and `1px` wireframe R/G/B inputs) that breaks tonal containment and clashes visually with dynamic HCT surfaces.
+> **The Fix**: Build an anchored `[popover="auto"]` palette panel (`28px` outer `--md-sys-shape-corner-extra-large` -> `12px` concentric inner 2D Chroma×Tone canvas, `surface-container-high` + optional `.md3e-blur-surface`) driven directly by `Hct` / `hctSolveToInt` from `assets/tokens/md3e-dynamic-color.js`. Wire the trigger with native Invoker Commands (`commandfor` + `command="toggle-popover"`, never combining `popovertarget` and `commandfor`, and without `aria-haspopup` on a `role="group"` picker), gate `inset: auto` + `margin` inside `@supports (position-area: block-end)`, style separate `::-webkit-slider-*` / `::-moz-range-*` blocks for Hue/Chroma/Tone range inputs, and feature-detect `EyeDropper` as progressive enhancement. See `assets/starter/index.html` (`#md3e-color-popover`) for the complete implementation.
+
 ---
 
 ## 12. Official 35-Shape Containers & Optional Frosted Floating Chrome

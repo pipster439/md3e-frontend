@@ -987,32 +987,312 @@
     flex-shrink: 0;
   }
 
-  .custom-color-label {
+  /* --- MD3E Anchored HCT Seed Color Popover Picker (replaces native browser OS color input) --- */
+  .seed-picker-trigger {
+    anchor-name: --seed-picker-trigger;
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: var(--md-sys-spacing-2);
-    min-block-size: var(--md-sys-touch-target-min);
+    height: var(--md3e-control-h);
     padding-inline: var(--md-sys-spacing-3);
-    border-radius: var(--md-sys-shape-corner-small);
     border: none;
+    border-radius: var(--md-sys-shape-corner-large-increased);
     background: var(--md-sys-color-surface-container-high);
     color: var(--md-sys-color-on-surface);
+    font-family: var(--md-sys-typescale-plain-font);
     font-size: var(--md-sys-typescale-label-large-size);
     line-height: var(--md-sys-typescale-label-large-line-height);
+    font-weight: var(--md-sys-typescale-label-large-weight);
+    --md-sys-icon-size: 20px;
     cursor: pointer;
+    transition: border-radius var(--md-sys-motion-fast-spatial),
+                background-color var(--md-sys-motion-fast-effects),
+                color var(--md-sys-motion-fast-effects);
+  }
+  .seed-picker-trigger::before {
+    content: "";
+    position: absolute;
+    inset-block: var(--md3e-control-hit-inset);
+    inset-inline: 0;
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+  }
+  .seed-picker-trigger::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-sys-motion-fast-effects);
+  }
+  .seed-picker-trigger:hover::after { opacity: var(--md-sys-state-hover-state-layer-opacity); }
+  .seed-picker-trigger:active::after { opacity: var(--md-sys-state-pressed-state-layer-opacity); }
+  .seed-picker-trigger:active,
+  .seed-picker-trigger[aria-expanded="true"] {
+    border-radius: var(--md-sys-shape-corner-medium);
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+  }
+  .seed-picker-trigger:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+  .seed-picker-trigger__swatch {
+    width: 20px;
+    height: 20px;
+    border-radius: var(--md-sys-shape-corner-small);
+    border: 1px solid var(--md-sys-color-outline);
+    background: var(--seed-preview-color, var(--md-sys-color-primary));
+    flex-shrink: 0;
+  }
+  .seed-picker-trigger__hex {
+    font-size: var(--md-sys-typescale-label-medium-size);
+    line-height: var(--md-sys-typescale-label-medium-line-height);
   }
 
-  .custom-color-picker {
-    inline-size: var(--md-sys-spacing-8);
-    block-size: var(--md-sys-spacing-8);
+  .seed-popover {
+    --md3e-blur-tint: var(--md-sys-color-surface-container-high);
+    --md3e-blur-fallback: var(--md-sys-color-surface-container-high);
+    --md3e-blur-alpha: var(--md-sys-blur-elevated-alpha);
+    width: min(344px, calc(100vw - var(--md-sys-spacing-6)));
+    max-block-size: calc(100dvh - var(--md-sys-spacing-8));
+    overflow-y: auto;
+    padding: var(--md-sys-spacing-4);
+    border: none;
+    border-radius: var(--md-sys-shape-corner-extra-large);
+    color: var(--md-sys-color-on-surface);
+    box-shadow: var(--md-sys-elevation-level3);
+    opacity: 0;
+    transition: opacity var(--md-sys-motion-fast-effects),
+                transform var(--md-sys-motion-fast-spatial),
+                display var(--md-sys-motion-fast-spatial),
+                overlay var(--md-sys-motion-fast-spatial);
+    transition-behavior: allow-discrete;
+  }
+  .seed-popover:is(:popover-open, .\:popover-open) {
+    display: grid;
+    gap: var(--md-sys-spacing-3);
+    opacity: 1;
+  }
+  @starting-style {
+    .seed-popover:is(:popover-open, .\:popover-open) {
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .seed-popover {
+      transform: scale(0.94);
+      transform-origin: top left;
+    }
+    .seed-popover:is(:popover-open, .\:popover-open) {
+      transform: scale(1);
+    }
+    @starting-style {
+      .seed-popover:is(:popover-open, .\:popover-open) {
+        transform: scale(0.94);
+      }
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .seed-popover {
+      transition: opacity var(--md-sys-motion-fast-effects),
+                  display var(--md-sys-motion-fast-effects),
+                  overlay var(--md-sys-motion-fast-effects);
+      transition-behavior: allow-discrete;
+    }
+  }
+  @supports (position-area: block-end) {
+    .seed-popover {
+      position-anchor: --seed-picker-trigger;
+      inset: auto;
+      margin: var(--md-sys-spacing-2) 0;
+      position-area: block-end span-inline-end;
+      position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+    }
+  }
+
+  .seed-popover__header {
+    display: flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-3);
+  }
+  .seed-popover__badge {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    background: var(--seed-preview-color, var(--md-sys-color-primary));
+  }
+  .seed-popover__title-group {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+  .seed-popover__title {
+    font-family: var(--md-sys-typescale-brand-font);
+    font-size: var(--md-sys-typescale-title-medium-size);
+    line-height: var(--md-sys-typescale-title-medium-line-height);
+    font-weight: var(--md-sys-typescale-title-medium-emphasized-weight);
+  }
+  .seed-popover__meta {
+    font-family: ui-monospace, monospace;
+    font-size: var(--md-sys-typescale-label-small-size);
+    line-height: var(--md-sys-typescale-label-small-line-height);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+  .seed-popover__icon-btn {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
     padding: 0;
-    border: 1px solid var(--md-sys-color-outline);
-    border-radius: var(--md-sys-shape-corner-small);
+    border: none;
+    border-radius: var(--md-sys-shape-corner-large-increased);
+    background: var(--md-sys-color-surface-container-highest);
+    color: var(--md-sys-color-on-surface);
+    cursor: pointer;
+    --md-sys-icon-size: 20px;
+  }
+  .seed-popover__icon-btn[hidden] {
+    display: none;
+  }
+  .seed-popover__icon-btn::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+  }
+  .seed-popover__icon-btn:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .hct-plane-wrap {
+    position: relative;
+    block-size: 136px;
+    border-radius: var(--md-sys-shape-corner-medium);
+    overflow: hidden;
+    background: var(--md-sys-color-surface-container-lowest);
+    cursor: crosshair;
+    touch-action: none;
+  }
+  .hct-plane-wrap:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+  .hct-plane-wrap canvas {
+    inline-size: 100%;
+    block-size: 100%;
+    display: block;
+  }
+  .hct-plane-thumb {
+    position: absolute;
+    inline-size: 20px;
+    block-size: 20px;
+    border-radius: var(--md-sys-shape-corner-full);
+    border: 3px solid var(--md-sys-color-surface-container-lowest);
+    box-shadow: var(--md-sys-elevation-level2);
+    background: var(--seed-preview-color, var(--md-sys-color-primary));
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .hct-sliders {
+    display: grid;
+    gap: var(--md-sys-spacing-1);
+  }
+  .hct-slider-row {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr) 44px;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+  }
+  .hct-slider-row label {
+    font-size: var(--md-sys-typescale-label-medium-size);
+    line-height: var(--md-sys-typescale-label-medium-line-height);
+    font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+  .hct-slider-row output {
+    text-align: end;
+    font-family: ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: var(--md-sys-typescale-label-medium-size);
+    line-height: var(--md-sys-typescale-label-medium-line-height);
+    color: var(--md-sys-color-on-surface);
+  }
+  .hct-slider {
+    appearance: none;
+    -webkit-appearance: none;
+    inline-size: 100%;
+    min-block-size: var(--md-sys-touch-target-min);
+    margin: 0;
+    padding: 0;
+    border: 0;
     background: transparent;
     cursor: pointer;
   }
-
-  .custom-color-picker:focus-visible {
+  .hct-slider::-webkit-slider-runnable-track {
+    block-size: 12px;
+    border: 0;
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--slider-gradient, var(--md-sys-color-surface-container-highest));
+  }
+  .hct-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    inline-size: 22px;
+    block-size: 22px;
+    margin-block-start: calc((12px - 22px) / 2);
+    border-radius: var(--md-sys-shape-corner-full);
+    border: 2px solid var(--md-sys-color-on-primary);
+    background: var(--md-sys-color-primary);
+    box-shadow: var(--md-sys-elevation-level1);
+  }
+  .hct-slider::-moz-range-track {
+    block-size: 12px;
+    border: 0;
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--slider-gradient, var(--md-sys-color-surface-container-highest));
+  }
+  .hct-slider::-moz-range-thumb {
+    inline-size: 22px;
+    block-size: 22px;
+    border-radius: var(--md-sys-shape-corner-full);
+    border: 2px solid var(--md-sys-color-on-primary);
+    background: var(--md-sys-color-primary);
+    box-shadow: var(--md-sys-elevation-level1);
+  }
+  .hct-slider:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+    border-radius: var(--md-sys-shape-corner-small);
+  }
+  .seed-popover__footer {
+    display: flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+    padding-top: var(--md-sys-spacing-1);
+  }
+  .seed-popover__hex-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: var(--md-sys-touch-target-min);
+    padding-inline: var(--md-sys-spacing-3);
+    border: none;
+    border-radius: var(--md-sys-shape-corner-small);
+    background: var(--md-sys-color-surface-container-highest);
+    color: var(--md-sys-color-on-surface);
+    font-family: ui-monospace, monospace;
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: var(--md-sys-typescale-body-medium-line-height);
+  }
+  .seed-popover__hex-input:focus-visible {
     outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
     outline-offset: var(--md-sys-focus-ring-gap);
   }
@@ -2532,6 +2812,9 @@
     .optical-card,
     .image-studio,
     .inspector-list,
+    .seed-picker-trigger,
+    .seed-popover,
+    .seed-popover__hex-input,
     .shape-tile-btn,
     .split-menu,
     .swatch-tile,
@@ -2763,10 +3046,91 @@
             <span>Upload or drop image</span>
           </label>
           <img id="image-theme-preview" class="image-preview-thumb" alt="Uploaded source image preview" hidden>
-          <label for="custom-seed-color" class="custom-color-label">
-            <span>Custom Hex</span>
-            <input type="color" id="custom-seed-color" name="custom_seed_color" class="custom-color-picker" value="#6750A4">
-          </label>
+          <button
+            type="button"
+            class="seed-picker-trigger"
+            id="btn-custom-seed-picker"
+            commandfor="md3e-color-popover"
+            command="toggle-popover"
+            aria-expanded="false"
+            aria-controls="md3e-color-popover"
+          >
+            <span class="seed-picker-trigger__swatch" id="custom-seed-swatch-preview" aria-hidden="true"></span>
+            <span>Custom Seed</span>
+            <code class="seed-picker-trigger__hex" id="custom-seed-hex-readout">#6750A4</code>
+            <span class="material-symbols-outlined" aria-hidden="true">palette</span>
+          </button>
+          <div
+            id="md3e-color-popover"
+            popover="auto"
+            class="seed-popover md3e-blur-surface md3e-blur--lg"
+            role="group"
+            aria-label="Material HCT seed color picker"
+          >
+            <div class="seed-popover__header">
+              <div class="md3e-shape md3e-shape-cookie-9-sided seed-popover__badge" id="hct-live-badge" aria-hidden="true"></div>
+              <div class="seed-popover__title-group">
+                <span class="seed-popover__title">HCT Seed Studio</span>
+                <span class="seed-popover__meta" id="hct-readout">H 264° · C 48 · T 40</span>
+              </div>
+              <button type="button" class="seed-popover__icon-btn" id="btn-seed-eyedropper" aria-label="Pick seed color from screen" hidden>
+                <span class="material-symbols-outlined" aria-hidden="true">colorize</span>
+              </button>
+            </div>
+            <div
+              class="hct-plane-wrap"
+              id="hct-plane-wrap"
+              tabindex="0"
+              role="slider"
+              aria-label="2D Chroma and Tone spectrum"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="40"
+              aria-valuetext="Chroma 48, Tone 40"
+            >
+              <canvas id="hct-plane-canvas" width="120" height="84"></canvas>
+              <span class="hct-plane-thumb" id="hct-plane-thumb" aria-hidden="true"></span>
+            </div>
+            <div class="hct-sliders">
+              <div class="hct-slider-row">
+                <label for="hct-hue-slider">Hue</label>
+                <input type="range" id="hct-hue-slider" class="hct-slider" min="0" max="360" step="1" value="264">
+                <output id="hct-hue-val" for="hct-hue-slider">264°</output>
+              </div>
+              <div class="hct-slider-row">
+                <label for="hct-chroma-slider">Chroma</label>
+                <input type="range" id="hct-chroma-slider" class="hct-slider" min="0" max="120" step="1" value="48">
+                <output id="hct-chroma-val" for="hct-chroma-slider">48</output>
+              </div>
+              <div class="hct-slider-row">
+                <label for="hct-tone-slider">Tone</label>
+                <input type="range" id="hct-tone-slider" class="hct-slider" min="0" max="100" step="1" value="40">
+                <output id="hct-tone-val" for="hct-tone-slider">40</output>
+              </div>
+            </div>
+            <div class="seed-popover__footer">
+              <label for="custom-seed-hex-input" class="visually-hidden">Seed Hex Code</label>
+              <input
+                type="text"
+                id="custom-seed-hex-input"
+                class="seed-popover__hex-input"
+                value="#6750A4"
+                maxlength="7"
+                spellcheck="false"
+                autocomplete="off"
+                aria-label="Seed hex color"
+              >
+              <button
+                type="button"
+                class="md3e-btn md3e-btn--filled md3e-btn--s"
+                id="btn-seed-popover-done"
+                commandfor="md3e-color-popover"
+                command="hide-popover"
+              >
+                <span>Done</span>
+              </button>
+            </div>
+          </div>
           <button type="button" class="md3e-btn md3e-btn--outlined md3e-btn--s" data-demo-wallpaper="sunset">Sunset Wallpaper</button>
           <button type="button" class="md3e-btn md3e-btn--outlined md3e-btn--s" data-demo-wallpaper="forest">Forest Wallpaper</button>
           <button type="button" class="md3e-btn md3e-btn--outlined md3e-btn--s" data-demo-wallpaper="cyber">Cyber Wallpaper</button>
@@ -2823,7 +3187,7 @@
             <button type="button" class="choice-chip" id="btn-type-emphasized" aria-pressed="false">Emphasized Type</button>
           </div>
           <div class="type-specimen__sample">Expressive Headline Medium (28px)</div>
-          <span class="inline-status" id="type-status">Baseline weight + GRAD 0 (Roboto Flex)</span>
+          <span class="inline-status" id="type-status">Baseline weight + GRAD 0 (Google Sans Flex)</span>
         </div>
 
         <div class="type-specimen">
@@ -3343,9 +3707,13 @@
   import { createSpringAnimator, resolveSpringPreset } from '../tokens/md3e-spring.js';
   import { createShapeMorpher, LOADING_SEQUENCE, SHAPE_NAMES as MORPH_SHAPES } from '../tokens/md3e-morph.js';
   import {
+    Hct,
     applyDynamicSeed,
+    argbToHex,
     clearDynamicSeed,
     extractSeedsFromImage,
+    hctSolveToInt,
+    hexToArgb,
     normalizeHex,
     renderStandaloneCss,
   } from '../tokens/md3e-dynamic-color.js';
@@ -3387,7 +3755,24 @@
   const seedChipCustom = document.getElementById('seed-chip-custom');
   const seedSwatchCustom = document.getElementById('seed-swatch-custom');
   const seedLabelCustom = document.getElementById('seed-label-custom');
-  const customSeedColor = document.getElementById('custom-seed-color');
+  const pickerTriggerBtn = document.getElementById('btn-custom-seed-picker');
+  const pickerTriggerSwatch = document.getElementById('custom-seed-swatch-preview');
+  const pickerTriggerHex = document.getElementById('custom-seed-hex-readout');
+  const colorPopover = document.getElementById('md3e-color-popover');
+  const hctReadout = document.getElementById('hct-readout');
+  const hctPlaneWrap = document.getElementById('hct-plane-wrap');
+  const hctPlaneCanvas = document.getElementById('hct-plane-canvas');
+  const hctPlaneCtx = hctPlaneCanvas.getContext('2d', { willReadFrequently: false });
+  const hctPlaneThumb = document.getElementById('hct-plane-thumb');
+  const hctHueSlider = document.getElementById('hct-hue-slider');
+  const hctChromaSlider = document.getElementById('hct-chroma-slider');
+  const hctToneSlider = document.getElementById('hct-tone-slider');
+  const hctHueVal = document.getElementById('hct-hue-val');
+  const hctChromaVal = document.getElementById('hct-chroma-val');
+  const hctToneVal = document.getElementById('hct-tone-val');
+  const customHexInput = document.getElementById('custom-seed-hex-input');
+  const btnSeedEyedropper = document.getElementById('btn-seed-eyedropper');
+  const btnSeedPopoverDone = document.getElementById('btn-seed-popover-done');
   const imageInput = document.getElementById('image-theme-input');
   const imageDropZone = document.getElementById('image-drop-zone');
   const imagePreview = document.getElementById('image-theme-preview');
@@ -3550,12 +3935,115 @@
     btn.addEventListener('click', () => applyVariant(btn.dataset.variantChoice));
   });
 
-  // --- Seed & Contrast Pickers + Image Extraction ---
-  function applyCustomSeedHex(hex, { toastMsg = '', persist = true } = {}) {
+  // --- Seed & Contrast Pickers + Anchored MD3E HCT Popover + Image Extraction ---
+  const MAX_HCT_CHROMA = 120;
+  let pickerHct = { hue: 264, chroma: 48, tone: 40 };
+  let lastCanvasHue = -1;
+
+  function clampNum(n, min, max) {
+    return Math.min(max, Math.max(min, n));
+  }
+
+  function isColorPopoverOpen() {
+    try {
+      return colorPopover.matches(':popover-open') || colorPopover.classList.contains(':popover-open');
+    } catch {
+      return colorPopover.classList.contains(':popover-open');
+    }
+  }
+
+  function renderHctPlane(hue, force = false) {
+    const roundedHue = Math.round(hue) % 360;
+    if (!force && roundedHue === lastCanvasHue) return;
+    lastCanvasHue = roundedHue;
+    const w = hctPlaneCanvas.width;
+    const h = hctPlaneCanvas.height;
+    const imgData = hctPlaneCtx.createImageData(w, h);
+    const data = imgData.data;
+    for (let y = 0; y < h; y++) {
+      const tone = 100 - (y / (h - 1)) * 100;
+      for (let x = 0; x < w; x++) {
+        const chroma = (x / (w - 1)) * MAX_HCT_CHROMA;
+        const argb = hctSolveToInt(roundedHue, chroma, tone);
+        const offset = (y * w + x) * 4;
+        data[offset] = (argb >> 16) & 255;
+        data[offset + 1] = (argb >> 8) & 255;
+        data[offset + 2] = argb & 255;
+        data[offset + 3] = 255;
+      }
+    }
+    hctPlaneCtx.putImageData(imgData, 0, 0);
+  }
+
+  function updateSliderGradients(hue, chroma, tone) {
+    const hueStops = [];
+    for (let h = 0; h <= 360; h += 30) {
+      hueStops.push(argbToHex(hctSolveToInt(h, 72, 62)));
+    }
+    hctHueSlider.style.setProperty('--slider-gradient', `linear-gradient(to right, ${hueStops.join(', ')})`);
+
+    const clampedTone = clampNum(tone, 24, 82);
+    const chromaStops = [];
+    for (let c = 0; c <= MAX_HCT_CHROMA; c += 20) {
+      chromaStops.push(argbToHex(hctSolveToInt(hue, c, clampedTone)));
+    }
+    hctChromaSlider.style.setProperty('--slider-gradient', `linear-gradient(to right, ${chromaStops.join(', ')})`);
+
+    const toneStops = [];
+    for (let t = 0; t <= 100; t += 20) {
+      toneStops.push(argbToHex(hctSolveToInt(hue, chroma, t)));
+    }
+    hctToneSlider.style.setProperty('--slider-gradient', `linear-gradient(to right, ${toneStops.join(', ')})`);
+  }
+
+  function syncPickerFromHex(hex, hctOverride = null) {
+    const norm = normalizeHex(hex);
+    if (hctOverride) {
+      pickerHct = {
+        hue: clampNum(Math.round(hctOverride.hue), 0, 360),
+        chroma: clampNum(Math.round(hctOverride.chroma), 0, MAX_HCT_CHROMA),
+        tone: clampNum(Math.round(hctOverride.tone), 0, 100),
+      };
+    } else {
+      const hct = Hct.fromInt(hexToArgb(norm));
+      pickerHct = {
+        hue: Math.round(hct.hue),
+        chroma: clampNum(Math.round(hct.chroma), 0, MAX_HCT_CHROMA),
+        tone: clampNum(Math.round(hct.tone), 0, 100),
+      };
+    }
+    pickerTriggerBtn.style.setProperty('--seed-preview-color', norm);
+    colorPopover.style.setProperty('--seed-preview-color', norm);
+    pickerTriggerHex.textContent = norm;
+    if (document.activeElement !== customHexInput) {
+      customHexInput.value = norm;
+    }
+
+    const { hue, chroma, tone } = pickerHct;
+    hctReadout.textContent = `H ${hue}° · C ${chroma} · T ${tone}`;
+    hctHueSlider.value = String(hue);
+    hctChromaSlider.value = String(chroma);
+    hctToneSlider.value = String(tone);
+    hctHueVal.textContent = `${hue}°`;
+    hctChromaVal.textContent = String(chroma);
+    hctToneVal.textContent = String(tone);
+
+    hctPlaneThumb.style.left = `${(chroma / MAX_HCT_CHROMA) * 100}%`;
+    hctPlaneThumb.style.top = `${100 - tone}%`;
+    hctPlaneWrap.setAttribute('aria-valuenow', String(tone));
+    hctPlaneWrap.setAttribute('aria-valuetext', `Chroma ${chroma}, Tone ${tone}`);
+
+    updateSliderGradients(hue, chroma, tone);
+    if (isColorPopoverOpen()) {
+      renderHctPlane(hue);
+    }
+  }
+
+  function applyCustomSeedHex(hex, { toastMsg = '', persist = true, hctOverride = null } = {}) {
     const norm = normalizeHex(hex);
     activeCustomHex = norm;
     applyDynamicSeed(norm, { specVersion: '2025' });
-    customSeedColor.value = norm;
+    syncPickerFromHex(norm, hctOverride);
     document.querySelectorAll('[data-seed-choice]').forEach((b) => {
       b.setAttribute('aria-pressed', String(b.dataset.seedChoice === 'custom'));
     });
@@ -3577,7 +4065,7 @@
     } else {
       root.dataset.seed = s;
     }
-    customSeedColor.value = PRESET_SEED_HEX[s];
+    syncPickerFromHex(PRESET_SEED_HEX[s]);
     document.querySelectorAll('[data-seed-choice]').forEach((b) => {
       b.setAttribute('aria-pressed', String(b.dataset.seedChoice === s));
     });
@@ -3589,9 +4077,102 @@
     btn.addEventListener('click', () => applySeed(btn.dataset.seedChoice));
   });
 
-  customSeedColor.addEventListener('input', (e) => {
-    applyCustomSeedHex(e.target.value);
+  function applyFromHctSliders() {
+    const hue = clampNum(Number(hctHueSlider.value) || 0, 0, 360);
+    const chroma = clampNum(Number(hctChromaSlider.value) || 0, 0, MAX_HCT_CHROMA);
+    const tone = clampNum(Number(hctToneSlider.value) || 0, 0, 100);
+    const hex = argbToHex(hctSolveToInt(hue, chroma, tone));
+    applyCustomSeedHex(hex, { hctOverride: { hue, chroma, tone } });
+  }
+
+  [hctHueSlider, hctChromaSlider, hctToneSlider].forEach((slider) => {
+    slider.addEventListener('input', applyFromHctSliders);
   });
+
+  function pickFromPlanePointer(e) {
+    const rect = hctPlaneWrap.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const xRatio = clampNum((e.clientX - rect.left) / rect.width, 0, 1);
+    const yRatio = clampNum((e.clientY - rect.top) / rect.height, 0, 1);
+    const hue = pickerHct.hue;
+    const chroma = Math.round(xRatio * MAX_HCT_CHROMA);
+    const tone = Math.round((1 - yRatio) * 100);
+    const hex = argbToHex(hctSolveToInt(hue, chroma, tone));
+    applyCustomSeedHex(hex, { hctOverride: { hue, chroma, tone } });
+  }
+
+  hctPlaneWrap.addEventListener('pointerdown', (e) => {
+    hctPlaneWrap.focus();
+    hctPlaneWrap.setPointerCapture?.(e.pointerId);
+    pickFromPlanePointer(e);
+  });
+  hctPlaneWrap.addEventListener('pointermove', (e) => {
+    if (e.buttons === 1 || hctPlaneWrap.hasPointerCapture?.(e.pointerId)) {
+      pickFromPlanePointer(e);
+    }
+  });
+  hctPlaneWrap.addEventListener('keydown', (e) => {
+    const step = e.shiftKey ? 10 : 3;
+    let { hue, chroma, tone } = pickerHct;
+    let handled = true;
+    if (e.key === 'ArrowLeft') chroma = clampNum(chroma - step, 0, MAX_HCT_CHROMA);
+    else if (e.key === 'ArrowRight') chroma = clampNum(chroma + step, 0, MAX_HCT_CHROMA);
+    else if (e.key === 'ArrowUp') tone = clampNum(tone + step, 0, 100);
+    else if (e.key === 'ArrowDown') tone = clampNum(tone - step, 0, 100);
+    else handled = false;
+    if (!handled) return;
+    e.preventDefault();
+    const hex = argbToHex(hctSolveToInt(hue, chroma, tone));
+    applyCustomSeedHex(hex, { hctOverride: { hue, chroma, tone } });
+  });
+
+  customHexInput.addEventListener('input', (e) => {
+    const raw = e.target.value.trim();
+    if (/^#?[0-9a-fA-F]{6}$/.test(raw)) {
+      applyCustomSeedHex(raw.startsWith('#') ? raw : `#${raw}`);
+    }
+  });
+  customHexInput.addEventListener('change', () => {
+    const norm = getActiveSeedHex();
+    customHexInput.value = norm;
+  });
+
+  if ('EyeDropper' in window) {
+    btnSeedEyedropper.hidden = false;
+    btnSeedEyedropper.addEventListener('click', async () => {
+      try {
+        const res = await new window.EyeDropper().open();
+        if (res?.sRGBHex) {
+          applyCustomSeedHex(res.sRGBHex, { toastMsg: `Sampled seed ${normalizeHex(res.sRGBHex)}` });
+        }
+      } catch {
+        // User cancelled screen eyedropper
+      }
+    });
+  }
+
+  if (!('commandForElement' in HTMLButtonElement.prototype)) {
+    pickerTriggerBtn.addEventListener('click', () => colorPopover.togglePopover?.());
+    btnSeedPopoverDone.addEventListener('click', () => colorPopover.hidePopover?.());
+  }
+
+  colorPopover.addEventListener('toggle', (e) => {
+    const open = e.newState === 'open';
+    pickerTriggerBtn.setAttribute('aria-expanded', String(open));
+    if (open) {
+      syncPickerFromHex(getActiveSeedHex(), pickerHct);
+      renderHctPlane(pickerHct.hue, true);
+    } else if (colorPopover.contains(document.activeElement)) {
+      pickerTriggerBtn.focus();
+    }
+  });
+  btnSeedPopoverDone.addEventListener('click', () => {
+    requestAnimationFrame(() => {
+      if (!isColorPopoverOpen()) pickerTriggerBtn.focus();
+    });
+  });
+
+  syncPickerFromHex(PRESET_SEED_HEX.purple);
 
   function renderCandidateButtons(candidates) {
     candidatesContainer.innerHTML = '';
@@ -3831,7 +4412,7 @@
     typeSpecimen.dataset.emphasized = String(next);
     typeStatus.textContent = next
       ? 'Emphasized 500/700 weight + GRAD 50 (zero layout reflow)'
-      : 'Baseline weight + GRAD 0 (Roboto Flex)';
+      : 'Baseline weight + GRAD 0 (Google Sans Flex)';
   });
 
   // --- Section 2: 35-Shape Gallery, Shadow Wrap Toggle & Loader Pause Control ---
