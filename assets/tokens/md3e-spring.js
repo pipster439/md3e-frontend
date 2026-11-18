@@ -3,7 +3,8 @@
  *
  * CSS `linear()` springs handle declarative hover/toggle transitions cleanly,
  * but they always start from v0 = 0 and restart on interruption. Use this helper
- * for pointer drag releases, mid-flight retargeting, and physics continuity.
+ * for pointer drag releases, mid-flight retargeting, physics continuity, and
+ * closed-form CSS `linear()` synthesis so CSS and JS springs settle identically.
  */
 
 export const SPRING_PRESETS = Object.freeze({
@@ -28,9 +29,22 @@ export const SPRING_PRESETS = Object.freeze({
 const DEFAULT_STIFFNESS = 380;
 const DEFAULT_DAMPING = 0.8;
 const DEFAULT_PRECISION = 0.05;
+const FRAME_1_DT = 1 / 60;
+const MIN_DT = 0.0005;
+const MAX_DT = 0.05;
 
 function isPositiveFinite(n) {
   return typeof n === 'number' && Number.isFinite(n) && n > 0;
+}
+
+function nowMs() {
+  return typeof performance !== 'undefined' && typeof performance.now === 'function'
+    ? performance.now()
+    : Date.now();
+}
+
+function isDocumentHidden() {
+  return typeof document !== 'undefined' && document.hidden === true;
 }
 
 function isReducedMotionPreferred() {
@@ -42,10 +56,7 @@ function scheduleFrame(cb) {
   if (typeof requestAnimationFrame === 'function') {
     return { id: requestAnimationFrame(cb), isTimeout: false };
   }
-  const now = () => (typeof performance !== 'undefined' && typeof performance.now === 'function'
-    ? performance.now()
-    : Date.now());
-  return { id: setTimeout(() => cb(now()), 16), isTimeout: true };
+  return { id: setTimeout(() => cb(nowMs()), 16), isTimeout: true };
 }
 
 function cancelFrame(handle) {
@@ -54,6 +65,31 @@ function cancelFrame(handle) {
     clearTimeout(handle.id);
   } else if (typeof cancelAnimationFrame === 'function') {
     cancelAnimationFrame(handle.id);
+  }
+}
+
+// Shared visibilitychange registry so springs pause ONLY when document.hidden === true
+// and seamlessly rebase timestamps on foreground return without stalling behind modals/blur.
+const visibilitySubscribers = new Set();
+let boundDocument = null;
+
+function handleDocumentVisibilityChange() {
+  const hidden = isDocumentHidden();
+  for (const subscriber of Array.from(visibilitySubscribers)) {
+    subscriber(hidden);
+  }
+}
+
+function ensureVisibilitySubscription() {
+  if (typeof document === 'undefined' || typeof document.addEventListener !== 'function') {
+    return;
+  }
+  if (boundDocument !== document) {
+    if (boundDocument && typeof boundDocument.removeEventListener === 'function') {
+      boundDocument.removeEventListener('visibilitychange', handleDocumentVisibilityChange);
+    }
+    document.addEventListener('visibilitychange', handleDocumentVisibilityChange);
+    boundDocument = document;
   }
 }
 
@@ -115,6 +151,70 @@ function stepAnalyticalSpring(value, velocity, target, damping, stiffness, dt) {
   return [safeTarget + x, v];
 }
 
+/**
+ * Synthesize a CSS `linear()` easing curve and settling duration from spring parameters
+ * using the exact closed-form analytical harmonic oscillator.
+ *
+ * @param {number} stiffness
+ * @param {number} damping
+ * @param {number} [samples=36]
+ * @returns {{ durationMs: number, linearEasing: string, cssShorthand: string, peakOvershoot: number }}
+ */
+export function synthesizeSpringLinearCss(
+  stiffness = DEFAULT_STIFFNESS,
+  damping = DEFAULT_DAMPING,
+  samples = 36,
+) {
+  const safeK = isPositiveFinite(stiffness) ? stiffness : DEFAULT_STIFFNESS;
+  const safeZ = isPositiveFinite(damping) ? damping : DEFAULT_DAMPING;
+  const safeSamples = Number.isInteger(samples) && samples >= 8 ? Math.min(240, samples) : 36;
+
+  const scanStep = 0.0005;
+  const maxScanSec = 4.0;
+  let lastOut = 0;
+  let peak = 1;
+
+  for (let t = 0; t <= maxScanSec + 1e-9; t += scanStep) {
+    const [pos, vel] = stepAnalyticalSpring(0, 0, 1, safeZ, safeK, t);
+    if (safeZ < 1 && t <= 3.0 && pos > peak) {
+      peak = pos;
+    }
+    if (Math.abs(pos - 1) >= 0.001 || Math.abs(vel) >= 0.02) {
+      lastOut = t;
+    }
+  }
+
+  const durationMs = Math.max(80, Math.ceil((lastOut * 1000 + 20) / 10) * 10);
+  const durationSec = durationMs / 1000;
+  const points = [];
+
+  for (let i = 0; i <= safeSamples; i++) {
+    if (i === 0) {
+      points.push(0);
+      continue;
+    }
+    if (i === safeSamples) {
+      points.push(1);
+      continue;
+    }
+    const t = durationSec * (i / safeSamples);
+    const [pos] = stepAnalyticalSpring(0, 0, 1, safeZ, safeK, t);
+    const rounded = Math.round(pos * 10000) / 10000;
+    points.push(Object.is(rounded, -0) ? 0 : rounded);
+  }
+
+  const linearEasing = `linear(${points.join(', ')})`;
+  const cssShorthand = `${durationMs}ms ${linearEasing}`;
+  const overshootPct = safeZ >= 1 ? 0 : Number(((peak - 1) * 100).toFixed(2));
+
+  return {
+    durationMs,
+    linearEasing,
+    cssShorthand,
+    peakOvershoot: Object.is(overshootPct, -0) ? 0 : overshootPct,
+  };
+}
+
 export function createSpringAnimator({
   initialValue = 0,
   stiffness = DEFAULT_STIFFNESS,
@@ -129,27 +229,77 @@ export function createSpringAnimator({
   let k = isPositiveFinite(stiffness) ? stiffness : DEFAULT_STIFFNESS;
   let z = isPositiveFinite(damping) ? damping : DEFAULT_DAMPING;
   const eps = isPositiveFinite(precision) ? precision : DEFAULT_PRECISION;
+
   let frameHandle = null;
   let lastTs = null;
+  let lastDt = FRAME_1_DT;
+  let pausedByVisibility = false;
+  let needsRebase = false;
+
+  function onVisibilityChange(hidden) {
+    if (hidden) {
+      if (frameHandle) {
+        cancelFrame(frameHandle);
+        frameHandle = null;
+        pausedByVisibility = true;
+        needsRebase = true;
+      }
+      return;
+    }
+    if (pausedByVisibility) {
+      pausedByVisibility = false;
+      needsRebase = true;
+      if (!frameHandle) {
+        frameHandle = scheduleFrame(tick);
+      }
+    }
+  }
 
   function stop() {
     if (frameHandle) {
       cancelFrame(frameHandle);
       frameHandle = null;
-      lastTs = null;
     }
+    pausedByVisibility = false;
+    needsRebase = false;
+    lastTs = null;
+    visibilitySubscribers.delete(onVisibilityChange);
   }
 
   function tick(ts) {
-    const dt = lastTs !== null ? Math.min(0.05, Math.max(0.001, (ts - lastTs) / 1000)) : 0.016;
-    lastTs = ts;
+    if (isDocumentHidden()) {
+      frameHandle = null;
+      pausedByVisibility = true;
+      needsRebase = true;
+      return;
+    }
+
+    const currentTs = typeof ts === 'number' && Number.isFinite(ts) ? ts : nowMs();
+    let dt;
+    if (needsRebase) {
+      needsRebase = false;
+      dt = lastDt;
+      lastTs = currentTs;
+    } else if (lastTs === null) {
+      dt = FRAME_1_DT;
+      lastTs = currentTs;
+    } else {
+      const rawDeltaSec = (currentTs - lastTs) / 1000;
+      dt = Math.min(MAX_DT, Math.max(MIN_DT, rawDeltaSec));
+      lastTs = currentTs;
+    }
+    lastDt = dt;
+
     [value, velocity] = stepAnalyticalSpring(value, velocity, target, z, k, dt);
 
     if (Math.abs(value - target) < eps && Math.abs(velocity) < eps) {
       value = target;
       velocity = 0;
       frameHandle = null;
+      pausedByVisibility = false;
+      needsRebase = false;
       lastTs = null;
+      visibilitySubscribers.delete(onVisibilityChange);
       onUpdate?.(value, 0);
       onComplete?.();
       return;
@@ -163,6 +313,7 @@ export function createSpringAnimator({
     get value() { return value; },
     get velocity() { return velocity; },
     get target() { return target; },
+    get paused() { return pausedByVisibility; },
     configure({ stiffness: nextK, damping: nextZ } = {}) {
       if (isPositiveFinite(nextK)) k = nextK;
       if (isPositiveFinite(nextZ)) z = nextZ;
@@ -181,8 +332,25 @@ export function createSpringAnimator({
         onComplete?.();
         return;
       }
+      ensureVisibilitySubscription();
+      visibilitySubscribers.add(onVisibilityChange);
+      if (isDocumentHidden()) {
+        if (frameHandle) {
+          cancelFrame(frameHandle);
+          frameHandle = null;
+        }
+        pausedByVisibility = true;
+        needsRebase = lastTs !== null;
+        return;
+      }
       if (!frameHandle) {
-        lastTs = null;
+        pausedByVisibility = false;
+        if (needsRebase) {
+          // Keep needsRebase if resuming; otherwise start fresh with Frame-1 1/60 baseline.
+        } else {
+          lastTs = null;
+          lastDt = FRAME_1_DT;
+        }
         frameHandle = scheduleFrame(tick);
       }
     },

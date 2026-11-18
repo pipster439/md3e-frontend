@@ -2,10 +2,11 @@
 
 > [!IMPORTANT]
 > **Layer 3 Opt-In Product Extension (`CUSTOM` Tier under `--mode=desktop-bento`)**:
-> This document defines an **opt-in product-style desktop telemetry extension** (`data-layout-profile="desktop-bento"`). It is **NOT part of Layer 1 Official M3E specifications**: in the compliance auditor, rules `MD3E101`–`MD3E104` emit `[CUSTOM]` findings **only** when `--mode=desktop-bento` is explicitly passed, and **are excluded from the Official M3E Compliance Score**. Keep this layer isolated from default M3E apps (`references/layout.md`, `--mode=strict`):
+> This document defines an **opt-in product-style desktop telemetry extension** (`data-layout-profile="desktop-bento"`). It is **NOT part of Layer 1 Official M3E specifications**: in the compliance auditor, rules `MD3E101`–`MD3E104` emit `[CUSTOM]` findings **only** when `--mode=desktop-bento` (or `--mode=personal-studio`) is explicitly passed, and **are excluded from the Official M3E Compliance Score**. Keep this layer isolated from default M3E apps (`references/layout.md`, `--mode=strict`):
 > `python scripts/audit_md3e.py <path> --mode=desktop-bento --fail-on warning`
+> *(Optional personal customization: see [`references/personal-studio.md`](personal-studio.md) for the strictly dormant **Layer 4** profile, which MUST NOT be loaded unless the user explicitly asks for Personal Studio / Layer 4.)*
 
-Desktop Bento dashboards optionally choose borderless tonal surface nesting, dual-tier control vs telemetry row ergonomics, and sharp high-stiffness desktop springs for command-center layouts.
+Desktop Bento dashboards optionally choose borderless tonal surface nesting, dual-tier control vs telemetry row ergonomics, and Android 16 M3E plush organic spatial springs (`~460–500ms` via `synthesizeSpringLinearCss`) for command-center layouts.
 
 ---
 
@@ -34,11 +35,11 @@ Combine compact operational scanning with unmistakably tactile primary controls:
   --md-bento-control-height: 48px;   /* Chunky 44px-64px primary controls */
   --md-bento-hero-cta-size: 60px;    /* Chunky Hero morphing shape button */
 
-  /* Desktop high-stiffness short springs (150ms-250ms) */
+  /* Android 16 M3E plush spatial springs (synthesized 36-point curves via synthesizeSpringLinearCss) */
   --md-bento-motion-fast-effects: 150ms cubic-bezier(0.34, 0.88, 0.34, 1);
   --md-bento-motion-default-effects: 200ms cubic-bezier(0.34, 0.80, 0.34, 1);
-  --md-bento-motion-fast-spatial: 180ms linear(0, 0.25 18%, 1.07 42%, 0.99 66%, 1);
-  --md-bento-motion-default-spatial: 240ms linear(0, 0.28 19%, 1.05 44%, 0.99 68%, 1);
+  --md-bento-motion-fast-spatial: var(--md-sys-motion-fast-spatial);       /* ~340ms crisp control settle (k=620, z=0.74) */
+  --md-bento-motion-default-spatial: var(--md-sys-motion-default-spatial); /* ~460-500ms plush spatial settle (k=380/340) */
 }
 ```
 
@@ -241,11 +242,13 @@ All visual layout opinions below (`MD3E101`–`MD3E104`) are **Layer 3 Opt-In Pr
 ## 4. Desktop Micro-Interactions & Web Engineering Protections
 
 1. **Mouse `:hover` + Keyboard `:focus-visible`**: Every interactive tile, table row hover state, switch, segmented item, and shape CTA implements subtle tonal hover overlays (`8%` via `color-mix(in oklab, ...)`) AND unmistakable `3px` `--md-sys-color-secondary` `:focus-visible` focus rings (`--md-sys-focus-ring-offset: 2px`; missing `:focus-visible` is `[ERROR]` `MD3E005`).
-2. **Tight High-Stiffness Desktop Springs (`150ms–250ms`)**: Product preference for crisp desktop clicks and toggles: configure JS morphers with `{ stiffness: 1500, damping: 0.88 }` (`~180ms` settling) and use `--md-bento-motion-*` tokens for CSS interactions.
+2. **Android 16 M3E Plush Organic Spatial Springs (`~460–500ms` via `synthesizeSpringLinearCss`)**: Pair JS morphers and CSS Bento layout transitions with 36-point curves synthesized by `synthesizeSpringLinearCss(stiffness, damping, 36)` from `assets/tokens/md3e-spring.js` instead of abrupt `240ms` 5-stop approximations: `k = 380, z = 0.78` (`~460ms` default spatial), `k = 340, z = 0.76` (`~500ms` plush modal Expand/Close), `k = 620, z = 0.74` (`~340ms` crisp fast spatial), and Fade Through (`130ms` emphasized-accelerate exit + `460ms` staggered arrival at `32ms` step).
 3. **Never Pair `9999px` (`corner-full`) With `border-radius` Spring Morphs (`MD3E019` `[WARNING]`)**: Any pill button transitioning `border-radius` on `:active` under an underdamped `linear()` spring (`1.07` overshoot, such as `--md-bento-motion-fast-spatial`) evaluates `9999px + 1.07 * (16px - 9999px) = -682.8px -> 0px`, flashing a razor-sharp rectangle mid-click! Bind resting radii to `calc(height / 2)` (`24px` on `48px` CTAs -> `12px`, `18px` on `36px` pills -> `8px`) so overshoot stays strictly positive across all frames.
 4. **Shape Drop Shadows (`MD3E023` `[WARNING]`)**: Avoid placing `box-shadow` directly on `.md3e-shape*`, `mask-image`, or morphing `<svg>` shapes (clipping or rectangular glow). Wrap the button/shape container in `filter: drop-shadow(...)`.
 5. **Ban `in oklch` on Neutral Color Mixing (`MD3E018` `[ERROR]`)**: Never use `color-mix(in oklch, ...)` on `surface*`, `on-surface*`, `outline*`, `shadow`, `scrim`, or `currentColor` — triggers Chromium's powerless-hue pink/red shift; always use **`in oklab`**.
-6. **Reference Implementation**: See targeted ranges of [`assets/starter/desktop-bento.html`](../assets/starter/desktop-bento.html) (never read in full into context; inspect specific component blocks only).
+6. **`dt`-Invariant Refresh-Rate Engine & `document.hidden`-Only Pause Policy**: Step springs, shape morphers, and wavy SVG/Canvas progress indicators using clamped `performance.now()` delta (`dt` with `1/60` frame-1 baseline) so `60Hz`, `120Hz`, `144Hz`, and `240Hz` displays run at identical speed. Pause continuous loops **only** when `document.hidden === true` (`visibilitychange` rebases `lastTs` on return) — never set `content-visibility: auto` or foreground blur throttling on actively animating `.md3e-wavy-progress` elements.
+7. **View Transitions Stacking Isolation & Wave-Ghosting Suppression**: Keep `view-transition-name` off `.bento-adaptive-toolbar` except while `.is-toolbar-morphing` is active (clearing in `t.finished.finally(...)`). During `html[data-vt-kind="modal"]` Expand/Close transitions, assign `view-transition-name: bento-vt-scrim` on `#bento-vt-backdrop` with `::view-transition-group(bento-vt-scrim) { z-index: 10; }` below `::view-transition-group(bento-vt-panel), ::view-transition-group(bento-vt-heading) { z-index: 20; }`, and set `::view-transition-old(root) { animation: none; display: none; }` + `::view-transition-new(root) { animation: none; }` so live wavy progress bars underneath never ghost.
+8. **Reference Implementation**: See targeted ranges of [`assets/starter/desktop-bento.html`](../assets/starter/desktop-bento.html) (never read in full into context; inspect specific component blocks only).
 
 ---
 

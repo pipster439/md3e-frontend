@@ -6,7 +6,7 @@
 [![Tailwind CSS: v3 & v4](https://img.shields.io/badge/Tailwind%20CSS-v3%20%26%20v4-38B2AC.svg)](https://tailwindcss.com)
 [![Auditor: 4-Tier Rules](https://img.shields.io/badge/Auditor-4--Tier%20Verified-success.svg)](#deterministic-compliance-auditor)
 
-**An M3 Expressive-inspired Web Design System with verified M3E specifications — organized cleanly into Official M3E foundations, Web Implementation adaptations, and Opt-In Product Extensions.**
+**An M3 Expressive-inspired Web Design System with verified M3E specifications — organized cleanly into Official M3E foundations (Layer 1), Web Implementation adaptations (Layer 2), Opt-In Product Extensions (Layer 3), and a strictly dormant Personal Studio tier (Layer 4, never loaded unless explicitly requested).**
 
 Compatible with **Google Antigravity**, **Cursor**, **Claude Code**, **Windsurf**, and any web development stack (React, Vue, Svelte, Tailwind CSS, or Vanilla HTML/CSS).
 
@@ -32,12 +32,12 @@ Instead of wrapping legacy custom elements or fighting Shadow DOM style encapsul
 
 ```
 md3e-frontend/
-├── SKILL.md                                 # Main AI agent instruction file (3-Layer Spec Architecture)
+├── SKILL.md                                 # Main AI agent instruction file (3-Layer Spec Architecture + Dormant Layer 4)
 ├── OFFICIAL_SPEC_AUDIT.md                   # Verification ledger & certified vs uncertified scope
 ├── assets/
 │   ├── starter/
 │   │   ├── index.html                       # Interactive Layer 1 & 2 showcase, color studio & morph lab
-│   │   └── desktop-bento.html               # Opt-in Layer 3 Desktop Bento Override studio
+│   │   └── desktop-bento.html               # Opt-in Layer 3 Desktop Bento (+ Layer 4 Personal Studio demo)
 │   ├── tailwind/
 │   │   ├── md3e-theme.css                   # Tailwind CSS v4 @theme configuration
 │   │   └── tailwind.config.js               # Tailwind CSS v3 theme extension
@@ -47,9 +47,11 @@ md3e-frontend/
 │       ├── md3e-shapes.css                  # 35 AndroidX MaterialShapes CSS mask definitions
 │       ├── md3e-motion.css                  # Sampled linear() physical spring motion tokens
 │       ├── md3e-blur.css                    # Translucent scrims & prefers-reduced-transparency fallbacks
-│       ├── md3e-spring.js                   # Real-time damped harmonic oscillator spring runtime
+│       ├── md3e-spring.js                   # Real-time damped harmonic oscillator spring runtime + synthesizeSpringLinearCss
 │       ├── md3e-morph.js                    # Cubic Bezier contour-aligned shape morph interpolator
-│       └── md3e-dynamic-color.js            # Browser HCT QuantizerCelebi + Score + SPEC_2025 engine
+│       ├── md3e-dynamic-color.js            # Browser HCT QuantizerCelebi + Score + SPEC_2025 engine
+│       ├── md3e-studio.css                  # Dormant Layer 4 (Opt-In Only): Optical glass, caustics & co-tuner styling
+│       └── md3e-studio.js                   # Dormant Layer 4 (Opt-In Only): Drag scrubbers & Human-AI Co-Tuning runtime
 ├── references/
 │   ├── tailwind.md                          # Tailwind CSS integration guide
 │   ├── color.md                             # Layer 1 & 2: 47 color roles, HCT variants & Web mixing rules
@@ -59,6 +61,7 @@ md3e-frontend/
 │   ├── layout.md                            # Layer 1 & 2: Breakpoints & adaptive canonical layouts
 │   ├── accessibility.md                     # Layer 1 & 2: WCAG 2.2 AA 24px floor vs 48px M3 target
 │   ├── desktop-bento.md                     # Layer 3 (Opt-In): Desktop Bento telemetry extension
+│   ├── personal-studio.md                   # Layer 4 (Strictly Dormant Opt-In): Personal Studio & Co-Tuning protocol
 │   ├── expressive-tactics.md                # Layer 3 (Opt-In): 7 editorial tactics for expressive UI
 │   ├── components.md                        # Shared rules & component index
 │   └── components/
@@ -187,7 +190,7 @@ Now use MD3E utility classes directly:
 
 ## 🔍 Deterministic Compliance Auditor (4-Tier Architecture)
 
-Run `audit_md3e.py` to scan HTML/CSS (and optionally `--markdown` doc examples) across four distinct authority tiers, cleanly separating **Official M3E / WCAG AA floors** from **Layer 3 Opt-In Product Extensions**:
+Run `audit_md3e.py` to scan HTML/CSS (and optionally `--markdown` doc examples) across four distinct authority tiers, cleanly separating **Official M3E / WCAG AA floors** from **Layer 3 Opt-In Product Extensions** and **Dormant Layer 4 (`Personal Studio`)**:
 
 ```bash
 # Default Layer 1 + Layer 2 compliance gate
@@ -199,9 +202,14 @@ python scripts/audit_md3e.py src --fail-on warning
 # Opt-in Layer 3 Desktop Bento product-style audit
 python scripts/audit_md3e.py src --mode=desktop-bento --fail-on warning
 
+# Dormant Layer 4 Personal Studio audit (ONLY when Personal Studio / Layer 4 is explicitly requested)
+python scripts/audit_md3e.py src --mode=personal-studio --fail-on warning
+
 # Machine-readable JSON output (isolates official_compliance vs custom_extensions)
 python scripts/audit_md3e.py src --json
 ```
+
+> **Dormant Layer 4 Policy:** `references/personal-studio.md`, `md3e-studio.css`, `md3e-studio.js`, and `--mode=personal-studio` are **strictly dormant by default** — agents must never load or apply them unless the user explicitly asks for `Personal Studio`, `Layer 4`, or `--mode=personal-studio`.
 
 Add `data-md3e-exempt="data-view"` on specialized workspaces (or rely on automatic exemption for `<canvas>`, chart `<svg>` with axes/ticks, 2D trajectory/replay viewports, and statistical `<table>` views) so Bento decorative rules never interfere with analytical UI.
 
@@ -219,12 +227,14 @@ Add `data-md3e-exempt="data-view"` on specialized workspaces (or rely on automat
 | `MD3E021` | `WARNING` | WCAG A11y | Decorative Material Symbols span missing `aria-hidden="true"` inside labeled control |
 | `MD3E022` | `ERROR` | L2 Blur | `backdrop-filter: blur(...)` missing `@media (prefers-reduced-transparency: reduce)` solid fallback |
 | `MD3E024` | `ERROR` | L1/WCAG | Contrast failure (`< 4.5:1` / `< 3.0:1` large) or semantic `on-*` role mismatch |
+| `MD3E028` | `ERROR` | L1/CSS | Unbalanced `{` / `}` CSS braces across `<style>` blocks or CSS files (catches unclosed `@keyframes` / rules) |
 | `MD3E004` | `WARNING` | L2 Motion | Uncalibrated ad-hoc curve (`md3e-spring.js`, sampled `linear()`, and Google `OFFICIAL_WEB_CURVES` + duration are all valid) |
 | `MD3E008` | `WARNING` | WCAG/M3 | Motion declarations missing `@media (prefers-reduced-motion: reduce)` path |
 | `MD3E011`, `013`, `016`, `019`, `023`, `026` | `WARNING` | L2 Web | `border-radius: 50%` on pills, `transition: all`, deprecated 40dp small FAB, `9999px` spring overshoot snap, `box-shadow` on masked shape, or unbound `md3e-*` modifier class |
 | `MD3E027` | `WARNING` | L2 Web / Input | OS-native `accent-color` range slider missing `appearance: none` (grey border/OS thumb bug) or `position: fixed` floating/FAB menu wrapper missing `pointer-events: none` (hit-trap) |
 | `MD3E001`–`003`, `007`, `010`, `012`, `015`, `025` | `INFO` | Project Prefs | Hardcoded hex/rgb/radii/type scale, shadow elevation, uppercase labels, bottom app bar, or multiple primary filled buttons in one view |
-| `MD3E101`–`104` | `CUSTOM` | L3 Opt-In | Desktop Bento (`--mode=desktop-bento` only, excluded from Official Score): borderless tonal panels, `4+` surface tiers, concentric radii, Hero motifs (auto-exempts analytical data views) |
+| `MD3E101`–`104` | `CUSTOM` | L3 Opt-In | Desktop Bento (`--mode=desktop-bento` / `--mode=personal-studio` only, excluded from Official Score): borderless tonal panels, `4+` surface tiers, concentric radii, Hero motifs (auto-exempts analytical data views) |
+| `MD3E201`–`202` | `CUSTOM` | L4 Dormant | Personal Studio (`--mode=personal-studio` only, strictly dormant unless requested, excluded from Official Score): optical glass/caustic + reduced-transparency hygiene and `<dialog>` modal `overscroll-behavior` / native ARIA hygiene |
 
 ---
 

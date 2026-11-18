@@ -130,15 +130,21 @@ When writing CSS `@keyframes` animations, pass the `-easing` token (`var(--md-sy
 
 For engines without `linear()`, `md3e-motion.css` falls back via `@supports not (transition-timing-function: linear(0, 1))` to M3E's official Web `cubic-bezier` curves (`350ms cubic-bezier(0.42, 1.67, 0.21, 0.90)` for expressive fast spatial, `500ms cubic-bezier(0.38, 1.21, 0.22, 1.00)` for default spatial, `650ms cubic-bezier(0.39, 1.29, 0.35, 0.98)` for slow spatial).
 
-For gesture-driven motion, use **`assets/tokens/md3e-spring.js`** (`createSpringAnimator`, `resolveSpringPreset`) or WAAPI velocity handoff so a dragged element keeps its live velocity when released or interrupted mid-flight. A pure CSS `linear()` transition restarts from zero velocity.
+For gesture-driven motion, use **`assets/tokens/md3e-spring.js`** (`createSpringAnimator`, `resolveSpringPreset`, `synthesizeSpringLinearCss`) or WAAPI velocity handoff so a dragged element keeps its live velocity when released or interrupted mid-flight. A pure CSS `linear()` transition restarts from zero velocity.
+
+- **Closed-Form CSS + JS Parity (`synthesizeSpringLinearCss`)**: Call `synthesizeSpringLinearCss(stiffness, damping, samples = 36)` to synthesize `{ durationMs, linearEasing, cssShorthand, peakOvershoot }` directly from the analytical harmonic oscillator. This replaces hand-approximated 5-stop `linear()` curves and keeps CSS transitions synchronized with Android 16 M3E **plush organic spatial timings (`~460–500ms`)**:
+  - Default workspace / card spatial settle: `k = 380, z = 0.78–0.80` (`~460ms`)
+  - Plush modal / sheet container expansion: `k = 340, z = 0.76` (`500ms`, `2.54%` overshoot)
+  - Crisp interactive button / segmented micro-spatial: `k = 620, z = 0.74` (`~340ms`)
+- **`dt`-Invariant Frame Loop & `document.hidden`-Only Pause Policy**: `md3e-spring.js`, `md3e-morph.js`, and continuous wavy SVG/Canvas progress loops advance via clamped `performance.now()` delta (`dt` clamped to `0.0005s..0.05s`, with a `1/60` frame-1 baseline) so `60Hz`, `120Hz`, `144Hz`, and `240Hz` panels animate at identical physical speed. Subscribe to `document` `visibilitychange` so active springs and wave animations pause **only** when `document.hidden === true` (rebasing `lastTs` seamlessly on foreground return) — **never** over-throttle or stall background animations while frosted blur, dialogs, or drawers are open in the foreground, and never place `content-visibility: auto` on continuously animating wavy progress bars.
 
 ## Web alignment matrix (`linear()`, Official Web `cubic-bezier`, JS Physics)
 
 | Driver | CSS / JS API | Duration & Overshoot Behaviour | When to use |
 |---|---|---|---|
-| **CSS `linear()` spring** *(Default)* | `var(--md-sys-motion-<speed>-<kind>)` | Exact damped harmonic oscillator unit-step curve (`380/460/620ms` analytical settle `±0.1% + 20ms tail`) | Hover/press/toggle/layout transitions |
+| **CSS `linear()` spring** *(Default)* | `var(--md-sys-motion-<speed>-<kind>)` | Exact damped harmonic oscillator unit-step curve (`380/460/620ms` analytical settle `±0.1% + 20ms tail`, or `synthesizeSpringLinearCss(..., 36)` for `~460–500ms` plush custom presets) | Hover/press/toggle/layout transitions |
 | **Official Web `cubic-bezier`** | `var(--md-sys-motion-<speed>-<kind>-bezier)` or `<html data-motion-driver="bezier">` | `m3.material.io` published `350 / 500 / 650ms` single-overshoot curves (also automatic `@supports not` fallback) | Parity with `m3.material.io` Web bezier table or legacy browsers |
-| **JS Spring Integrator** | `assets/tokens/md3e-spring.js` (`createSpringAnimator`) | Exact closed-form `(stiffness, damping)` physics per `requestAnimationFrame`; zero velocity loss on retarget/drag release | Drag-and-drop gestures, interruptible cards/drawers, interactive physics |
+| **JS Spring Integrator** | `assets/tokens/md3e-spring.js` (`createSpringAnimator`) | Exact closed-form `(stiffness, damping)` physics per `requestAnimationFrame` with `dt` invariance & `document.hidden`-only pause | Drag-and-drop gestures, interruptible cards/drawers, interactive physics |
 | **Morph Loading Indicator** | `--md-comp-loading-indicator-morph-easing` | Official `spring(damping = 0.6, stiffness = 200)` sampled across `650ms` interval × 7 shapes (`4550ms` cycle) + `4666ms` linear rotation | Expressive `LoadingIndicator` (`md3e-shapes.css`) |
 
 ## Official Web-Compatible Curves (First-Class Web Easing + Duration)
@@ -215,13 +221,55 @@ Decouple container geometry from label legibility so labels never wrap or squish
 
 ### 2. View-Switch Fade Through & Staggered Bento Entrance (`25ms–35ms` Step)
 When switching navigation views or filtering Bento workspaces:
-1. **Outgoing Fade-Through Exit**: Fade the departing view out quickly (`opacity -> 0`, micro-scale `0.985`, `90ms` with `--md-sys-motion-easing-emphasized-accelerate`).
-2. **Staggered Spring Arrival**: Swap visible panels/cards and stagger visible items in reading order at `--stagger-step: 30ms` (`25ms–35ms` range via `animation-delay: calc(var(--stagger-index, 0) * 30ms)`). Always pass `--md-sys-motion-default-spatial-easing` (never composite tokens with duration inside `animation`) and disable under `prefers-reduced-motion: reduce`.
+1. **Outgoing Fade-Through Exit**: Fade the departing view out quickly (`opacity -> 0`, micro-scale `0.985`, `130ms` with `--md-sys-motion-easing-emphasized-accelerate`).
+2. **Staggered Spring Arrival**: Swap visible panels/cards and stagger visible items in reading order at `--stagger-step: 32ms` (`25ms–35ms` range via `animation-delay: calc(var(--stagger-index, 0) * var(--stagger-step, 32ms))` paired with `~460ms` plush default spatial arrival). Always pass `--md-sys-motion-default-spatial-easing` (never composite tokens with duration inside `animation`) and disable under `prefers-reduced-motion: reduce`.
 
 ### 3. View Transitions Shared Container Transform
 Promote card-to-diagnostics expansions (such as `#event-stream-card` -> `#bento-vt-modal`) into continuous shared-element morphs using `document.startViewTransition(...)`:
-- Assign `view-transition-name: bento-vt-panel` strictly to **1 active element before** and **1 active element after** the DOM mutation (marking the obscured source card invisible during modal display and setting `inert` on background landmarks).
-- Bind `::view-transition-group(bento-vt-panel)` to `overflow: clip`, matching `border-radius: var(--md-sys-shape-corner-extra-large)` (`28px`), and MD3E Spatial Spring `-duration` / `-easing` tokens; wrap `@media (prefers-reduced-motion: reduce)` with `animation: none !important;`.
+- **Strict Snapshot Isolation & Scoped Toolbar Naming**: Assign `view-transition-name: bento-vt-panel` strictly to **1 active element before** and **1 active element after** the DOM mutation (marking the obscured source card invisible during modal display and setting `inert` on background landmarks). **Never** leave `view-transition-name` permanently set on floating/docked adaptive toolbars (`.md3e-toolbar-adaptive` / `.bento-adaptive-toolbar`), or the browser hoists the toolbar above modal scrims during unrelated card expansions; apply it exclusively via a transient `.is-toolbar-morphing` class during the dock/float transition and remove it in `t.finished.finally(...)`.
+- **VT Scrim `z-index` Layering (`bento-vt-scrim`)**: Assign `view-transition-name: bento-vt-scrim` to `#bento-vt-backdrop` only while `html[data-vt-kind="modal"]` is active, and layer `::view-transition-group(bento-vt-scrim) { z-index: 10; }` beneath `::view-transition-group(bento-vt-panel), ::view-transition-group(bento-vt-heading) { z-index: 20; }` so the scrim dims underlying toolbars and Bento cards cleanly from Frame 1.
+- **Live-DOM `::view-transition-old(root)` Wave-Ghosting Suppression**: During modal container expansion (`html[data-vt-kind="modal"]`), suppress the frozen `root` bitmap cross-fade (`::view-transition-old(root) { animation: none; display: none; }` and `::view-transition-new(root) { animation: none; }`) so live animated elements underneath (such as SVG/Canvas wavy progress bars) render directly from the live DOM with zero frozen wave ghosting.
+- Bind `::view-transition-group(bento-vt-panel)` to `overflow: clip`, matching `border-radius: var(--md-sys-shape-corner-extra-large)` (`28px`), and synthesized `~500ms` MD3E plush spatial spring tokens (`k = 340, z = 0.76`); wrap `@media (prefers-reduced-motion: reduce)` with `animation: none !important;`.
+
+```css
+.bento-adaptive-toolbar.is-toolbar-morphing {
+  view-transition-name: bento-adaptive-toolbar;
+}
+
+html[data-vt-kind="modal"] .bento-vt-backdrop {
+  view-transition-name: bento-vt-scrim;
+}
+
+html[data-vt-kind="modal"]::view-transition-old(root) {
+  animation: none;
+  display: none;
+}
+
+html[data-vt-kind="modal"]::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-group(bento-vt-scrim) {
+  z-index: 10;
+  animation-duration: var(--md-sys-motion-default-effects-duration);
+  animation-timing-function: var(--md-sys-motion-default-effects-easing);
+}
+
+::view-transition-group(bento-vt-panel),
+::view-transition-group(bento-vt-heading) {
+  z-index: 20;
+  animation-duration: var(--md-sys-motion-default-spatial-duration);
+  animation-timing-function: var(--md-sys-motion-default-spatial-easing);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+```
 
 ### 4. Physical Sliding Segmented Pill Indicator (`md3e-spring.js`)
 Replace abrupt background-color swaps across connected single-select segments with a shared sliding capsule (`<span class="seg-indicator" aria-hidden="true">`) whose `translateX` and `width` are integrated per-frame by two `createSpringAnimator` instances (`{ stiffness: 1400, damping: 0.86 }`):

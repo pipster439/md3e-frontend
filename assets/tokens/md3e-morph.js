@@ -1009,6 +1009,8 @@ export function createShapeMorpher(
     onUpdate: render,
   });
 
+  let activeSequenceCleanup = null;
+
   // Render initial rest path immediately
   render(0);
 
@@ -1123,23 +1125,32 @@ export function createShapeMorpher(
       sequence = LOADING_SEQUENCE,
       { intervalMs = 650, stiffness = 200, damping = 0.6 } = {},
     ) {
+      activeSequenceCleanup?.();
       let stepIdx = 0;
       let timerId = null;
       animator.configure({ stiffness, damping });
       this.morphTo(sequence[0], { immediate: true });
       const advance = () => {
+        // Pause sequence advancement ONLY when tab is hidden; never stall in foreground.
+        if (typeof document !== 'undefined' && document.hidden === true) return;
         stepIdx = (stepIdx + 1) % sequence.length;
         this.morphTo(sequence[stepIdx]);
       };
       timerId = setInterval(advance, intervalMs);
-      return () => {
+      const stopSequence = () => {
         if (timerId !== null) {
           clearInterval(timerId);
           timerId = null;
         }
+        if (activeSequenceCleanup === stopSequence) {
+          activeSequenceCleanup = null;
+        }
       };
+      activeSequenceCleanup = stopSequence;
+      return stopSequence;
     },
     destroy() {
+      activeSequenceCleanup?.();
       animator.stop();
     },
   };

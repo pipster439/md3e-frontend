@@ -342,6 +342,10 @@ The official snackbar diagram ("Diagram of snackbar indicating the four parts of
 
 **Notes.** No explicit do/don't, caution, or "not recommended" statement appears in the rendered text of this page. Colour values are implemented through design tokens.
 
+**Web Adaptation Note (Layer 2):**
+- **Expressive Transient Status Toast (`corner-full`)**: For brief single-line status confirmations floating above a `corner-full` pill toolbar, use `border-radius: var(--md-sys-shape-corner-full)` with `inverse-surface` / `inverse-on-surface` so the transient toast harmonizes cleanly with the floating pill chrome below it.
+- **Actionable / Multi-line Snackbar (`corner-large` `16dp` or baseline `4dp`)**: When a snackbar includes an action button (`inverse-primary`), a close affordance, or multi-line supporting text (e.g. `.md3e-snackbar--action`), step back to `var(--md-sys-shape-corner-large)` (`16dp`) or baseline M3 `4dp` (`var(--md-sys-shape-corner-extra-small)`) so multiline padding and inline action controls stay crisp without pill clipping.
+
 ---
 
 ## Tooltips

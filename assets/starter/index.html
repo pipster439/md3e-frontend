@@ -2355,8 +2355,6 @@
     block-size: 16px;
     display: flex;
     align-items: center;
-    content-visibility: auto;
-    contain-intrinsic-size: auto none auto 16px;
   }
   .md3e-wavy-progress svg,
   .md3e-wavy-progress canvas {
@@ -2392,7 +2390,6 @@
     background: var(--md-sys-color-surface-container-low);
   }
   .md3e-toolbar-adaptive {
-    view-transition-name: md3e-starter-adaptive-toolbar;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2403,6 +2400,9 @@
     box-shadow: var(--md-sys-elevation-level2);
     transition: border-radius var(--md-sys-motion-default-spatial),
                 background-color var(--md-sys-motion-fast-effects);
+  }
+  .md3e-toolbar-adaptive.is-toolbar-morphing {
+    view-transition-name: md3e-starter-adaptive-toolbar;
   }
   .md3e-toolbar-adaptive[data-toolbar-mode="floating"] {
     inline-size: fit-content;
@@ -2643,7 +2643,7 @@
     margin-inline: var(--md-sys-spacing-1);
   }
 
-  /* --- Snackbar Toast --- */
+  /* --- Expressive Capsule Toast & Actionable Snackbar --- */
   .md3e-snackbar {
     position: fixed;
     inset-block-end: calc(156px + env(safe-area-inset-bottom, 0px));
@@ -2656,8 +2656,8 @@
     gap: var(--md-sys-spacing-3);
     min-height: 48px;
     max-width: min(480px, calc(100vw - var(--md-sys-spacing-8)));
-    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-4);
-    border-radius: var(--md-sys-shape-corner-extra-small);
+    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-5);
+    border-radius: var(--md-sys-shape-corner-full);
     background: var(--md-sys-color-inverse-surface);
     color: var(--md-sys-color-inverse-on-surface);
     font-size: var(--md-sys-typescale-body-medium-size);
@@ -2666,9 +2666,13 @@
     transition: opacity var(--md-sys-motion-fast-effects),
                 transform var(--md-sys-motion-fast-spatial);
   }
+  .md3e-snackbar--action {
+    border-radius: var(--md-sys-shape-corner-large);
+    padding-inline: var(--md-sys-spacing-4);
+  }
   @media (min-width: 600px) {
     .md3e-snackbar {
-      inset-block-end: calc(88px + env(safe-area-inset-bottom, 0px));
+      inset-block-end: calc(92px + env(safe-area-inset-bottom, 0px));
     }
   }
   .md3e-snackbar.is-visible {
@@ -4283,9 +4287,10 @@
   const downloadCssBtn = document.getElementById('btn-download-theme-css');
 
   let snackbarTimer = null;
-  function showToast(msg) {
+  function showToast(msg, { actionable = false } = {}) {
     statusEl.textContent = msg;
     snackbarEl.textContent = msg;
+    snackbarEl.classList.toggle('md3e-snackbar--action', Boolean(actionable || String(msg).includes('\n')));
     snackbarEl.classList.add('is-visible');
     clearTimeout(snackbarTimer);
     snackbarTimer = setTimeout(() => {
@@ -5700,7 +5705,7 @@
     let wavePhase = 0;
     let waveAmpScale = 1;
     let wavyRaf = null;
-    let wavySkipped = false;
+    let lastWavyTs = null;
     const rmQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     const targetFactor = (pct) => {
@@ -5738,9 +5743,10 @@
       return frac >= 0.999 ? `${d}Z` : d;
     };
 
-    const drawWavy = () => {
+    const drawWavy = (dt = 1 / 60) => {
       const tgt = targetFactor(wavyPct);
-      waveAmpScale += (tgt - waveAmpScale) * (rmQuery.matches ? 1 : 0.25);
+      const blend = rmQuery.matches ? 1 : Math.min(1, 1 - Math.exp(-dt * 18));
+      waveAmpScale += (tgt - waveAmpScale) * blend;
       if (Math.abs(tgt - waveAmpScale) < 0.01) waveAmpScale = tgt;
       const amp = 3 * waveAmpScale;
 
@@ -5800,14 +5806,25 @@
       canvasAmpEl.textContent = `amp: ${amp.toFixed(1)}px`;
     };
 
-    const tickWavy = () => {
-      drawWavy();
+    const tickWavy = (ts) => {
+      if (document.hidden) {
+        wavyRaf = null;
+        lastWavyTs = null;
+        return;
+      }
+      const hasTs = typeof ts === 'number';
+      const dt = !hasTs || lastWavyTs === null
+        ? (1 / 60)
+        : Math.min(0.05, Math.max(0, (ts - lastWavyTs) / 1000));
+      if (hasTs) lastWavyTs = ts;
+      drawWavy(dt);
       const settledFlat = waveAmpScale <= 0.005 && targetFactor(wavyPct) === 0;
-      if (!wavySkipped && !rmQuery.matches && !settledFlat) {
-        wavePhase = (wavePhase + 0.14) % (Math.PI * 2);
+      if (!rmQuery.matches && !settledFlat) {
+        wavePhase = (wavePhase + dt * 8.4) % (Math.PI * 2);
         wavyRaf = requestAnimationFrame(tickWavy);
       } else {
         wavyRaf = null;
+        lastWavyTs = null;
       }
     };
 
@@ -5822,8 +5839,8 @@
       wavyStatusEl.textContent = wavyPct >= 100
         ? '100% (auto-straightened: amp -> 0px)'
         : `${wavyPct}% (wavy amplitude active)`;
-      if (!wavyRaf) tickWavy();
-      else drawWavy();
+      if (!wavyRaf && !document.hidden) tickWavy();
+      else drawWavy(1 / 60);
     };
 
     if (wavySlider) {
@@ -5833,27 +5850,34 @@
     }
     document.getElementById('btn-wavy-100')?.addEventListener('click', () => setWavyPct(100));
     document.getElementById('btn-wavy-68')?.addEventListener('click', () => setWavyPct(68));
-    [svgWavyHost, canvasWavyHost].forEach((host) => {
-      host.addEventListener('contentvisibilityautostatechange', (e) => {
-        wavySkipped = e.skipped;
-        if (!wavySkipped && !wavyRaf) tickWavy();
-      });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (wavyRaf !== null) {
+          cancelAnimationFrame(wavyRaf);
+          wavyRaf = null;
+        }
+        lastWavyTs = null;
+      } else if (!wavyRaf) {
+        tickWavy();
+      }
     });
     if ('MutationObserver' in window) {
       new MutationObserver(() => {
-        if (!wavyRaf) drawWavy();
+        if (!wavyRaf) drawWavy(1 / 60);
       }).observe(root, { attributes: true, attributeFilter: ['data-theme', 'data-seed', 'data-color-variant', 'data-contrast', 'style'] });
     }
     window.addEventListener('resize', () => {
-      if (!wavyRaf) drawWavy();
+      if (!wavyRaf) drawWavy(1 / 60);
     });
-    tickWavy();
+    if (!document.hidden) tickWavy();
+    else drawWavy(1 / 60);
   }
 
   // Bidirectional Floating <-> Docked Toolbar + Squeeze Group + Variable Icon Buttons
   const adaptiveToolbarDemo = document.getElementById('adaptive-toolbar-demo');
   const adaptiveDockToggle = document.getElementById('btn-toggle-toolbar-dock');
   const adaptiveDockIcon = document.getElementById('toolbar-dock-icon');
+  let toolbarVtSeq = 0;
   adaptiveDockToggle?.addEventListener('click', () => {
     const next = adaptiveToolbarDemo.dataset.toolbarMode === 'docked' ? 'floating' : 'docked';
     const apply = () => {
@@ -5864,7 +5888,13 @@
       showToast(`Adaptive toolbar -> ${next}`);
     };
     if (typeof document.startViewTransition === 'function' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      document.startViewTransition(apply).ready.catch(() => {});
+      const seq = ++toolbarVtSeq;
+      adaptiveToolbarDemo.classList.add('is-toolbar-morphing');
+      const t = document.startViewTransition(apply);
+      t.ready.catch(() => {});
+      t.finished.finally(() => {
+        if (seq === toolbarVtSeq) adaptiveToolbarDemo.classList.remove('is-toolbar-morphing');
+      });
     } else {
       apply();
     }

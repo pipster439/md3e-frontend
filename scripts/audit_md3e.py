@@ -13,6 +13,7 @@ Usage
 -----
     python audit_md3e.py <path>...            # files or directories
     python audit_md3e.py src --mode=desktop-bento
+    python audit_md3e.py src --mode=personal-studio
     python audit_md3e.py src --json           # machine-readable (includes official_compliance.score)
     python audit_md3e.py src --fail-on warning
     python audit_md3e.py docs --markdown      # audit HTML/CSS fences in .md
@@ -23,7 +24,7 @@ Authority Levels
     ERROR    Violates Official Core M3E spec or WCAG 2.2 AA floor (blocks CI by default)
     WARNING  Deviates from Official M3E recommended guidance
     INFO     Project-level engineering preference / default convention
-    CUSTOM   Opt-in product extension (--mode=desktop-bento only; excluded from Official Score)
+    CUSTOM   Opt-in product extension (--mode=desktop-bento / --mode=personal-studio; excluded from Official Score)
 
 Data & Analytical View Exemptions
 ---------------------------------
@@ -60,10 +61,13 @@ Finding codes
     MD3E025  multiple enabled filled primary buttons in view (info)
     MD3E026  unbound md3e-* modifier or legacy MWC bridge class (warning)
     MD3E027  slider accent-color without appearance:none or fixed menu hit-trap (warning)
+    MD3E028  unbalanced CSS braces { / }                         (error)
     MD3E101  [desktop-bento] 1px border or rectangular box-shadow (custom)
     MD3E102  [desktop-bento] <4 surface-container nesting tiers   (custom)
     MD3E103  [desktop-bento] missing concentric 28px/16px radii   (custom)
     MD3E104  [desktop-bento] missing Hero wave/sparkline/morph anchors (custom)
+    MD3E201  [personal-studio] optical glass / caustic / reduced-transparency hygiene (custom)
+    MD3E202  [personal-studio] <dialog> modal overscroll-behavior / role / focusable controls (custom)
 """
 
 from __future__ import annotations
@@ -77,7 +81,7 @@ from dataclasses import dataclass, field
 
 SEVERITIES = ("error", "warning", "info", "custom")
 SEVERITY_RANK = {s: i for i, s in enumerate(SEVERITIES)}
-AUDIT_MODES = ("strict", "desktop-bento")
+AUDIT_MODES = ("strict", "desktop-bento", "personal-studio")
 
 
 def normalize_severity(val: str) -> str:
@@ -972,7 +976,7 @@ def check_shadow(cx, prop, value, lineno, line) -> None:
 
 
 def check_bento_decl(cx, prop, value, lineno, line, *, in_forced_colors: bool = False) -> None:
-    if getattr(cx, "mode", "strict") != "desktop-bento" or cx.token_file or in_forced_colors:
+    if getattr(cx, "mode", "strict") not in ("desktop-bento", "personal-studio") or cx.token_file or in_forced_colors:
         return
     clean_v = strip_important(value).lower()
     if prop in BORDER_PROPS:
@@ -1393,7 +1397,169 @@ class Checker:
                     self.path, ln, snippet,
                 )
 
-    def audit_css(self, css_text: str, base_line: int = 1, *, check_file_rules: bool = True, linked_motion_css: bool = False, has_reduced_transparency_doc: bool = False) -> None:
+    def _check_css_brace_balance(self, css_text: str, base_line: int = 1) -> None:
+        cleaned = strip_css_comments(css_text)
+        css_lines = css_text.splitlines()
+        stack: list[tuple[int, str]] = []
+        header_buf: list[str] = []
+        in_string: str | None = None
+        escape = False
+        lineno = base_line
+
+        for ch in cleaned:
+            if escape:
+                escape = False
+                if ch == "\n":
+                    lineno += 1
+                continue
+            if ch == "\\" and in_string:
+                escape = True
+                continue
+            if in_string:
+                if ch == in_string:
+                    in_string = None
+                if ch == "\n":
+                    lineno += 1
+                continue
+            if ch in ('"', "'"):
+                in_string = ch
+                continue
+            if ch == "{":
+                header = re.sub(r"\s+", " ", "".join(header_buf)).strip()[:80] or "{"
+                stack.append((lineno, header))
+                header_buf.clear()
+            elif ch == "}":
+                header_buf.clear()
+                if stack:
+                    stack.pop()
+                else:
+                    idx = lineno - base_line
+                    snip = css_lines[idx] if 0 <= idx < len(css_lines) else "}"
+                    self.add(
+                        "MD3E028",
+                        "error",
+                        "Unexpected closing CSS brace `}` (unbalanced block or duplicate closing brace).",
+                        "Remove the stray `}` or add the matching opening `{` (check `@keyframes` and `@media` blocks).",
+                        self.path,
+                        lineno,
+                        snip,
+                    )
+            elif ch == ";":
+                header_buf.clear()
+            else:
+                if ch == "\n":
+                    lineno += 1
+                    header_buf.append(" ")
+                elif len(header_buf) < 160:
+                    header_buf.append(ch)
+
+        for open_ln, header in stack:
+            idx = open_ln - base_line
+            snip = css_lines[idx] if 0 <= idx < len(css_lines) else header
+            self.add(
+                "MD3E028",
+                "error",
+                f"Unclosed CSS block `{header}` (missing closing `}}`).",
+                "Add the matching closing `}` to balance every `@keyframes`, `@media`, and selector block.",
+                self.path,
+                open_ln,
+                snip,
+            )
+
+    def _audit_personal_studio_css(
+        self,
+        cleaned_css: str,
+        rules: list[RuleBlock],
+        *,
+        has_reduced_transparency: bool = False,
+        linked_studio_css: bool = False,
+    ) -> None:
+        if self.mode != "personal-studio" or self.is_snippet or linked_studio_css:
+            return
+
+        has_rt_support = has_reduced_transparency or bool(
+            re.search(r"data-reduced-transparency", cleaned_css, re.I)
+        )
+
+        caustic_rules = [
+            r for r in rules
+            if re.search(r"\.studio-caustic-field\b", r.selector, re.I)
+        ]
+        if caustic_rules:
+            has_pe_none = any(
+                prop == "pointer-events" and strip_important(val).lower() == "none"
+                for r in caustic_rules
+                for prop, val, _, _ in r.declarations
+            )
+            if not has_pe_none:
+                self.add(
+                    "MD3E201",
+                    "custom",
+                    "Personal Studio `.studio-caustic-field` must declare `pointer-events: none`.",
+                    "Add `pointer-events: none;` on `.studio-caustic-field` so ambient optical caustics never intercept pointer input.",
+                    self.path,
+                    caustic_rules[0].start_line,
+                    caustic_rules[0].selector,
+                )
+            if not has_rt_support:
+                self.add(
+                    "MD3E201",
+                    "custom",
+                    "Personal Studio `.studio-caustic-field` lacks a reduced-transparency suppression path.",
+                    "Hide `.studio-caustic-field` under `@media (prefers-reduced-transparency: reduce)` and `[data-reduced-transparency=\"true\"]`.",
+                    self.path,
+                    caustic_rules[0].start_line,
+                    caustic_rules[0].selector,
+                )
+
+        if re.search(r"--md-studio-(?:blur-px|glass-alpha|glass-saturate)\s*:", cleaned_css) and not has_rt_support:
+            self.add(
+                "MD3E201",
+                "custom",
+                "Personal Studio optical glass variables declared without a reduced-transparency fallback.",
+                "Pair `--md-studio-*` glass properties with `@media (prefers-reduced-transparency: reduce)` / `[data-reduced-transparency=\"true\"]` solid surface fallbacks.",
+                self.path,
+                1,
+                "",
+            )
+
+        dialog_rules = [
+            r for r in rules
+            if re.search(
+                r"(?:^|[\s,>+~])dialog\b[^,{]*(?::modal|::backdrop)|\.studio-cmd-dialog\b",
+                r.selector,
+                re.I,
+            )
+        ]
+        if dialog_rules:
+            has_overscroll_contain = any(
+                prop in ("overscroll-behavior", "overscroll-behavior-y", "overscroll-behavior-block")
+                and strip_important(val).lower() in ("contain", "none")
+                for r in dialog_rules
+                for prop, val, _, _ in r.declarations
+            )
+            if not has_overscroll_contain:
+                self.add(
+                    "MD3E202",
+                    "custom",
+                    "Personal Studio `<dialog>` modal/backdrop styling lacks `overscroll-behavior: contain`.",
+                    "Set `overscroll-behavior: contain;` on `dialog:modal` and `dialog::backdrop` so scrolling never leaks behind the modal.",
+                    self.path,
+                    dialog_rules[0].start_line,
+                    dialog_rules[0].selector,
+                )
+
+    def audit_css(
+        self,
+        css_text: str,
+        base_line: int = 1,
+        *,
+        check_file_rules: bool = True,
+        linked_motion_css: bool = False,
+        has_reduced_transparency_doc: bool = False,
+        linked_studio_css: bool = False,
+    ) -> None:
+        self._check_css_brace_balance(css_text, base_line=base_line)
         cleaned_css = strip_css_comments(css_text)
         if self.ext in CSS_EXTENSIONS and not self.token_file:
             css_lines = css_text.splitlines()
@@ -1461,6 +1627,13 @@ class Checker:
                 self.path, blur_hit[0], blur_hit[1],
             )
 
+        self._audit_personal_studio_css(
+            cleaned_css,
+            rules,
+            has_reduced_transparency=has_reduced_transparency,
+            linked_studio_css=linked_studio_css,
+        )
+
         if not check_file_rules:
             return
 
@@ -1496,7 +1669,7 @@ class Checker:
             )
 
     def _audit_desktop_bento_document(self, text: str, combined_css: str, markup_only: str) -> None:
-        if self.mode != "desktop-bento" or self.is_snippet or self.token_file:
+        if self.mode not in ("desktop-bento", "personal-studio") or self.is_snippet or self.token_file:
             return
         is_full_doc = bool(re.search(r"<!doctype\s+html|<html\b", text, re.I))
         if not is_full_doc:
@@ -1553,8 +1726,155 @@ class Checker:
                 self.path, 1, "",
             )
 
+    def _audit_personal_studio_document(
+        self,
+        text: str,
+        combined_css: str,
+        markup_clean: str,
+        lines: list[str],
+        exempt_lines: set[int],
+        *,
+        linked_studio_css: bool = False,
+        linked_blur_css: bool = False,
+    ) -> None:
+        if self.mode != "personal-studio":
+            return
+
+        # 1. Modal <dialog> semantic & focusable-controls checks (apply to snippets and full docs)
+        for m in re.finditer(rf"<dialog\b({TAG_ATTRS_PAT})>", markup_clean, re.I):
+            attrs = m.group(1)
+            ln = markup_clean[:m.start()].count("\n") + 1
+            if ln in exempt_lines:
+                continue
+            line_text = lines[ln - 1] if ln - 1 < len(lines) else ""
+            if re.search(r"""\brole\s*=\s*(?:"dialog"|'dialog')""", attrs, re.I):
+                self.add(
+                    "MD3E202",
+                    "custom",
+                    "Native `<dialog>` has implicit dialog semantics; remove redundant `role=\"dialog\"`.",
+                    "Remove `role=\"dialog\"` from `<dialog>` and use native `.showModal()` / `closedby=\"any\"` with `aria-labelledby` or `aria-label`.",
+                    self.path,
+                    ln,
+                    line_text,
+                )
+
+        dialog_blocks = list(re.finditer(rf"<dialog\b({TAG_ATTRS_PAT})>([\s\S]*?)</dialog>", markup_clean, re.I))
+        for dm in dialog_blocks:
+            ln = markup_clean[:dm.start()].count("\n") + 1
+            if ln in exempt_lines:
+                continue
+            inner = dm.group(2)
+            if self.is_snippet and (
+                not inner.strip() or re.fullmatch(r"(?:<!--[\s\S]*?-->|\s|\.\.\.|…)+", inner)
+            ):
+                continue
+            has_focusable = bool(
+                re.search(
+                    r"""<(?:button|select|textarea|summary)\b(?![^>]*\bdisabled\b)"""
+                    r"""|<input\b(?![^>]*\bdisabled\b)(?![^>]*\btype\s*=\s*["']hidden["'])"""
+                    r"""|<a\b[^>]*\bhref\s*="""
+                    r"""|\btabindex\s*=\s*(?:"(?:0|[1-9]\d*)"|'(?:0|[1-9]\d*)'|(?:0|[1-9]\d*)\b)""",
+                    inner,
+                    re.I,
+                )
+            )
+            if not has_focusable:
+                line_text = lines[ln - 1] if ln - 1 < len(lines) else ""
+                self.add(
+                    "MD3E202",
+                    "custom",
+                    "Modal `<dialog>` contains no keyboard-focusable control.",
+                    "Include at least one enabled `<input>`, `<button>`, `<a href>`, or `tabindex=\"0\"` control inside `<dialog>`.",
+                    self.path,
+                    ln,
+                    line_text,
+                )
+
+        if self.is_snippet or self.token_file:
+            return
+        is_full_doc = bool(re.search(r"<!doctype\s+html|<html\b", text, re.I))
+        if not is_full_doc:
+            return
+
+        has_doc_exempt = bool(re.search(r"<(?:html|body|main)\b[^>]*\bdata-md3e-exempt\b", markup_clean, re.I))
+        has_hero_card = bool(re.search(r"bento-card--hero|data-bento-hero\b", text, re.I))
+        has_analytical_view = bool(
+            re.search(r"<(?:canvas|table)\b|\brole\s*=\s*[\"'](?:grid|treegrid)[\"']|\bdata-md3e-exempt\b", markup_clean, re.I)
+            or re.search(r"<svg\b[^>]*(?:chart|plot|graph|axis|trajectory|replay|telemetry)", markup_clean, re.I)
+        )
+        if has_doc_exempt or (has_analytical_view and not has_hero_card):
+            return
+
+        # 2. Full-doc Layer 4 optical glass + caustic + reduced-transparency hygiene (MD3E201)
+        has_studio_profile = bool(re.search(r"""data-studio-profile\s*=\s*(?:"personal-studio"|'personal-studio')""", text, re.I))
+        has_studio_tokens = linked_studio_css or bool(re.search(r"--md-studio-(?:blur-px|glass-alpha)\s*:", combined_css))
+        if not (has_studio_profile and has_studio_tokens):
+            self.add(
+                "MD3E201",
+                "custom",
+                "Personal Studio document is missing `data-studio-profile=\"personal-studio\"` or `md3e-studio.css` tokens.",
+                "Set `data-studio-profile=\"personal-studio\"` on `<html>` and link `md3e-studio.css` (Layer 4).",
+                self.path,
+                1,
+                "",
+            )
+
+        has_optical_glass = linked_blur_css or bool(re.search(r"\bmd3e-blur-", markup_clean)) or "backdrop-filter" in combined_css
+        has_caustic = bool(re.search(r"\bstudio-caustic-field\b", markup_clean + "\n" + combined_css))
+        if not (has_optical_glass and has_caustic):
+            self.add(
+                "MD3E201",
+                "custom",
+                "Personal Studio document is missing optical glass (`.md3e-blur-*`) or ambient caustic field (`.studio-caustic-field`).",
+                "Include `.studio-caustic-field` (`aria-hidden=\"true\"`) and `.md3e-blur-*` optical glass chrome.",
+                self.path,
+                1,
+                "",
+            )
+
+        has_rt_support = (
+            linked_blur_css
+            or linked_studio_css
+            or bool(re.search(r"prefers-reduced-transparency\s*:\s*reduce\b", combined_css, re.I))
+            or bool(re.search(r"data-reduced-transparency", text, re.I))
+        )
+        if not has_rt_support:
+            self.add(
+                "MD3E201",
+                "custom",
+                "Personal Studio optical glass & caustic layer lacks reduced-transparency support.",
+                "Link `md3e-blur.css` / `md3e-studio.css` or provide `@media (prefers-reduced-transparency: reduce)` solid surface fallbacks.",
+                self.path,
+                1,
+                "",
+            )
+
+        # 3. Full-doc <dialog> modal overscroll-behavior hygiene (MD3E202)
+        first_dialog = re.search(rf"<dialog\b({TAG_ATTRS_PAT})>", markup_clean, re.I)
+        if first_dialog:
+            has_modal_overscroll = linked_studio_css or bool(
+                re.search(
+                    r"(?:dialog\b[^,{]*(?::modal|::backdrop)|\.studio-cmd-dialog\b)[^}]*\boverscroll-behavior(?:-(?:y|block))?\s*:\s*(?:contain|none)\b",
+                    combined_css,
+                    re.I,
+                )
+            )
+            if not has_modal_overscroll:
+                d_ln = markup_clean[:first_dialog.start()].count("\n") + 1
+                self.add(
+                    "MD3E202",
+                    "custom",
+                    "Personal Studio `<dialog>` modal lacks `overscroll-behavior: contain` on `:modal` / `::backdrop`.",
+                    "Link `md3e-studio.css` or add `dialog:modal, dialog::backdrop { overscroll-behavior: contain; }`.",
+                    self.path,
+                    d_ln,
+                    lines[d_ln - 1] if d_ln - 1 < len(lines) else "",
+                )
+
     def audit_markup_document(self, text: str) -> None:
         linked_motion_css = bool(re.search(r"md3e-motion\.css", text))
+        linked_studio_css = bool(re.search(r"md3e-studio\.css", text))
+        linked_blur_css = bool(re.search(r"md3e-blur\.css", text))
         # 1. Audit all <style> blocks using full CSS parser
         style_blocks = extract_style_blocks(text)
         combined_css = strip_css_comments("\n".join(blk for blk, _ in style_blocks))
@@ -1566,6 +1886,7 @@ class Checker:
                 check_file_rules=False,
                 linked_motion_css=linked_motion_css,
                 has_reduced_transparency_doc=has_rt_doc,
+                linked_studio_css=linked_studio_css,
             )
 
         if not self.is_snippet and style_blocks:
@@ -1623,8 +1944,17 @@ class Checker:
                             self.path, i, line,
                         )
 
-        # 3. HTML component, icon, tag, accessibility & desktop-bento structural checks
+        # 3. HTML component, icon, tag, accessibility & desktop-bento / personal-studio structural checks
         self._audit_desktop_bento_document(text, combined_css, markup_only)
+        self._audit_personal_studio_document(
+            text,
+            combined_css,
+            markup_clean,
+            lines,
+            exempt_lines,
+            linked_studio_css=linked_studio_css,
+            linked_blur_css=linked_blur_css,
+        )
         self._audit_html_semantics(markup_only, full_text=text, exempt_lines=exempt_lines)
 
     def _check_multiple_primary_filled_buttons(self, markup_clean: str, lines: list[str], exempt_lines: set[int]) -> None:
@@ -2167,15 +2497,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--markdown", action="store_true",
                         help="also audit HTML/CSS fenced code blocks in .md files")
     parser.add_argument("--mode", choices=AUDIT_MODES, default="strict",
-                        help="audit policy profile: strict (default) or desktop-bento")
+                        help="audit policy profile: strict (default), desktop-bento, or personal-studio")
     parser.add_argument("--exclude", default="",
                         help="comma-separated substrings to skip")
     parser.add_argument("--fail-on", type=normalize_severity, default="error",
                         help="severity threshold that fails the run (error, warning/warn, info, custom; default: error)")
     parser.add_argument("--min-severity", type=normalize_severity, default=None,
-                        help="lowest severity to report (default: custom in desktop-bento, info in strict)")
+                        help="lowest severity to report (default: custom in desktop-bento/personal-studio, info in strict)")
     args = parser.parse_args(argv)
-    min_sev = args.min_severity or ("custom" if args.mode == "desktop-bento" else "info")
+    min_sev = args.min_severity or ("custom" if args.mode in ("desktop-bento", "personal-studio") else "info")
 
     exclude = [x.strip() for x in args.exclude.split(",") if x.strip()]
     reports, scanned = audit(args.paths, exclude, include_markdown=args.markdown, mode=args.mode)
@@ -2198,7 +2528,7 @@ def main(argv: list[str] | None = None) -> int:
                 "info": counts["info"],
             },
             "custom_extensions": {
-                "active": args.mode == "desktop-bento",
+                "active": args.mode in ("desktop-bento", "personal-studio"),
                 "custom": counts["custom"],
             },
             "summary": counts,

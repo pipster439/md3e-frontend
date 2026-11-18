@@ -29,9 +29,12 @@ PALETTES_CSS = ROOT_DIR / "assets" / "tokens" / "md3e-palettes.css"
 SHAPES_CSS = ROOT_DIR / "assets" / "tokens" / "md3e-shapes.css"
 MOTION_CSS = ROOT_DIR / "assets" / "tokens" / "md3e-motion.css"
 SPRING_JS = ROOT_DIR / "assets" / "tokens" / "md3e-spring.js"
+STUDIO_CSS = ROOT_DIR / "assets" / "tokens" / "md3e-studio.css"
+STUDIO_JS = ROOT_DIR / "assets" / "tokens" / "md3e-studio.js"
 TAILWIND_THEME_CSS = ROOT_DIR / "assets" / "tailwind" / "md3e-theme.css"
 TAILWIND_CONFIG_JS = ROOT_DIR / "assets" / "tailwind" / "tailwind.config.js"
 STARTER_HTML = ROOT_DIR / "assets" / "starter" / "index.html"
+BENTO_HTML = ROOT_DIR / "assets" / "starter" / "desktop-bento.html"
 SKILL_MD = ROOT_DIR / "SKILL.md"
 OFFICIAL_AUDIT_MD = ROOT_DIR / "OFFICIAL_SPEC_AUDIT.md"
 REFERENCES_DIR = ROOT_DIR / "references"
@@ -646,18 +649,19 @@ class AuditorTests(unittest.TestCase):
     def _findings(self, text: str, filename: str = "sample.html", *, is_snippet: bool = False) -> list[audit_md3e.Finding]:
         return audit_md3e.Checker(pathlib.Path(filename), is_snippet=is_snippet).run(text)
 
-    def test_shipped_assets_and_all_21_markdown_docs_pass_compliance(self) -> None:
+    def test_shipped_assets_and_all_22_markdown_docs_pass_compliance(self) -> None:
         reports, scanned = audit_md3e.audit([str(ROOT_DIR / "assets")], [], mode="strict")
-        self.assertEqual(scanned, 12)
+        self.assertEqual(scanned, 14)
         self.assertEqual(reports, [], f"Unexpected strict asset findings: {reports}")
 
-        bento_reports, bento_scanned = audit_md3e.audit(
-            [str(ROOT_DIR / "assets" / "starter" / "desktop-bento.html")],
-            [],
-            mode="desktop-bento",
-        )
-        self.assertEqual(bento_scanned, 1)
-        self.assertEqual(bento_reports, [], f"Unexpected desktop-bento HTML findings: {bento_reports}")
+        for bento_mode in ("desktop-bento", "personal-studio"):
+            bento_reports, bento_scanned = audit_md3e.audit(
+                [str(BENTO_HTML)],
+                [],
+                mode=bento_mode,
+            )
+            self.assertEqual(bento_scanned, 1)
+            self.assertEqual(bento_reports, [], f"Unexpected {bento_mode} HTML findings: {bento_reports}")
 
         md_reports, md_scanned = audit_md3e.audit(
             [str(SKILL_MD), str(ROOT_DIR / "README.md"), str(OFFICIAL_AUDIT_MD), str(REFERENCES_DIR)],
@@ -665,23 +669,21 @@ class AuditorTests(unittest.TestCase):
             include_markdown=True,
             mode="strict",
         )
-        self.assertEqual(md_scanned, 21)
-        self.assertEqual(md_reports, [], f"Unexpected markdown compliance findings across 21 docs: {md_reports}")
+        self.assertEqual(md_scanned, 22)
+        self.assertEqual(md_reports, [], f"Unexpected markdown compliance findings across 22 docs: {md_reports}")
 
-        bento_md_reports, bento_md_scanned = audit_md3e.audit(
-            [str(REFERENCES_DIR / "desktop-bento.md")],
-            [],
-            include_markdown=True,
-            mode="desktop-bento",
-        )
-        self.assertEqual(bento_md_scanned, 1)
-        bento_md_we = [
-            (r.path, f)
-            for r in bento_md_reports
-            for f in r.findings
-            if f.severity in ("error", "warning")
-        ]
-        self.assertEqual(bento_md_we, [], f"Unexpected desktop-bento markdown findings: {bento_md_we}")
+        for doc_path, doc_mode in (
+            (REFERENCES_DIR / "desktop-bento.md", "desktop-bento"),
+            (REFERENCES_DIR / "personal-studio.md", "personal-studio"),
+        ):
+            doc_reports, doc_scanned = audit_md3e.audit(
+                [str(doc_path)],
+                [],
+                include_markdown=True,
+                mode=doc_mode,
+            )
+            self.assertEqual(doc_scanned, 1)
+            self.assertEqual(doc_reports, [], f"Unexpected {doc_mode} markdown findings in {doc_path.name}: {doc_reports}")
 
     def test_md3e017_catches_non_alphabetical_google_fonts_axes(self) -> None:
         bad_html = (
@@ -1479,7 +1481,7 @@ class DualSkillAndDesktopChoreographyTests(unittest.TestCase):
         self.assertEqual(len(m020), 1)
 
     def test_starter_stylesheets_have_balanced_braces(self) -> None:
-        for html_path in (STARTER_HTML, ROOT_DIR / "assets" / "starter" / "desktop-bento.html"):
+        for html_path in (STARTER_HTML, BENTO_HTML):
             text = html_path.read_text(encoding="utf-8")
             for idx, (css_block, _) in enumerate(audit_md3e.extract_style_blocks(text)):
                 cleaned = audit_md3e.strip_css_comments(css_block)
@@ -1488,6 +1490,528 @@ class DualSkillAndDesktopChoreographyTests(unittest.TestCase):
                     cleaned.count("}"),
                     f"Unbalanced CSS braces in {html_path.name} <style> block #{idx}",
                 )
+
+
+class RootCauseAndPersonalStudioTests(unittest.TestCase):
+    def test_md3e028_unbalanced_keyframes_and_css_braces(self) -> None:
+        unclosed_kf = """
+        @keyframes pulse {
+          0% { opacity: 0.2; }
+          100% { opacity: 1; }
+        .card { color: var(--md-sys-color-on-surface); }
+        """
+        extra_brace_kf = """
+        @keyframes pulse {
+          0% { opacity: 0.2; }
+          100% { opacity: 1; }
+        }
+        }
+        """
+        quoted_braces_ok = """
+        .token::before { content: "{ ok }"; }
+        @keyframes ok {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .token { animation: none; }
+        }
+        """
+        for bad_css in (unclosed_kf, extra_brace_kf):
+            for mode in audit_md3e.AUDIT_MODES:
+                m028 = [f for f in audit_md3e.Checker(pathlib.Path("kf.css"), mode=mode).run(bad_css) if f.code == "MD3E028"]
+                self.assertEqual(len(m028), 1, f"Expected MD3E028 error in mode={mode} for:\n{bad_css}")
+                self.assertEqual(m028[0].severity, "error")
+
+        bad_html = f"<!doctype html><html><head><style>{extra_brace_kf}</style></head><body></body></html>"
+        self.assertEqual(
+            len([f for f in audit_md3e.Checker(pathlib.Path("kf.html")).run(bad_html) if f.code == "MD3E028"]),
+            1,
+        )
+        self.assertEqual(
+            [f for f in audit_md3e.Checker(pathlib.Path("ok.css")).run(quoted_braces_ok) if f.code == "MD3E028"],
+            [],
+        )
+
+    def test_personal_studio_mode_isolation_inheritance_and_layer4_rules(self) -> None:
+        import contextlib
+        import io
+
+        # Bad Layer 4 CSS/HTML should trigger MD3E101+ and MD3E201/MD3E202 ONLY in personal-studio,
+        # while strict mode remains completely isolated from MD3E101+ and MD3E201+.
+        incomplete_studio_html = """<!doctype html>
+<html lang="en">
+<head>
+<style>
+  .bento-card {
+    background: var(--md-sys-color-surface-container);
+    color: var(--md-sys-color-on-surface);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-shape-corner-medium);
+  }
+  .studio-caustic-field { position: fixed; inset: 0; }
+  dialog.studio-cmd-dialog:modal { display: grid; }
+</style>
+</head>
+<body>
+  <main>
+    <dialog id="cmd" role="dialog"><p>No focusable controls</p></dialog>
+  </main>
+</body>
+</html>"""
+        strict_codes = {
+            f.code for f in audit_md3e.Checker(pathlib.Path("studio.html"), mode="strict").run(incomplete_studio_html)
+        }
+        self.assertFalse(any(c.startswith("MD3E1") or c.startswith("MD3E2") for c in strict_codes), strict_codes)
+
+        bento_codes = {
+            f.code for f in audit_md3e.Checker(pathlib.Path("studio.html"), mode="desktop-bento").run(incomplete_studio_html)
+        }
+        self.assertTrue({"MD3E101", "MD3E102", "MD3E103", "MD3E104"} <= bento_codes, bento_codes)
+        self.assertFalse(any(c.startswith("MD3E2") for c in bento_codes), bento_codes)
+
+        studio_findings = audit_md3e.Checker(pathlib.Path("studio.html"), mode="personal-studio").run(incomplete_studio_html)
+        studio_codes = {f.code for f in studio_findings}
+        self.assertTrue(
+            {"MD3E101", "MD3E102", "MD3E103", "MD3E104", "MD3E201", "MD3E202"} <= studio_codes,
+            studio_codes,
+        )
+        self.assertTrue(
+            all(f.severity == "custom" for f in studio_findings if f.code.startswith(("MD3E1", "MD3E2"))),
+            studio_findings,
+        )
+
+        # CLI --mode=personal-studio JSON check: custom findings do not reduce score below 100
+        with tempfile.TemporaryDirectory() as td:
+            sample = pathlib.Path(td) / "studio_sample.html"
+            sample.write_text(incomplete_studio_html, encoding="utf-8")
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                rc = audit_md3e.main([str(sample), "--mode=personal-studio", "--fail-on=info", "--json"])
+            self.assertEqual(rc, 0)
+            payload = json.loads(buf.getvalue())
+            self.assertEqual(payload["mode"], "personal-studio")
+            self.assertEqual(payload["official_compliance"]["score"], 100)
+            self.assertTrue(payload["custom_extensions"]["active"])
+            self.assertGreaterEqual(payload["custom_extensions"]["custom"], 2)
+
+        # Clean compliant personal-studio snippet/doc passes with 0 findings across all severities
+        good_studio_html = """<!doctype html>
+<html lang="en" data-layout-profile="desktop-bento" data-studio-profile="personal-studio">
+<head>
+<link rel="stylesheet" href="../tokens/md3e-blur.css">
+<link rel="stylesheet" href="../tokens/md3e-studio.css">
+<style>
+  .shell { background: var(--md-sys-color-surface-container-lowest); }
+  .card { background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-extra-large); }
+  .well { background: var(--md-sys-color-surface-container); border-radius: var(--md-sys-shape-corner-large); }
+  .hi { background: var(--md-sys-color-surface-container-high); }
+  .kpi { font-size: var(--md-sys-typescale-display-large-size); }
+  .wrap { filter: drop-shadow(0 4px 12px color-mix(in oklab, var(--md-sys-color-shadow) 24%, transparent)); }
+</style>
+</head>
+<body>
+  <div class="studio-caustic-field" aria-hidden="true"></div>
+  <main>
+    <article class="card bento-card--hero">
+      <div class="wave"></div>
+      <svg class="sparkline" viewBox="0 0 100 20" aria-hidden="true"></svg>
+      <div class="wrap"><button type="button" class="md3e-shape md3e-shape-sunny" aria-label="Morph">Go</button></div>
+    </article>
+    <dialog class="studio-cmd-dialog md3e-blur-surface-highest" id="studio-cmd-dialog" aria-labelledby="cmd-t" closedby="any">
+      <h2 id="cmd-t">Commands</h2>
+      <input type="search" aria-label="Search commands">
+      <button type="button">Close</button>
+    </dialog>
+  </main>
+  <script type="module" src="../tokens/md3e-morph.js"></script>
+</body>
+</html>"""
+        self.assertEqual(
+            audit_md3e.Checker(pathlib.Path("good-studio.html"), mode="personal-studio").run(good_studio_html),
+            [],
+        )
+
+    def test_spring_js_synthesizer_dt_invariance_and_visibility(self) -> None:
+        node_bin = shutil.which("node")
+        if not node_bin:
+            self.skipTest("node runtime unavailable")
+
+        js_driver = r"""
+let nowVal = 1000;
+let rafSeq = 0;
+const rafQueue = new Map();
+const visListeners = new Set();
+let cancelledCount = 0;
+
+globalThis.performance = { now: () => nowVal };
+globalThis.requestAnimationFrame = (cb) => {
+  const id = ++rafSeq;
+  rafQueue.set(id, cb);
+  return id;
+};
+globalThis.cancelAnimationFrame = (id) => {
+  if (rafQueue.delete(id)) cancelledCount += 1;
+};
+globalThis.document = {
+  hidden: false,
+  documentElement: { dataset: { motionScheme: 'expressive' } },
+  addEventListener(evt, fn) { if (evt === 'visibilitychange') visListeners.add(fn); },
+  removeEventListener(evt, fn) { if (evt === 'visibilitychange') visListeners.delete(fn); },
+};
+
+const { synthesizeSpringLinearCss, createSpringAnimator } = await import('./assets/tokens/md3e-spring.js');
+
+// 1. Closed-form CSS linear() synthesis
+const s340 = synthesizeSpringLinearCss(340, 0.76, 36);
+const sCritical = synthesizeSpringLinearCss(1600, 1.0, 24);
+
+// 2. 60Hz vs 120Hz dt invariance at identical elapsed time (250ms after Frame 1)
+function runAtHz(hz, elapsedMs) {
+  rafQueue.clear();
+  nowVal = 1000;
+  let lastVal = 0;
+  let completed = false;
+  const anim = createSpringAnimator({
+    initialValue: 0,
+    stiffness: 340,
+    damping: 0.76,
+    precision: 0.01,
+    onUpdate(v) { lastVal = v; },
+    onComplete() { completed = true; },
+  });
+  anim.setTarget(100);
+  // Frame 1 at ts=1000 uses FRAME_1_DT = 1/60
+  const firstId = [...rafQueue.keys()][0];
+  const firstCb = rafQueue.get(firstId);
+  rafQueue.delete(firstId);
+  firstCb(nowVal);
+
+  const stepMs = 1000 / hz;
+  const steps = Math.round(elapsedMs / stepMs);
+  for (let i = 1; i <= steps; i++) {
+    nowVal = 1000 + i * stepMs;
+    const ids = [...rafQueue.keys()];
+    if (ids.length === 0) break;
+    const id = ids[0];
+    const cb = rafQueue.get(id);
+    rafQueue.delete(id);
+    cb(nowVal);
+  }
+  const midVal = anim.value;
+  const midVel = anim.velocity;
+  // Settle to completion
+  for (let guard = 0; guard < 400 && rafQueue.size > 0; guard++) {
+    nowVal += stepMs;
+    const id = [...rafQueue.keys()][0];
+    const cb = rafQueue.get(id);
+    rafQueue.delete(id);
+    cb(nowVal);
+  }
+  return { midVal, midVel, finalVal: anim.value, completed, lastVal };
+}
+
+const r60 = runAtHz(60, 250);
+const r120 = runAtHz(120, 250);
+
+// 3. document.hidden pause and timestamp rebase on foreground return
+rafQueue.clear();
+cancelledCount = 0;
+nowVal = 2000;
+const visAnim = createSpringAnimator({
+  initialValue: 0,
+  stiffness: 340,
+  damping: 0.76,
+  precision: 0.01,
+});
+visAnim.setTarget(100);
+for (let i = 0; i < 3; i++) {
+  const id = [...rafQueue.keys()][0];
+  const cb = rafQueue.get(id);
+  rafQueue.delete(id);
+  nowVal += 16.6667;
+  cb(nowVal);
+}
+const valBeforeHide = visAnim.value;
+globalThis.document.hidden = true;
+for (const fn of visListeners) fn();
+const pausedWhileHidden = visAnim.paused;
+const queueSizeWhileHidden = rafQueue.size;
+
+// Return to foreground 60 seconds later: must rebase ts smoothly without jumping straight to 100
+nowVal += 60000;
+globalThis.document.hidden = false;
+for (const fn of visListeners) fn();
+const pausedAfterShow = visAnim.paused;
+const queueSizeAfterShow = rafQueue.size;
+const resumeId = [...rafQueue.keys()][0];
+const resumeCb = rafQueue.get(resumeId);
+rafQueue.delete(resumeId);
+resumeCb(nowVal);
+const valOnResumeFrame = visAnim.value;
+visAnim.stop();
+
+console.log(JSON.stringify({
+  s340,
+  sCritical,
+  r60,
+  r120,
+  valBeforeHide,
+  pausedWhileHidden,
+  queueSizeWhileHidden,
+  cancelledCount,
+  pausedAfterShow,
+  queueSizeAfterShow,
+  valOnResumeFrame,
+}));
+"""
+        raw = subprocess.check_output(
+            [node_bin, "--input-type=module", "-e", js_driver],
+            cwd=str(ROOT_DIR),
+            text=True,
+        )
+        out = json.loads(raw)
+
+        s340 = out["s340"]
+        self.assertGreaterEqual(s340["durationMs"], 460)
+        self.assertLessEqual(s340["durationMs"], 540)
+        self.assertTrue(s340["linearEasing"].startswith("linear("))
+        self.assertEqual(len(s340["linearEasing"][7:-1].split(",")), 37)
+        self.assertEqual(s340["cssShorthand"], f"{s340['durationMs']}ms {s340['linearEasing']}")
+        self.assertGreater(s340["peakOvershoot"], 0)
+        self.assertEqual(out["sCritical"]["peakOvershoot"], 0)
+
+        self.assertAlmostEqual(out["r60"]["midVal"], out["r120"]["midVal"], delta=0.05)
+        self.assertAlmostEqual(out["r60"]["midVel"], out["r120"]["midVel"], delta=0.25)
+        self.assertTrue(out["r60"]["completed"])
+        self.assertTrue(out["r120"]["completed"])
+        self.assertEqual(out["r60"]["finalVal"], 100)
+        self.assertEqual(out["r120"]["finalVal"], 100)
+
+        self.assertTrue(out["pausedWhileHidden"])
+        self.assertEqual(out["queueSizeWhileHidden"], 0)
+        self.assertGreaterEqual(out["cancelledCount"], 1)
+        self.assertFalse(out["pausedAfterShow"])
+        self.assertEqual(out["queueSizeAfterShow"], 1)
+        self.assertGreater(out["valOnResumeFrame"], out["valBeforeHide"])
+        self.assertLess(out["valOnResumeFrame"], 60.0)
+
+    def test_studio_js_schema_intent_harmonize_and_css_patch(self) -> None:
+        node_bin = shutil.which("node")
+        if not node_bin:
+            self.skipTest("node runtime unavailable")
+
+        js_driver = r"""
+import {
+  STUDIO_PARAM_SCHEMA,
+  inferHumanIntent,
+  computeHarmonizedParams,
+  formatStudioCssPatch,
+} from './assets/tokens/md3e-studio.js';
+
+const schemaKeys = Object.keys(STUDIO_PARAM_SCHEMA);
+const defaultIntent = inferHumanIntent({});
+const crystalIntent = inferHumanIntent({
+  values: { glassAlpha: 38, blurPx: 42 },
+  sources: { glassAlpha: 'human', blurPx: 'human' },
+});
+const silkIntent = inferHumanIntent({
+  values: { springStiffness: 200, springDamping: 0.62, staggerMs: 48 },
+  sources: { springStiffness: 'human', springDamping: 'human', staggerMs: 'human' },
+});
+const crispIntent = inferHumanIntent({
+  values: { springStiffness: 820, glassAlpha: 82, springDamping: 0.94 },
+  sources: { springStiffness: 'human', glassAlpha: 'human', springDamping: 'human' },
+});
+const tactileIntent = inferHumanIntent({
+  values: { spotlightAlpha: 22, spotlightPx: 390 },
+  sources: { spotlightAlpha: 'human', spotlightPx: 'human' },
+});
+
+const humanState = {
+  values: { glassAlpha: 40, springStiffness: 250 },
+  sources: { glassAlpha: 'human', springStiffness: 'human' },
+};
+const harmonized = computeHarmonizedParams(humanState);
+const harmonizedAgain = computeHarmonizedParams(harmonized);
+const cssPatch = formatStudioCssPatch(harmonized);
+
+console.log(JSON.stringify({
+  schemaKeys,
+  schema: STUDIO_PARAM_SCHEMA,
+  defaultIntent,
+  crystalIntent,
+  silkIntent,
+  crispIntent,
+  tactileIntent,
+  harmonized,
+  harmonizedAgain,
+  cssPatch,
+}));
+"""
+        raw = subprocess.check_output(
+            [node_bin, "--input-type=module", "-e", js_driver],
+            cwd=str(ROOT_DIR),
+            text=True,
+        )
+        out = json.loads(raw)
+
+        expected_keys = [
+            "blurPx", "glassAlpha", "glassSaturate", "specularAlpha",
+            "springStiffness", "springDamping", "staggerMs",
+            "spotlightPx", "spotlightAlpha", "splitRatio",
+        ]
+        self.assertEqual(out["schemaKeys"], expected_keys)
+        self.assertEqual({out["schema"][k]["group"] for k in expected_keys}, {"glass", "physics", "desktop"})
+
+        self.assertEqual(out["defaultIntent"], "balanced-studio")
+        self.assertEqual(out["crystalIntent"], "frosted-crystal")
+        self.assertEqual(out["silkIntent"], "silk-cinematic")
+        self.assertEqual(out["crispIntent"], "crisp-utility")
+        self.assertEqual(out["tactileIntent"], "tactile-focus")
+
+        h = out["harmonized"]
+        self.assertEqual(h["humanModifiedKeys"], ["glassAlpha", "springStiffness"])
+        self.assertEqual(h["values"]["glassAlpha"], 40)
+        self.assertEqual(h["values"]["springStiffness"], 250)
+        self.assertEqual(h["sources"]["glassAlpha"], "human")
+        self.assertEqual(h["sources"]["springStiffness"], "human")
+        self.assertGreaterEqual(len(h["aiHarmonizedKeys"]), 4)
+        for ai_key in h["aiHarmonizedKeys"]:
+            self.assertNotIn(ai_key, h["humanModifiedKeys"])
+            self.assertEqual(h["sources"][ai_key], "ai")
+        self.assertEqual(out["harmonizedAgain"]["values"], h["values"])
+        self.assertEqual(out["harmonizedAgain"]["sources"], h["sources"])
+
+        patch = out["cssPatch"]
+        self.assertIn(':root[data-studio-profile="personal-studio"]', patch)
+        for token in (
+            "--md-studio-blur-px:",
+            "--md-studio-glass-alpha:",
+            "--md-studio-glass-saturate:",
+            "--md-studio-specular-alpha:",
+            "--md-studio-glass-brightness:",
+            "--md-studio-glass-contrast:",
+            "--md-bento-motion-default-spatial-duration:",
+            "--md-bento-motion-default-spatial-easing:",
+            "--md-bento-motion-default-spatial:",
+        ):
+            self.assertIn(token, patch)
+
+    def test_root_cause_fixes_and_layer4_dom_in_starter_and_bento_html(self) -> None:
+        index_html = STARTER_HTML.read_text(encoding="utf-8")
+        bento_html = BENTO_HTML.read_text(encoding="utf-8")
+
+        def parse_rules(html_text: str) -> list[audit_md3e.RuleBlock]:
+            out: list[audit_md3e.RuleBlock] = []
+            for blk, start_line in audit_md3e.extract_style_blocks(html_text):
+                out.extend(audit_md3e.parse_css_rules(blk, base_line=start_line))
+            return out
+
+        index_rules = parse_rules(index_html)
+        bento_rules = parse_rules(bento_html)
+
+        # 1. Scoped .is-toolbar-morphing in BOTH HTML files (never permanent view-transition-name on base toolbar)
+        for label, rules, base_sel, vt_name in (
+            ("index.html", index_rules, ".md3e-toolbar-adaptive", "md3e-starter-adaptive-toolbar"),
+            ("desktop-bento.html", bento_rules, ".bento-adaptive-toolbar", "bento-adaptive-toolbar"),
+        ):
+            base_vt = [
+                r for r in rules
+                if base_sel in r.selector and ".is-toolbar-morphing" not in r.selector
+                and any(p == "view-transition-name" for p, _, _, _ in r.declarations)
+            ]
+            self.assertEqual(base_vt, [], f"{label} must not permanently assign view-transition-name on {base_sel}")
+            scoped_vt = [
+                r for r in rules
+                if f"{base_sel}.is-toolbar-morphing" in r.selector
+                and any(p == "view-transition-name" and vt_name in v for p, v, _, _ in r.declarations)
+            ]
+            self.assertTrue(scoped_vt, f"{label} must scope view-transition-name: {vt_name} to .is-toolbar-morphing")
+
+        # 2. Removal of content-visibility: auto on .md3e-wavy-progress + visibilitychange dt loop in BOTH HTML files
+        for label, html_text, rules in (
+            ("index.html", index_html, index_rules),
+            ("desktop-bento.html", bento_html, bento_rules),
+        ):
+            wavy_rules = [r for r in rules if ".md3e-wavy-progress" in r.selector]
+            self.assertTrue(wavy_rules, f"Missing .md3e-wavy-progress rule in {label}")
+            for r in wavy_rules:
+                self.assertFalse(
+                    any(p == "content-visibility" for p, _, _, _ in r.declarations),
+                    f"{label} .md3e-wavy-progress must not use content-visibility: auto",
+                )
+            self.assertIn("document.hidden", html_text)
+            self.assertIn("visibilitychange", html_text)
+
+        # 3. index.html Expressive Capsule Toast (.md3e-snackbar corner-full + .md3e-snackbar--action corner-large)
+        snackbar_rules = [r for r in index_rules if r.selector.strip() == ".md3e-snackbar"]
+        self.assertTrue(snackbar_rules)
+        self.assertTrue(
+            any(
+                p == "border-radius" and "var(--md-sys-shape-corner-full)" in v
+                for r in snackbar_rules
+                for p, v, _, _ in r.declarations
+            ),
+            "index.html .md3e-snackbar must use var(--md-sys-shape-corner-full)",
+        )
+        snackbar_action_rules = [r for r in index_rules if r.selector.strip() == ".md3e-snackbar--action"]
+        self.assertTrue(
+            any(
+                p == "border-radius" and "var(--md-sys-shape-corner-large)" in v
+                for r in snackbar_action_rules
+                for p, v, _, _ in r.declarations
+            ),
+            "index.html .md3e-snackbar--action must use var(--md-sys-shape-corner-large)",
+        )
+
+        # 4. desktop-bento.html VT modal scrim z-index layering + ::view-transition-old(root) suppression + plush springs
+        for snippet in (
+            "bento-vt-scrim",
+            'html[data-vt-kind="modal"]::view-transition-old(root)',
+            'html[data-vt-kind="modal"]::view-transition-new(root)',
+            "::view-transition-group(bento-vt-scrim)",
+            "synthesizeSpringLinearCss",
+            'data-studio-profile="personal-studio"',
+            "md3e-studio.css",
+            "md3e-studio.js",
+            "studio-caustic-field",
+            'id="titlebar-status-pill"',
+            'id="md3e-studio-telemetry"',
+            'id="studio-tuner-panel"',
+            'id="studio-cmd-dialog"',
+            'id="bento-split-handle"',
+            'id="btn-studio-harmonize"',
+            'id="studio-css-output"',
+        ):
+            self.assertIn(snippet, bento_html)
+
+        self.assertNotIn("240ms", bento_html, "Stale 240ms spring copy/tokens must be replaced in desktop-bento.html")
+        self.assertNotRegex(
+            bento_html,
+            r"<dialog\b[^>]*\brole\s*=\s*[\"']dialog[\"']",
+            "Native <dialog id='studio-cmd-dialog'> must not carry redundant role='dialog'",
+        )
+        for key in (
+            "blurPx", "glassAlpha", "glassSaturate", "specularAlpha",
+            "springStiffness", "springDamping", "staggerMs",
+            "spotlightPx", "spotlightAlpha", "splitRatio",
+        ):
+            self.assertIn(f'data-scrubber-key="{key}"', bento_html)
+
+    def test_personal_studio_cli_exit_zero_and_json_contract(self) -> None:
+        import contextlib
+        import io
+
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = audit_md3e.main([str(BENTO_HTML), "--mode=personal-studio", "--fail-on=custom", "--json"])
+        self.assertEqual(rc, 0)
+        payload = json.loads(buf.getvalue())
+        self.assertEqual(payload["mode"], "personal-studio")
+        self.assertTrue(payload["custom_extensions"]["active"])
+        self.assertEqual(payload["official_compliance"]["score"], 100)
+        self.assertEqual(payload["summary"], {"error": 0, "warning": 0, "info": 0, "custom": 0})
 
 
 if __name__ == "__main__":

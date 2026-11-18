@@ -1,5 +1,5 @@
 /* ============================================================================
- * md3e-blur.css — Accessible MD3E Backdrop Blur & Translucent Tinting Layer
+ * md3e-blur.css — Accessible MD3E Optical Glass & Translucent Tinting Layer
  * ----------------------------------------------------------------------------
  * NOTE: Official m3.material.io specifies tonal surface elevation via opaque
  * `surface-container-*` roles and does NOT define `md.sys.blur.*`. Following
@@ -8,10 +8,12 @@
  * backdrop blur with:
  *   1. Opaque `surface-container*` baseline before `@supports`
  *   2. Neutral-safe `color-mix(in oklab, ...)` tinting (never `in oklch`)
- *   3. Mandatory `@media (prefers-reduced-transparency: reduce)` automatic
- *      fallback to opaque solid Surface Container colours
- *   4. High-contrast (`prefers-contrast: more`, `[data-contrast="high"]`) and
- *      `forced-colors: active` accessibility fallbacks
+ *   3. Optical saturate + brightness/contrast layer and specular top rim on
+ *      rectangular floating chrome (leaving `.md3e-shape*` untouched)
+ *   4. Richer Layer 4 curve when `[data-studio-profile="personal-studio"]` is set
+ *   5. Mandatory `@media (prefers-reduced-transparency: reduce)`,
+ *      `[data-reduced-transparency="true"]`, `@media (prefers-contrast: more)`,
+ *      `[data-contrast="high"]`, and `@media (forced-colors: active)` fallbacks
  * ========================================================================== */
 
 :root {
@@ -20,96 +22,127 @@
   --md-sys-blur-md: 20px;
   --md-sys-blur-lg: 32px;
   --md-sys-blur-xl: 48px;
-  --md-sys-blur-saturate: 140%;
 
-  --md-sys-blur-surface-alpha: 78%;
-  --md-sys-blur-elevated-alpha: 84%;
-  --md-sys-blur-accent-alpha: 74%;
+  --md-sys-blur-saturate: 185%;
+  --md-sys-blur-brightness: 1.04;
+  --md-sys-blur-contrast: 1.03;
+
+  --md-sys-blur-surface-alpha: 74%;
+  --md-sys-blur-elevated-alpha: 80%;
+  --md-sys-blur-accent-alpha: 70%;
   --md-sys-blur-scrim-alpha: 44%;
+
+  --md3e-specular-tint: var(--md-sys-color-surface-container-lowest);
+  --md3e-specular-alpha: 24%;
+}
+
+/* Dark Mode Optical Lift: vibrant refraction + subtle catchlight rim */
+[data-theme="dark"] {
+  --md-sys-blur-saturate: 190%;
+  --md-sys-blur-brightness: 1.12;
+  --md-sys-blur-contrast: 1.06;
+
+  --md-sys-blur-surface-alpha: 66%;
+  --md-sys-blur-elevated-alpha: 72%;
+  --md-sys-blur-accent-alpha: 64%;
+
+  --md3e-specular-tint: var(--md-sys-color-on-surface);
+  --md3e-specular-alpha: 18%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --md-sys-blur-saturate: 190%;
+    --md-sys-blur-brightness: 1.12;
+    --md-sys-blur-contrast: 1.06;
+
+    --md-sys-blur-surface-alpha: 66%;
+    --md-sys-blur-elevated-alpha: 72%;
+    --md-sys-blur-accent-alpha: 64%;
+
+    --md3e-specular-tint: var(--md-sys-color-on-surface);
+    --md3e-specular-alpha: 18%;
+  }
 }
 
 /* ----------------------------------------------------------------------------
- * Solid Baseline (No Backdrop Blur Support Fallback)
+ * Variant Custom-Property Bindings
+ * Keeping `background-color` / `color` on zero-specificity `:where(...)` rules
+ * below ensures `@supports` optical glass and all accessibility fallbacks
+ * cascade cleanly without specificity clashes.
  * -------------------------------------------------------------------------- */
 .md3e-blur,
 .md3e-blur-surface {
   --md3e-blur-tint: var(--md-sys-color-surface-container);
   --md3e-blur-fallback: var(--md-sys-color-surface-container);
+  --md3e-blur-fg: var(--md-sys-color-on-surface);
   --md3e-blur-alpha: var(--md-sys-blur-surface-alpha);
   --md3e-blur-radius: var(--md-sys-blur-md);
-  background-color: var(--md3e-blur-fallback);
-  color: var(--md-sys-color-on-surface);
 }
 
 .md3e-blur-surface-low {
   --md3e-blur-tint: var(--md-sys-color-surface-container-low);
   --md3e-blur-fallback: var(--md-sys-color-surface-container-low);
+  --md3e-blur-fg: var(--md-sys-color-on-surface);
   --md3e-blur-alpha: var(--md-sys-blur-surface-alpha);
   --md3e-blur-radius: var(--md-sys-blur-sm);
-  background-color: var(--md3e-blur-fallback);
-  color: var(--md-sys-color-on-surface);
 }
 
 .md3e-blur-surface-high {
   --md3e-blur-tint: var(--md-sys-color-surface-container-high);
   --md3e-blur-fallback: var(--md-sys-color-surface-container-high);
+  --md3e-blur-fg: var(--md-sys-color-on-surface);
   --md3e-blur-alpha: var(--md-sys-blur-elevated-alpha);
   --md3e-blur-radius: var(--md-sys-blur-lg);
-  background-color: var(--md3e-blur-fallback);
-  color: var(--md-sys-color-on-surface);
 }
 
 .md3e-blur-surface-highest {
   --md3e-blur-tint: var(--md-sys-color-surface-container-highest);
   --md3e-blur-fallback: var(--md-sys-color-surface-container-highest);
+  --md3e-blur-fg: var(--md-sys-color-on-surface);
   --md3e-blur-alpha: var(--md-sys-blur-elevated-alpha);
   --md3e-blur-radius: var(--md-sys-blur-xl);
-  background-color: var(--md3e-blur-fallback);
-  color: var(--md-sys-color-on-surface);
 }
 
 .md3e-blur-primary {
   --md3e-blur-tint: var(--md-sys-color-primary-container);
   --md3e-blur-fallback: var(--md-sys-color-primary-container);
+  --md3e-blur-fg: var(--md-sys-color-on-primary-container);
   --md3e-blur-alpha: var(--md-sys-blur-accent-alpha);
   --md3e-blur-radius: var(--md-sys-blur-md);
-  background-color: var(--md3e-blur-fallback);
-  color: var(--md-sys-color-on-primary-container);
 }
 
 .md3e-blur-secondary {
   --md3e-blur-tint: var(--md-sys-color-secondary-container);
   --md3e-blur-fallback: var(--md-sys-color-secondary-container);
+  --md3e-blur-fg: var(--md-sys-color-on-secondary-container);
   --md3e-blur-alpha: var(--md-sys-blur-accent-alpha);
   --md3e-blur-radius: var(--md-sys-blur-md);
-  background-color: var(--md3e-blur-fallback);
-  color: var(--md-sys-color-on-secondary-container);
 }
 
 .md3e-blur-tertiary {
   --md3e-blur-tint: var(--md-sys-color-tertiary-container);
   --md3e-blur-fallback: var(--md-sys-color-tertiary-container);
+  --md3e-blur-fg: var(--md-sys-color-on-tertiary-container);
   --md3e-blur-alpha: var(--md-sys-blur-accent-alpha);
   --md3e-blur-radius: var(--md-sys-blur-md);
-  background-color: var(--md3e-blur-fallback);
-  color: var(--md-sys-color-on-tertiary-container);
 }
 
 .md3e-blur-inverse {
   --md3e-blur-tint: var(--md-sys-color-inverse-surface);
   --md3e-blur-fallback: var(--md-sys-color-inverse-surface);
+  --md3e-blur-fg: var(--md-sys-color-inverse-on-surface);
+  --md3e-specular-tint: var(--md-sys-color-inverse-on-surface);
   --md3e-blur-alpha: var(--md-sys-blur-elevated-alpha);
   --md3e-blur-radius: var(--md-sys-blur-md);
-  background-color: var(--md3e-blur-fallback);
-  color: var(--md-sys-color-inverse-on-surface);
 }
 
 .md3e-blur-scrim {
   --md3e-blur-tint: var(--md-sys-color-scrim);
   --md3e-blur-fallback: color-mix(in oklab, var(--md-sys-color-scrim) 52%, transparent);
+  --md3e-blur-fg: inherit;
   --md3e-blur-alpha: var(--md-sys-blur-scrim-alpha);
   --md3e-blur-radius: var(--md-sys-blur-sm);
-  background-color: var(--md3e-blur-fallback);
 }
 
 /* Radius Intensity Modifiers */
@@ -120,7 +153,90 @@
 .md3e-blur--xl { --md3e-blur-radius: var(--md-sys-blur-xl); }
 
 /* ----------------------------------------------------------------------------
- * Progressive Enhancement: Backdrop Blur + Oklab Translucent Overlay
+ * Solid Baseline (No Backdrop Blur Support Fallback)
+ * -------------------------------------------------------------------------- */
+:where(
+  .md3e-blur,
+  .md3e-blur-surface,
+  .md3e-blur-surface-low,
+  .md3e-blur-surface-high,
+  .md3e-blur-surface-highest,
+  .md3e-blur-primary,
+  .md3e-blur-secondary,
+  .md3e-blur-tertiary,
+  .md3e-blur-inverse
+) {
+  background-color: var(--md3e-blur-fallback, var(--md-sys-color-surface-container));
+  color: var(--md3e-blur-fg, var(--md-sys-color-on-surface));
+}
+
+:where(.md3e-blur-scrim) {
+  background-color: var(--md3e-blur-fallback, color-mix(in oklab, var(--md-sys-color-scrim) 52%, transparent));
+}
+
+/* ----------------------------------------------------------------------------
+ * Hidden Layer 4 Personal Studio Translucency Curve
+ * Activated ONLY when `[data-studio-profile="personal-studio"]` is present.
+ * -------------------------------------------------------------------------- */
+[data-studio-profile="personal-studio"] {
+  --md-sys-blur-saturate: var(--md-studio-glass-saturate, 190%);
+  --md-sys-blur-brightness: var(--md-studio-glass-brightness, 1.10);
+  --md-sys-blur-contrast: var(--md-studio-glass-contrast, 1.05);
+  --md3e-specular-alpha: var(--md-studio-specular-alpha, 18%);
+}
+
+[data-studio-profile="personal-studio"] :where(.md3e-blur, .md3e-blur-surface) {
+  --md3e-blur-alpha: var(--md-studio-glass-alpha, 56%);
+  --md3e-blur-radius: var(--md-studio-blur-px, 28px);
+}
+
+[data-studio-profile="personal-studio"] :where(.md3e-blur-surface-low) {
+  --md3e-blur-alpha: clamp(26%, calc(var(--md-studio-glass-alpha, 56%) - 6%), 92%);
+  --md3e-blur-radius: calc(var(--md-studio-blur-px, 28px) * 0.8);
+}
+
+[data-studio-profile="personal-studio"] :where(.md3e-blur-surface-high) {
+  --md3e-blur-alpha: clamp(34%, calc(var(--md-studio-glass-alpha, 56%) + 6%), 94%);
+  --md3e-blur-radius: calc(var(--md-studio-blur-px, 28px) * 1.15);
+}
+
+[data-studio-profile="personal-studio"] :where(.md3e-blur-surface-highest) {
+  --md3e-blur-alpha: clamp(38%, calc(var(--md-studio-glass-alpha, 56%) + 12%), 96%);
+  --md3e-blur-radius: calc(var(--md-studio-blur-px, 28px) * 1.35);
+}
+
+[data-studio-profile="personal-studio"] :where(.md3e-blur-primary, .md3e-blur-secondary, .md3e-blur-tertiary) {
+  --md3e-blur-alpha: clamp(36%, calc(var(--md-studio-glass-alpha, 56%) + 10%), 94%);
+  --md3e-blur-radius: var(--md-studio-blur-px, 28px);
+}
+
+[data-studio-profile="personal-studio"] :where(.md3e-blur-inverse) {
+  --md3e-blur-alpha: clamp(44%, calc(var(--md-studio-glass-alpha, 56%) + 18%), 96%);
+  --md3e-blur-radius: var(--md-studio-blur-px, 28px);
+}
+
+[data-studio-profile="personal-studio"] .md3e-blur--xs {
+  --md3e-blur-radius: calc(var(--md-studio-blur-px, 28px) * 0.45);
+}
+
+[data-studio-profile="personal-studio"] .md3e-blur--sm {
+  --md3e-blur-radius: calc(var(--md-studio-blur-px, 28px) * 0.65);
+}
+
+[data-studio-profile="personal-studio"] .md3e-blur--md {
+  --md3e-blur-radius: var(--md-studio-blur-px, 28px);
+}
+
+[data-studio-profile="personal-studio"] .md3e-blur--lg {
+  --md3e-blur-radius: calc(var(--md-studio-blur-px, 28px) * 1.15);
+}
+
+[data-studio-profile="personal-studio"] .md3e-blur--xl {
+  --md3e-blur-radius: calc(var(--md-studio-blur-px, 28px) * 1.45);
+}
+
+/* ----------------------------------------------------------------------------
+ * Progressive Enhancement: Backdrop Blur + Oklab Tinting + Optical Specular Rim
  * -------------------------------------------------------------------------- */
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   :where(
@@ -132,16 +248,37 @@
     .md3e-blur-primary,
     .md3e-blur-secondary,
     .md3e-blur-tertiary,
-    .md3e-blur-inverse,
-    .md3e-blur-scrim
-  ) {
+    .md3e-blur-inverse
+  ):not([class*="md3e-shape"]) {
     background-color: color-mix(
       in oklab,
       var(--md3e-blur-tint, var(--md-sys-color-surface-container)) var(--md3e-blur-alpha, var(--md-sys-blur-surface-alpha)),
       transparent
     );
-    -webkit-backdrop-filter: blur(var(--md3e-blur-radius, var(--md-sys-blur-md))) saturate(var(--md-sys-blur-saturate, 140%));
-    backdrop-filter: blur(var(--md3e-blur-radius, var(--md-sys-blur-md))) saturate(var(--md-sys-blur-saturate, 140%));
+    -webkit-backdrop-filter:
+      blur(var(--md3e-blur-radius, var(--md-sys-blur-md)))
+      saturate(var(--md-sys-blur-saturate, 185%))
+      brightness(var(--md-sys-blur-brightness, 1.04))
+      contrast(var(--md-sys-blur-contrast, 1.03));
+    backdrop-filter:
+      blur(var(--md3e-blur-radius, var(--md-sys-blur-md)))
+      saturate(var(--md-sys-blur-saturate, 185%))
+      brightness(var(--md-sys-blur-brightness, 1.04))
+      contrast(var(--md-sys-blur-contrast, 1.03));
+    box-shadow:
+      inset 0 1px 0 0 color-mix(in oklab, var(--md3e-specular-tint, var(--md-sys-color-on-surface)) var(--md3e-specular-alpha, 18%), transparent),
+      inset 0 0 0 1px color-mix(in oklab, var(--md3e-specular-tint, var(--md-sys-color-on-surface)) calc(var(--md3e-specular-alpha, 18%) * 0.42), transparent),
+      0 12px 32px -12px color-mix(in oklab, var(--md-sys-color-shadow) 24%, transparent);
+  }
+
+  :where(.md3e-blur-scrim) {
+    background-color: color-mix(
+      in oklab,
+      var(--md3e-blur-tint, var(--md-sys-color-scrim)) var(--md3e-blur-alpha, var(--md-sys-blur-scrim-alpha)),
+      transparent
+    );
+    -webkit-backdrop-filter: blur(var(--md3e-blur-radius, var(--md-sys-blur-sm))) saturate(120%);
+    backdrop-filter: blur(var(--md3e-blur-radius, var(--md-sys-blur-sm))) saturate(120%);
   }
 }
 
@@ -161,28 +298,55 @@
     .md3e-blur-primary,
     .md3e-blur-secondary,
     .md3e-blur-tertiary,
-    .md3e-blur-inverse,
-    .md3e-blur-scrim
+    .md3e-blur-inverse
   ) {
     background-color: var(--md3e-blur-fallback, var(--md-sys-color-surface-container));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+  :where(.md3e-blur-scrim) {
+    background-color: var(--md3e-blur-fallback, color-mix(in oklab, var(--md-sys-color-scrim) 52%, transparent));
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 }
 
-[data-reduced-transparency="true"] :where(
-  .md3e-blur,
-  .md3e-blur-surface,
-  .md3e-blur-surface-low,
-  .md3e-blur-surface-high,
-  .md3e-blur-surface-highest,
-  .md3e-blur-primary,
-  .md3e-blur-secondary,
-  .md3e-blur-tertiary,
-  .md3e-blur-inverse,
-  .md3e-blur-scrim
+:is(
+  [data-reduced-transparency="true"] :where(
+    .md3e-blur,
+    .md3e-blur-surface,
+    .md3e-blur-surface-low,
+    .md3e-blur-surface-high,
+    .md3e-blur-surface-highest,
+    .md3e-blur-primary,
+    .md3e-blur-secondary,
+    .md3e-blur-tertiary,
+    .md3e-blur-inverse
+  ),
+  :where(
+    .md3e-blur,
+    .md3e-blur-surface,
+    .md3e-blur-surface-low,
+    .md3e-blur-surface-high,
+    .md3e-blur-surface-highest,
+    .md3e-blur-primary,
+    .md3e-blur-secondary,
+    .md3e-blur-tertiary,
+    .md3e-blur-inverse
+  )[data-reduced-transparency="true"]
 ) {
   background-color: var(--md3e-blur-fallback, var(--md-sys-color-surface-container));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+:is(
+  [data-reduced-transparency="true"] :where(.md3e-blur-scrim),
+  :where(.md3e-blur-scrim)[data-reduced-transparency="true"]
+) {
+  background-color: var(--md3e-blur-fallback, color-mix(in oklab, var(--md-sys-color-scrim) 52%, transparent));
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
@@ -197,28 +361,55 @@
     .md3e-blur-primary,
     .md3e-blur-secondary,
     .md3e-blur-tertiary,
-    .md3e-blur-inverse,
-    .md3e-blur-scrim
+    .md3e-blur-inverse
   ) {
     background-color: var(--md3e-blur-fallback, var(--md-sys-color-surface-container));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+  :where(.md3e-blur-scrim) {
+    background-color: var(--md3e-blur-fallback, color-mix(in oklab, var(--md-sys-color-scrim) 64%, transparent));
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 }
 
-[data-contrast="high"] :where(
-  .md3e-blur,
-  .md3e-blur-surface,
-  .md3e-blur-surface-low,
-  .md3e-blur-surface-high,
-  .md3e-blur-surface-highest,
-  .md3e-blur-primary,
-  .md3e-blur-secondary,
-  .md3e-blur-tertiary,
-  .md3e-blur-inverse,
-  .md3e-blur-scrim
+:is(
+  [data-contrast="high"] :where(
+    .md3e-blur,
+    .md3e-blur-surface,
+    .md3e-blur-surface-low,
+    .md3e-blur-surface-high,
+    .md3e-blur-surface-highest,
+    .md3e-blur-primary,
+    .md3e-blur-secondary,
+    .md3e-blur-tertiary,
+    .md3e-blur-inverse
+  ),
+  :where(
+    .md3e-blur,
+    .md3e-blur-surface,
+    .md3e-blur-surface-low,
+    .md3e-blur-surface-high,
+    .md3e-blur-surface-highest,
+    .md3e-blur-primary,
+    .md3e-blur-secondary,
+    .md3e-blur-tertiary,
+    .md3e-blur-inverse
+  )[data-contrast="high"]
 ) {
   background-color: var(--md3e-blur-fallback, var(--md-sys-color-surface-container));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+:is(
+  [data-contrast="high"] :where(.md3e-blur-scrim),
+  :where(.md3e-blur-scrim)[data-contrast="high"]
+) {
+  background-color: var(--md3e-blur-fallback, color-mix(in oklab, var(--md-sys-color-scrim) 64%, transparent));
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
@@ -240,8 +431,9 @@
     border: 1px solid CanvasText;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+    box-shadow: none;
   }
-  .md3e-blur-scrim {
+  :where(.md3e-blur-scrim) {
     background-color: color-mix(in oklab, CanvasText 35%, transparent);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
