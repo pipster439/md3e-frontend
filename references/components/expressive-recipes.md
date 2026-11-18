@@ -1,8 +1,18 @@
 # Expressive Component Recipes (HTML / CSS / JS)
 
-These recipes implement the **Expressive components introduced in Material 3 Expressive (May 2025+)** that are not provided by `@material/web` (which is in maintenance mode).
+These recipes implement the **Expressive components introduced in Material 3 Expressive (May 2025+)** using zero-dependency **native semantic HTML (`<button>`, `<input>`, `<dialog>`, `<nav>`) + MD3E CSS tokens (`--md-sys-*`) + vanilla JS runtimes (`md3e-spring.js`, `md3e-morph.js`)**.
 
-Every recipe uses pure semantic HTML, MD3E CSS tokens (`--md-sys-*`), and spring motion. They work out of the box with zero dependencies and can be used alongside `@material/web` or in any framework (React, Vue, Svelte, Vanilla).
+> [!TIP]
+> **Using React / Vue / Svelte? Pair with Headless UI Primitives (Radix UI / Base UI / React Aria):**
+> Rather than fighting Shadow DOM encapsulation, drop complex overlay state, roving focus, and ARIA plumbing into unstyled headless primitives (e.g. **Radix UI**, **Base UI**, or **React Aria**) and bind MD3E tokens directly onto `[data-state="open|checked"]`, `[data-highlighted]`, and `:focus-visible`:
+> ```css
+> .md3e-dialog-content[data-state="open"] {
+>   background: var(--md-sys-color-surface-container-high);
+>   color: var(--md-sys-color-on-surface);
+>   border-radius: var(--md-sys-shape-corner-extra-large);
+>   transition: transform var(--md-sys-motion-default-spatial), opacity var(--md-sys-motion-fast-effects);
+> }
+> ```
 
 ---
 

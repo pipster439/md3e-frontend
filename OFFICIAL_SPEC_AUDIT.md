@@ -7,11 +7,12 @@
 > - **第一轮**：本文档最初列出的 12 项问题（2 项 P1 + 10 项 P2）以及后续排查出的图标防幻觉/FOUT 保护、WAAPI/形态变形动画、Tailwind 动效映射与响应式示例缺陷已在当前版本全部落地修复，并新增 `references/icons.md`、回归测试 `scripts/test_md3e.py` 与静态检查器规则 `MD3E017`–`MD3E021`（完整规则集现涵盖 `MD3E001`–`MD3E022`）。
 > - **第二轮（配色方案 + 异形容器 + 模糊 + 动效 + 桌面优化对齐）**：修复了 `[data-color-variant="vibrant"]` 在暗色下完全无变化、深色模式下 `surface` (`#1C1B1F` N10) 与 `surface-container-low` (`#1D1B20` N10) 阶梯坍塌的问题，改为 `N98 #FEF7FF` / `N6 #141218`；新增纯标准库 CAM16/HCT + MCU `SPEC_2025` 生成器 `scripts/color_to_css.py`、多主题预设 `assets/tokens/md3e-palettes.css`（6 个种子色 × 5 种变体 × 3 档对比度 + `@media (forced-colors: active)`）；移植 AOSP `MaterialShapes.kt` 全部 35 种官方异形容器及 7 边形 `LoadingIndicator` 变形序列至 `scripts/shapes_to_css.py` / `assets/tokens/md3e-shapes.css`；完善动效生成器 `scripts/spring_to_css.py` 与 `assets/tokens/md3e-motion.css`，新增动效 `-bezier` 官方曲线对照驱动与可打断速度继承物理弹簧 `assets/tokens/md3e-spring.js`；明确区分官网无 `md.sys.blur.*` 令牌与 Android 16 系统窗口模糊，新增受保护的 `.md3e-frosted-surface` 与检查器规则 `MD3E022`，并补全桌面多窗格布局、Navigation Rail 折叠/展开及视觉密度（`data-density`）规范。
 > - **当前工具与资产清单**：
->   - **5 个脚本（`scripts/`）**：`color_to_css.py`（支持 `--seed` 与 `--image` 传图取色）、`shapes_to_css.py`、`spring_to_css.py`、`audit_md3e.py`（支持 `--mode=strict` 与 `--mode=desktop-bento`，规则涵盖 `MD3E001`–`MD3E023` 与 `MD3E101`–`MD3E104`）、`test_md3e.py`。
->   - **9 个令牌与运行时文件（`assets/tokens/`）**：`md3e-tokens.css`、`md3e-palettes.css`、`md3e-blur.css`（带 `@media (prefers-reduced-transparency: reduce)` 自动纯色回退）、`md3e-shapes.css`、`md3e-motion.css`、`md3e-material-web.css`、`md3e-spring.js`、`md3e-morph.js`（AndroidX `RoundedPolygon` + `Morph` 三阶贝塞尔实时形变插值器）、`md3e-dynamic-color.js`（浏览器端上传图片取色 `QuantizerCelebi` + `Score` + `SPEC_2025` 实时换肤）。
->   - **Tailwind 与 Starter 资产**：`assets/tailwind/md3e-theme.css`、`assets/tailwind/tailwind.config.js`、`assets/starter/index.html`、`assets/starter/desktop-bento.html`（独立桌面端高密度 Bento 仪表盘演示页）。
+>   - **5 个脚本（`scripts/`）**：`color_to_css.py`（支持 `--seed` 与 `--image` 传图取色）、`shapes_to_css.py`、`spring_to_css.py`、`audit_md3e.py`（支持 `--mode=strict` 与 `--mode=desktop-bento`，四级权威规则：`ERROR`/`WARNING`/`INFO` 层 `MD3E001`–`MD3E026` 与 `CUSTOM` 产品扩展层 `MD3E101`–`MD3E104`，含 `data-md3e-exempt="data-view"` 数据视图自动豁免）、`test_md3e.py`。
+>   - **8 个令牌与运行时文件（`assets/tokens/`）**：`md3e-tokens.css`、`md3e-palettes.css`、`md3e-blur.css`（带 `@media (prefers-reduced-transparency: reduce)` 自动纯色回退）、`md3e-shapes.css`、`md3e-motion.css`、`md3e-spring.js`、`md3e-morph.js`（AndroidX `RoundedPolygon` + `Morph` 三阶贝塞尔实时形变插值器）、`md3e-dynamic-color.js`（浏览器端上传图片取色 `QuantizerCelebi` + `Score` + `SPEC_2025` 实时换肤）。
+>   - **Tailwind 与 Starter 资产**：`assets/tailwind/md3e-theme.css`、`assets/tailwind/tailwind.config.js`、`assets/starter/index.html`、`assets/starter/desktop-bento.html`（Layer 3 Opt-In 产品级桌面端高密度 Bento 仪表盘演示页）。
 > - **第三轮（Web 原生完备度 + 桌面端高密度 Bento 系统升级）**：在 `SKILL.md` 建立上下文预算防溢出机制与 `references/desktop-bento.md` 可选覆写层解耦；新增 `md3e-blur.css`、`md3e-morph.js`，并在 `expressive-recipes.md` / `typography.md` / `starter` 示例中补齐实时贝塞尔形变、100% 自动拉直双实现波浪进度条（SVG + Canvas）、悬浮/停靠双向工具栏、按钮组邻居宽度挤压、可变字体 `GRAD`/`ROND`/`wght` 弹簧过渡及 View Transitions 容器展开配方；随后在交互回归中修复了 `desktop-bento.html` CTA 按钮点击瞬时锐角矩形（`9999px` 过冲负值钳位，规则 `MD3E019`）与取色 Popover 锚定问题。
 > - **第四轮（Official Spec Purification 官方规范纯化与三层架构重构）**：将仓库统一定位为 *"M3 Expressive-inspired Web Design System with verified M3E specifications"*；在 `SKILL.md`、`README.md` 与 `references/` 明确切分 **Layer 1 Official M3E**（6 组语义色彩与 5 种 HCT 动态变体、基线/强调各 15 级排版、10 档圆角与 35 种 `MaterialShapes`、Expressive/Standard 弹簧物理参数）、**Layer 2 Web Implementation**（`md3e-spring.js` / `linear()` 与 Google `OFFICIAL_WEB_CURVES` 同为一等公民、WCAG 2.2 AA `24×24px` 热区底线 `[ERROR]` vs M3 推荐 `48×48px` `[WARNING]`、CSS Mask / wrapper `filter: drop-shadow()`、`in oklab` 中性色混合、`md3e-blur.css` `prefers-reduced-transparency` 回退）、**Layer 3 Opt-In Product Extensions**（将 `desktop-bento.md` 与 `expressive-tactics.md` 从官方强制范畴剥离）；将 `scripts/audit_md3e.py` 重构为 `ERROR` / `WARNING` / `INFO` / `CUSTOM` 四级权威判定（新增 `MD3E024` 对比度/角色配对与 `MD3E025` 单视图多主按钮规则），使 `CUSTOM` 仅在 `--mode=desktop-bento` 激活且不计入 `official_compliance.score`，并加入 `data-md3e-exempt="data-view"` 与 `<canvas>` / 图表 `<svg>` / 2D 轨迹视口 / 统计明细表的自动豁免。
+> - **第五轮（移除旧版 Web Components 依赖与现代化语义组件重构）**：物理删除旧版 Web Component 桥接令牌表与集成文档，全仓清理所有自定义元素标签与外部 CDN 模块加载残留；全面统一至 **“原生语义化 HTML（或 Radix UI / Base UI 无样式原语）+ MD3E CSS Tokens / Tailwind + 原生 JS 运行时引擎”** 范式；同步升级 `audit_md3e.py` 与 `test_md3e.py`（将 `MD3E020` 升级为禁止遗留自定义元素且校验原生 ARIA 状态与 `tabindex` 契约，新增 `MD3E026` 检查 MD3E Token 基类与修饰类完整绑定）。
 
 ## 结论（初版审查快照）
 
@@ -85,13 +86,13 @@ P1 表示应优先修复、可能直接影响可读性或错误放行；P2 表�
 
 项目自身的 `components/action.md` 已记录对应要求；与指定参考的按钮组件章节一致。建议按尺寸与状态实现间距和内部圆角，将当前实现明确标为简化示意，直至补齐。依据：[结构化按钮参考](https://github.com/abhixv/m3-expressive-design-skill/blob/main/skills/m3-expressive/references/components/buttons.md)，其对应官方页面为 [Split button Specs](https://m3.material.io/components/split-button/specs) 与 [Button groups Specs](https://m3.material.io/components/button-groups/specs)。
 
-### 7. 五档按钮尺寸在示例和桥接层中没有完整落实
+### 7. 五档按钮尺寸在早期示例和旧版桥接层中没有完整落实
 
-位置：[starter/index.html:134](C:/Users/ROG/.gemini/config/skills/md3e-frontend/assets/starter/index.html:134)、[md3e-material-web.css:258](C:/Users/ROG/.gemini/config/skills/md3e-frontend/assets/tokens/md3e-material-web.css:258)。
+位置：[starter/index.html:134](C:/Users/ROG/.gemini/config/skills/md3e-frontend/assets/starter/index.html:134)（以及早期旧版自定义元素桥接表，**已在第五轮物理移除**）。
 
 浏览器实测：starter 的 XS、S 都是 48px 高。原因是直接在有背景的按钮上设置 `min-height:48px`，覆盖了 32px、40px 的视觉高度。应保持视觉容器高度，再扩展透明命中区。
 
-桥接样式也不完整：L 的 padding、icon、label 只完整更新 filled/outlined；XL 的完整映射主要只有 filled，text 连高度也未更新。使用同一个 `.md3e-size-xl`，不同按钮类型会得到不同尺寸体系。
+早期桥接样式也不完整：L 的 padding、icon、label 只完整更新 filled/outlined；XL 的完整映射主要只有 filled，text 连高度也未更新。后续已全面统一为原生 HTML `.md3e-btn` / `.md3e-icon-btn` 体系，不再保留旧版缩放桥接类名。
 
 建议覆盖各颜色样式与 XS/S/M/L/XL 的完整矩阵，并分别测量容器、命中区、标签和图标。尺寸依据：[指定结构化按钮参考](https://github.com/abhixv/m3-expressive-design-skill/blob/main/skills/m3-expressive/references/components/buttons.md)，也见本项目 `references/components/action.md` 的测量表。
 
@@ -111,13 +112,11 @@ P1 表示应优先修复、可能直接影响可读性或错误放行；P2 表�
 
 这是静态代码确认，未把该 recipe 单独装载为完整交互测试。建议使用 hidden/inert 或等价焦点管理，补齐打开、关闭、Escape、焦点返回和实际命中区。与本项目无障碍参考中的键盘可达性要求冲突。
 
-### 10. Starter 的文本框闭合错误使滑块进入未显示的内容
+### 10. Starter 早期文本框闭合错误使滑块进入未显示的内容
 
-位置：[starter/index.html:485](C:/Users/ROG/.gemini/config/skills/md3e-frontend/assets/starter/index.html:485)。
+位置：[starter/index.html:485](C:/Users/ROG/.gemini/config/skills/md3e-frontend/assets/starter/index.html:485)（初版审查快照；第五轮已整体重构为原生 `<div class="md3e-text-field">` + `<input>` 与原生滑动条，彻底根除自定义标签错配风险）。
 
-`<md-outlined-text-field>` 被 `</md-filled-text-field>` 关闭。浏览器实际 DOM 中，后续 slider 成为 outlined text field 的后代；可访问性树中未出现 Volume slider。
-
-建议先修正闭合标签，再验证文本框与滑块分别可见、可聚焦。另应修正同页 473、478 行的可访问名称：可见 Wi-Fi 对应 Airplane mode，Notifications 对应 Option A，语义不一致。
+早期遗留自定义文本框标签曾被错误的闭合标签关闭，导致浏览器实际 DOM 中后续 slider 成为文本框的后代，可访问性树中未出现 Volume slider。现已全面替换为原生语义 `<input>`、`role="switch"` 与 `<dialog>`，并修复了 Wi-Fi 与 Notifications 的可访问名称一致问题。
 
 ### 11. 自动检查器的零问题结果不能证明合规
 
@@ -175,5 +174,5 @@ P1 表示应优先修复、可能直接影响可读性或错误放行；P2 表�
 ### 尚未逐一认证的范围（Known Boundaries）
 - **全组件跨断点状态矩阵**：尚未针对全部 36+ 组件图示的每一种交互状态、密级组合及全尺寸（`XS–XL`）在所有 `m3.material.io` 规格图上逐像素认证。
 - **Tailwind CSS v3 / v4 实机编译流水线**：`assets/tailwind/md3e-theme.css` 与 `tailwind.config.js` 的键值与 Token 映射已通过结构对齐，尚未在独立 Vite/PostCSS v3 & v4 构建管线中逐类渲染实测。
-- **外部前端框架全量构建矩阵**：React、Vue、Svelte、Next.js、Nuxt 等外部框架集成代码片段仅作接入参考，未逐框架启动端到端构建与 SSR 水合测试；`@material/web` 版本升级兼容性随上游 `esm.run` 发布节奏变化。
+- **外部前端框架全量构建矩阵**：React、Vue、Svelte、Next.js、Nuxt 等外部框架与 Headless UI 原语（Radix UI / Base UI / React Aria）接入模式仅作集成参考，未逐框架启动端到端构建与 SSR 水合测试。
 - **非 Chromium 引擎差异**：`linear()` 与 `@supports` 降级路径在文档和回退 CSS 中已覆盖，实机浏览器回归仅在 Chromium 无头/桌面环境下完成，未覆盖 Safari/WebKit 与 Firefox 跨引擎实机矩阵。

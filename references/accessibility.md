@@ -81,10 +81,8 @@ alone, and do not leave a disabled control focusable without explanation.
 
 ## Semantics
 
-- Use native elements first: `<button>`, `<a href>`, `<input>`, `<select>`.
-  Material web components already carry the right role — do not re-declare it.
-- Icon-only controls need an accessible name: `aria-label` (or `label=` on
-  Material elements). A FAB, an icon button, a close affordance — all of them.
+- Use native elements first: `<button type="button">`, `<a href>`, `<input>`, `<select>`, `<dialog>`, and `<nav>`. When using Headless UI primitives (Radix UI / Base UI / React Aria) for composite menus, dialogs, or switches, preserve their native ARIA state attributes (`aria-pressed`, `aria-expanded`, `aria-checked`, `aria-selected`) without conflicting redundant roles.
+- Icon-only controls need an accessible name (`aria-label` or visually hidden text) — FABs, icon buttons, close affordances, all of them.
 - Toggles need a label describing both states: "Add to favourites" /
   "Remove from favourites", plus `aria-pressed`.
 - Keep DOM order equal to visual order so tab order follows reading order.

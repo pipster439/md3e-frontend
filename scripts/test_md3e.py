@@ -28,7 +28,6 @@ TOKENS_CSS = ROOT_DIR / "assets" / "tokens" / "md3e-tokens.css"
 PALETTES_CSS = ROOT_DIR / "assets" / "tokens" / "md3e-palettes.css"
 SHAPES_CSS = ROOT_DIR / "assets" / "tokens" / "md3e-shapes.css"
 MOTION_CSS = ROOT_DIR / "assets" / "tokens" / "md3e-motion.css"
-MWC_CSS = ROOT_DIR / "assets" / "tokens" / "md3e-material-web.css"
 SPRING_JS = ROOT_DIR / "assets" / "tokens" / "md3e-spring.js"
 TAILWIND_THEME_CSS = ROOT_DIR / "assets" / "tailwind" / "md3e-theme.css"
 TAILWIND_CONFIG_JS = ROOT_DIR / "assets" / "tailwind" / "tailwind.config.js"
@@ -373,45 +372,53 @@ class MotionTokenTests(unittest.TestCase):
         self.assertIn("cubic-bezier(0.42, 1.67, 0.21, 0.90)", fallback_block)
 
 
-class MaterialWebBridgeTests(unittest.TestCase):
-    def test_five_sizes_complete_across_all_button_and_icon_button_variants(self) -> None:
-        css = MWC_CSS.read_text(encoding="utf-8")
-        variants = ("filled", "outlined", "elevated", "filled-tonal", "text")
-        sizes = ("xs", "s", "m", "l", "xl")
-        for size in sizes:
-            block = extract_var_block(css, rf"\.md3e-size-{size},\s*\n\[data-md3e-size=\"{size}\"\]\s*\{{")
-            for v in variants:
-                for prop in (
-                    "container-height",
-                    "container-shape",
-                    "leading-space",
-                    "trailing-space",
-                    "with-leading-icon-leading-space",
-                    "with-leading-icon-trailing-space",
-                    "icon-size",
-                    "label-text-size",
-                    "label-text-line-height",
-                ):
-                    tok = f"--md-{v}-button-{prop}"
-                    self.assertIn(tok, block, f"Missing {tok} in .md3e-size-{size}")
-                    self.assertNotIn("corner-full", block[tok], f"Morphable button {tok} must not use corner-full")
+class SemanticPrimitivesAndZeroMwcTests(unittest.TestCase):
+    def test_legacy_material_web_assets_and_refs_removed(self) -> None:
+        self.assertFalse((ROOT_DIR / "assets" / "tokens" / "md3e-material-web.css").exists())
+        self.assertFalse((REFERENCES_DIR / "material-web.md").exists())
 
-            self.assertIn("--md-icon-button-state-layer-width", block)
-            self.assertIn("--md-icon-button-state-layer-height", block)
-            for iv in ("filled", "filled-tonal", "outlined"):
-                self.assertIn(f"--md-{iv}-icon-button-container-width", block)
-                self.assertIn(f"--md-{iv}-icon-button-container-height", block)
+        banned = re.compile(r"@material/web|md3e-material-web|esm\.run/@material/web|</?md-[a-z]", re.IGNORECASE)
+        scan_files = [SKILL_MD, ROOT_DIR / "README.md", OFFICIAL_AUDIT_MD]
+        scan_files.extend(sorted(REFERENCES_DIR.rglob("*.md")))
+        scan_files.extend(sorted((ROOT_DIR / "assets").rglob("*")))
+        offenders: list[tuple[str, int, str]] = []
+        for fp in scan_files:
+            if not fp.is_file():
+                continue
+            for idx, line in enumerate(fp.read_text(encoding="utf-8").splitlines(), start=1):
+                if banned.search(line):
+                    offenders.append((fp.name, idx, line.strip()[:100]))
+        self.assertEqual(offenders, [], f"Legacy @material/web/<md-*> references remain: {offenders}")
 
-    def test_hit_area_before_parents_have_position_relative(self) -> None:
-        css = MWC_CSS.read_text(encoding="utf-8")
-        rel_match = re.search(r":(?:is|where)\(([^()]*)\)\s*\{\s*position:\s*relative;", css)
-        self.assertIsNotNone(rel_match, "Missing position: relative hit-area parent rule")
-        rel_selectors = {s.strip() for s in rel_match.group(1).split(",")}
-        self.assertIn(
-            "md-fab",
-            rel_selectors,
-            "md-fab must have position: relative so density ::before hit-area does not escape to viewport",
-        )
+    def test_starter_native_primitives_and_headless_guidance(self) -> None:
+        html = STARTER_HTML.read_text(encoding="utf-8")
+        for variant in ("filled", "tonal", "elevated", "outlined", "text"):
+            self.assertIn(f".md3e-btn--{variant}", html)
+        for size in ("xs", "s", "m", "l", "xl"):
+            self.assertIn(f".md3e-btn--{size}", html)
+        self.assertIn(".md3e-btn--square", html)
+        self.assertIn(".md3e-btn::before", html)
+        self.assertIn("calc(var(--md-btn-h) / 2)", html)
+        for selector in (
+            'id="section-primitives"',
+            'id="prim-switch"',
+            'id="prim-checkbox"',
+            'id="prim-text-field"',
+            'id="volume-slider"',
+            'id="prim-dialog"',
+            ".md3e-fab--medium",
+        ):
+            self.assertIn(selector, html)
+
+        for doc in (
+            SKILL_MD,
+            ROOT_DIR / "README.md",
+            REFERENCES_DIR / "components.md",
+            REFERENCES_DIR / "components" / "expressive-recipes.md",
+        ):
+            text = doc.read_text(encoding="utf-8")
+            self.assertIn("Radix UI", text, f"Missing Radix UI guidance in {doc.name}")
+            self.assertIn("Base UI", text, f"Missing Base UI guidance in {doc.name}")
 
 
 class TypographyAndDesktopTokenTests(unittest.TestCase):
@@ -578,7 +585,7 @@ class AuditorTests(unittest.TestCase):
 
     def test_shipped_assets_and_all_21_markdown_docs_pass_compliance(self) -> None:
         reports, scanned = audit_md3e.audit([str(ROOT_DIR / "assets")], [], mode="strict")
-        self.assertEqual(scanned, 13)
+        self.assertEqual(scanned, 12)
         self.assertEqual(reports, [], f"Unexpected strict asset findings: {reports}")
 
         bento_reports, bento_scanned = audit_md3e.audit(
@@ -595,14 +602,8 @@ class AuditorTests(unittest.TestCase):
             include_markdown=True,
             mode="strict",
         )
-        self.assertEqual(md_scanned, 22)
-        warn_or_error = [
-            (r.path, f)
-            for r in md_reports
-            for f in r.findings
-            if f.severity in ("error", "warning")
-        ]
-        self.assertEqual(warn_or_error, [], f"Unexpected markdown error/warning findings: {warn_or_error}")
+        self.assertEqual(md_scanned, 21)
+        self.assertEqual(md_reports, [], f"Unexpected markdown compliance findings across 21 docs: {md_reports}")
 
         bento_md_reports, bento_md_scanned = audit_md3e.audit(
             [str(REFERENCES_DIR / "desktop-bento.md")],
@@ -663,16 +664,18 @@ class AuditorTests(unittest.TestCase):
         bad_bezier_anim = ".loader { animation: spin 2.4s var(--md-sys-motion-default-spatial-bezier) infinite; }"
         self.assertIn("MD3E019", self._codes(bad_bezier_anim, "bezier.css"))
 
-        # MD3E014: multi-line labelled md-icon-button must not false-positive
-        good_multiline_icon_btn = '<md-icon-button\n  aria-label="Settings"\n>\n  <md-icon aria-hidden="true">settings</md-icon>\n</md-icon-button>'
+        # MD3E014: multi-line labelled native icon button must not false-positive
+        good_multiline_icon_btn = '<button type="button" class="md3e-icon-btn"\n  aria-label="Settings"\n>\n  <span class="material-symbols-outlined" aria-hidden="true">settings</span>\n</button>'
         self.assertNotIn("MD3E014", self._codes(good_multiline_icon_btn))
-        bad_empty_icon_btn = '<md-icon-button><md-icon aria-hidden="true">settings</md-icon></md-icon-button>'
+        bad_empty_icon_btn = '<button type="button" class="md3e-icon-btn"><span class="material-symbols-outlined" aria-hidden="true">settings</span></button>'
         self.assertIn("MD3E014", self._codes(bad_empty_icon_btn))
 
-        # MD3E020 unclosed tag & MD3E021 exact line number on multi-line control
-        unclosed_md = '<md-outlined-text-field label="Name">'
-        self.assertIn("MD3E020", self._codes(unclosed_md))
-        multiline_a11y = '<md-fab aria-label="Add">\n  <md-icon>add</md-icon>\n</md-fab>'
+        # MD3E020 legacy <md-*> rejection & MD3E021 exact line number on multi-line control
+        legacy_md = '<md-outlined-text-field label="Name"></md-outlined-text-field>'
+        m020_legacy = [f for f in self._findings(legacy_md) if f.code == "MD3E020"]
+        self.assertEqual(len(m020_legacy), 1)
+        self.assertEqual(m020_legacy[0].severity, "error")
+        multiline_a11y = '<button type="button" class="md3e-fab--medium" aria-label="Add">\n  <span class="material-symbols-outlined">add</span>\n</button>'
         m021 = [f for f in self._findings(multiline_a11y) if f.code == "MD3E021"]
         self.assertEqual(len(m021), 1)
         self.assertEqual(m021[0].line, 2)
@@ -728,7 +731,7 @@ class AuditorTests(unittest.TestCase):
         self.assertEqual(len(m004_bad), 1)
         self.assertEqual(m004_bad[0].severity, "warning")
 
-    def test_new_checks_md3e017_to_md3e021(self) -> None:
+    def test_new_checks_md3e017_to_md3e026(self) -> None:
         # MD3E017: bad icon names + missing Material Symbols <link>
         bad_icons = '<!doctype html><html><body><span class="material-symbols-outlined">trash</span><span class="material-symbols-outlined">chevron-down</span></body></html>'
         codes = self._codes(bad_icons)
@@ -746,9 +749,35 @@ class AuditorTests(unittest.TestCase):
         bad_morph = ".pill { border-radius: var(--md-sys-shape-corner-full); transition: border-radius var(--md-sys-motion-default-spatial); }"
         self.assertIn("MD3E019", self._codes(bad_morph, "morph.css"))
 
-        # MD3E020: mismatched <md-*> closing tag
-        bad_tag = "<md-outlined-text-field label=\"Name\"></md-filled-text-field>"
-        self.assertIn("MD3E020", self._codes(bad_tag))
+        # MD3E020: legacy @material/web ref, missing ARIA checked/tabindex, invalid ARIA boolean, TSX inline style
+        bad_mwc_import = "import '@material/web/button/filled-button.js';"
+        self.assertIn("MD3E020", self._codes(bad_mwc_import, "app.ts"))
+        bad_mwc_css = "@import './md3e-material-web.css';"
+        self.assertIn("MD3E020", self._codes(bad_mwc_css, "app.css"))
+        bad_aria = (
+            '<div role="button">Click</div>\n'
+            '<input type="checkbox" role="switch" id="s1">\n'
+            '<button type="button" aria-pressed="yes">Toggle</button>'
+        )
+        m020_aria = [f for f in self._findings(bad_aria) if f.code == "MD3E020"]
+        self.assertEqual(len(m020_aria), 3)
+        good_headless_tsx = (
+            'export const Toggle = (props: any) => (\n'
+            '  <div role="button" {...props} style={{ color: "var(--md-sys-color-primary)" }} aria-pressed={true}>OK</div>\n'
+            ');'
+        )
+        self.assertEqual([f for f in self._findings(good_headless_tsx, "Toggle.tsx") if f.code == "MD3E020"], [])
+
+        # MD3E026: unbound modifier classes and legacy bridge scaling classes
+        unbound_cls = (
+            '<button type="button" class="md3e-btn--filled">No base</button>\n'
+            '<div class="md3e-shape-sunny">No shape base</div>\n'
+            '<div class="md3e-blur--lg">No blur base</div>\n'
+            '<button type="button" class="md3e-size-m">Legacy bridge size</button>'
+        )
+        m026 = [f for f in self._findings(unbound_cls) if f.code == "MD3E026"]
+        self.assertEqual(len(m026), 4)
+        self.assertTrue(all(f.severity == "warning" for f in m026))
 
         # MD3E021: decorative icon missing aria-hidden="true"
         bad_a11y_icon = '<button type="button"><span class="material-symbols-outlined">send</span> Publish</button>'
@@ -1147,8 +1176,8 @@ class OfficialSpecPurificationTests(unittest.TestCase):
     def test_md3e025_multiple_primary_filled_buttons_and_word_boundary(self) -> None:
         multi_primary_html = (
             "<!doctype html><html><body><section id='checkout'>"
-            "<md-filled-button>Buy Now</md-filled-button>"
-            "<md-filled-button>Subscribe</md-filled-button>"
+            "<button type='button' class='md3e-btn md3e-btn--filled md3e-btn--s'>Buy Now</button>"
+            "<button type='button' class='md3e-btn md3e-btn--filled md3e-btn--s'>Subscribe</button>"
             "</section></body></html>"
         )
         m025 = [f for f in audit_md3e.Checker(pathlib.Path("btn.html")).run(multi_primary_html) if f.code == "MD3E025"]
@@ -1157,8 +1186,8 @@ class OfficialSpecPurificationTests(unittest.TestCase):
 
         icon_filled_html = (
             "<!doctype html><html><body><section id='toolbar'>"
-            "<button type='button' class='md3e-icon-btn--filled' aria-label='Bold'><span class='material-symbols-outlined' aria-hidden='true'>check</span></button>"
-            "<button type='button' class='md3e-icon-btn--filled' aria-label='Italic'><span class='material-symbols-outlined' aria-hidden='true'>edit</span></button>"
+            "<button type='button' class='md3e-icon-btn md3e-icon-btn--filled' aria-label='Bold'><span class='material-symbols-outlined' aria-hidden='true'>check</span></button>"
+            "<button type='button' class='md3e-icon-btn md3e-icon-btn--filled' aria-label='Italic'><span class='material-symbols-outlined' aria-hidden='true'>edit</span></button>"
             "</section></body></html>"
         )
         m025_icons = [f for f in audit_md3e.Checker(pathlib.Path("icons.html")).run(icon_filled_html) if f.code == "MD3E025"]

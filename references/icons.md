@@ -98,7 +98,7 @@ Material Symbols uses **lowercase `snake_case` ligatures**. Never guess Lucide, 
 
 ## 4. Accessibility Rules for Icons
 
-1. **Decorative icons inside labelled buttons/links**: Add **`aria-hidden="true"`** on `<span class="material-symbols-outlined" aria-hidden="true">send</span>` or `<md-icon slot="icon" aria-hidden="true">`. Otherwise screen readers read the raw ligature string (`"send Publish"`, `"dark underscore mode Dark Mode"`).
-2. **Icon-only interactive controls**: Keep `aria-hidden="true"` on the icon span itself and put a human-readable **`aria-label`** on the parent `<button>`, `<a href>`, `<md-icon-button>`, or `<md-fab>`.
+1. **Decorative icons inside labelled buttons/links**: Add **`aria-hidden="true"`** on `<span class="material-symbols-outlined" aria-hidden="true">send</span>` (or inline `<svg aria-hidden="true">`). Otherwise screen readers read the raw ligature string (`"send Publish"`, `"dark underscore mode Dark Mode"`).
+2. **Icon-only interactive controls**: Keep `aria-hidden="true"` on the icon span itself and put a human-readable **`aria-label`** on the parent `<button type="button" class="md3e-icon-btn">`, `<a href>`, or `.md3e-fab`.
 3. **Standalone informative icons**: Use `role="img"` and `aria-label="..."` on the icon wrapper (never expose raw snake_case ligature text to assistive technology).
 4. **Target vs glyph**: Keep the icon visual size at `24px` (or `20px` on XS/S buttons) and expand the parent interactive hit area to `>= 48×48px` via padding or `::before`—never enlarge the glyph to hit 48px.

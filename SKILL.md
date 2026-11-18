@@ -24,7 +24,7 @@ Downstream agents operate with a finite context window. Preserve token budget st
      - Real-time cubic Bézier SVG shape morphing -> `assets/tokens/md3e-morph.js` + `assets/tokens/md3e-spring.js`
      - Client-side wallpaper/image HCT palette extraction & custom seed picker -> `assets/tokens/md3e-dynamic-color.js`
      - Multi-seed preset schemes -> `assets/tokens/md3e-palettes.css`
-     - `@material/web` primitives -> `assets/tokens/md3e-material-web.css`
+     - Native semantic HTML + Headless UI primitives (`<button>`, `<input>`, `<dialog>`, Radix UI / Base UI) -> bind directly to `--md-sys-*` / `--md-comp-*` tokens & `.md3e-*` classes (no legacy custom-element bridge or Shadow DOM wrapper required)
 
 ## Three-Layer Specification Architecture
 
@@ -67,7 +67,6 @@ assets/tokens/md3e-motion.css         (core) motion springs + -duration/-easing/
 assets/tokens/md3e-blur.css           (optional) floating backdrop-filter blur + prefers-reduced-transparency solid fallbacks
 assets/tokens/md3e-palettes.css       (optional, link-only) multi-seed colour scheme presets (ocean, emerald, amber, rose, teal)
 assets/tokens/md3e-shapes.css         (optional) 35 official MaterialShapes masks & 7-polygon LoadingIndicator
-assets/tokens/md3e-material-web.css   (optional) bridge for @material/web components
 assets/tokens/md3e-spring.js          (optional) velocity-preserving interruptible JS spring helper
 assets/tokens/md3e-morph.js           (optional) AndroidX RoundedPolygon + Morph cubic Bézier real-time shape interpolator
 assets/tokens/md3e-dynamic-color.js   (optional) runtime browser/SSR HCT palette extraction from uploaded images/seeds
@@ -86,7 +85,6 @@ assets/tokens/md3e-dynamic-color.js   (optional) runtime browser/SSR HCT palette
 <link rel="stylesheet" href="./tokens/md3e-blur.css">
 <link rel="stylesheet" href="./tokens/md3e-shapes.css">
 <link rel="stylesheet" href="./tokens/md3e-motion.css">
-<link rel="stylesheet" href="./tokens/md3e-material-web.css">
 ```
 
 Set the scheme and theme roots once:
@@ -150,9 +148,9 @@ Two structural rules that get missed:
 
 ### Three component strategies
 
-1. **Google Material Web (`@material/web`)**: For standard primitives (buttons, text fields, selects, checkbox, switch, slider, dialog, menu, tabs). Include `assets/tokens/md3e-material-web.css` and use MD3E utility classes (`.md3e-size-xs` .. `.md3e-size-xl`, `.md3e-shape-square`, `.md3e-fab-medium`). See `references/material-web.md`.
-2. **Pure Expressive Recipes**: For the Expressive components missing from `@material/web` (docked/floating toolbars, split button, connected/standard button groups, FAB menu, 7-polygon shape-morphing loading indicator, toggle buttons, plus search bar, badges, carousel, nav rail, clock dial & 35-shape containers). See `references/components/expressive-recipes.md`.
-3. **Tailwind CSS**: Use MD3E token utility classes (`bg-md-primary`, `rounded-md-lg`, `shadow-md-level2`). See `references/tailwind.md` and `assets/tailwind/`.
+1. **Native Semantic HTML + MD3E Token Classes**: Build buttons, checkboxes, switches (`<input type="checkbox" role="switch">`), text fields, sliders, navigation rails/bars, and native `<dialog>` elements directly on standard HTML tags styled with `--md-sys-*` tokens, `::before` `48×48px` hit targets, `:focus-visible` focus rings, and standard ARIA states (`aria-pressed`, `aria-expanded`, `aria-checked`, `aria-selected`, `aria-current="page"`) — zero Web Component or Shadow DOM encapsulation friction.
+2. **Headless Unstyled Primitives (Radix UI / Base UI / React Aria / Ark UI)**: For complex composite overlays, comboboxes, dropdown menus, roving tabs, and modal focus traps in React/Vue/Svelte apps, bind headless state attributes (`[data-state="open|checked"]`, `[data-highlighted]`) directly to MD3E colour roles, state layers, and `--md-sys-motion-*` springs.
+3. **Pure Expressive Recipes & Tailwind CSS**: Use `references/components/expressive-recipes.md` for copy-ready HTML/CSS/JS Expressive components (docked/floating toolbars, split buttons, connected button groups, FAB menus, 7-polygon loading indicators, wavy progress bars, toggle groups, clock dial & 35-shape containers) and `references/tailwind.md` (`assets/tailwind/`) for Tailwind CSS v3/v4 utilities (`bg-md-primary`, `rounded-md-lg`, `shadow-md-level2`).
 
 Complete every state: enabled, hover, focus, pressed, disabled, plus selected
 where it applies. See `references/accessibility.md`.
@@ -208,7 +206,7 @@ python scripts/test_md3e.py -v                           # Full token, generator
 | MD3E014 | `ERROR` | Icon-only interactive control missing accessible name |
 | MD3E017 | `ERROR` | Hallucinated/invalid Material Symbols ligature, missing font `<link>`, or non-alphabetical Google Fonts axes |
 | MD3E018 | `ERROR` | Unitless opacity in `color-mix()` or `color-mix(in oklch, ...)` on neutrals/surfaces |
-| MD3E020 | `ERROR` | Mismatched or unclosed `<md-*>` Web Component closing tag |
+| MD3E020 | `ERROR` | Legacy custom-element tags / Web Component bridge imports or invalid native interactive ARIA state/tabindex contract (`role="switch"` missing `aria-checked`, clickable `<div role="button">` missing `tabindex`, invalid boolean ARIA literal) |
 | MD3E022 | `ERROR` | `backdrop-filter: blur(...)` missing `@media (prefers-reduced-transparency: reduce)` fallback |
 | MD3E024 | `ERROR` | WCAG contrast `< 4.5:1` (`< 3.0:1` large text) or foreign container/`on-*` semantic role mismatch |
 | MD3E004 | `WARNING` | Motion uses uncalibrated curve (`OFFICIAL_WEB_CURVES` and springs both pass with 0 findings) |
@@ -220,6 +218,7 @@ python scripts/test_md3e.py -v                           # Full token, generator
 | MD3E019 | `WARNING` | Composite spring token in `animation:` shorthand (delay bug) or `9999px` radius morph snap/overshoot `0px` flash |
 | MD3E021 | `WARNING` | Decorative icon inside labelled control missing `aria-hidden="true"` |
 | MD3E023 | `WARNING` | Rectangular `box-shadow` directly on `.md3e-shape*`/masked shape instead of wrapper `filter: drop-shadow()` |
+| MD3E026 | `WARNING` | Unbound MD3E modifier class missing base class (`.md3e-btn--*` without `.md3e-btn`, `.md3e-shape-*` without `.md3e-shape`) or deprecated `md3e-size-*` / `md3e-fab-medium` bridge class |
 | MD3E001 | `INFO` | Hardcoded hex colour *(Project Default)* |
 | MD3E002 | `INFO` | Hardcoded `rgb()` / `hsl()` / `oklch()` functional colour *(Project Default)* |
 | MD3E003 | `INFO` | Custom/brand corner radius outside default 10-step scale *(Project Default)* |
@@ -254,8 +253,7 @@ python scripts/spring_to_css.py --stiffness 500 --damping 0.7   # custom spring
 | File | Contents |
 |---|---|
 | `references/icons.md` | Material Symbols `<head>` setup, offline SVG fallback, hallucination-prevention name table, variable axes, a11y rules |
-| `references/material-web.md` | Google `@material/web` component catalogue, token mappings, framework setups (React/Vue/Svelte/Next) |
-| `references/components/expressive-recipes.md` | Production HTML/CSS/JS recipes for Expressive components & patterns (Toolbars, Split button, Button groups, FAB menu, 7-polygon Loader, real-time `md3e-morph.js` button, Wavy SVG+Canvas progress bar, Toggle & variable-width icon buttons, Flexible Top App Bar, Carousel, Nav rail, Clock dial & `md3e-blur.css` chrome) |
+| `references/components/expressive-recipes.md` | Production HTML/CSS/JS recipes for Expressive components & Headless UI bindings (Toolbars, Split button, Button groups, FAB menu, 7-polygon Loader, real-time `md3e-morph.js` button, Wavy SVG+Canvas progress bar, Toggle & variable-width icon buttons, Flexible Top App Bar, Carousel, Nav rail, Clock dial & `md3e-blur.css` chrome) |
 | `references/desktop-bento.md` | Opt-in Desktop High-Expressiveness Bento override layer (frameless shell, `32–36px` dense tables vs `44–64px` chunky controls, borderless 4+ tonal nesting, `28px/16px` concentric radii, Hero wave/sparkline/morph anchors, `150–250ms` desktop springs) |
 | `references/tailwind.md` | Tailwind CSS v3 & v4 integration guide, theme extension mapping, `@theme` block |
 | `references/color.md` | tonal palettes, 47 colour roles (including 12 Fixed roles), role→tone mapping, state layers, fixed roles, contrast levels |
@@ -306,9 +304,9 @@ title. To read a spec you have not yet got in this skill:
    and read the image itself. If a section has a heading but no attribute rows,
    that is what happened.
 
-Fallbacks when a value is still missing: the Material web docs, Android
-Developers' Compose Material 3 reference, or a client library that cites the
-spec version.
+Fallbacks when a value is still missing: official `m3.material.io` token tables, Android
+Developers' Compose Material 3 / `MaterialShapes` reference, or official M3
+component token catalogs that cite the spec version.
 
 Do **not** fill a gap with a plausible-looking number. An off-spec radius or
 spring is worse than an explicitly flagged unknown, because it will be

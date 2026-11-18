@@ -2,7 +2,7 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Spec: m3.material.io](https://img.shields.io/badge/Spec-Material%203%20Expressive-6750A4.svg)](https://m3.material.io)
-[![Web Components: @material/web](https://img.shields.io/badge/%40material%2Fweb-Compatible-4285F4.svg)](https://github.com/material-components/material-web)
+[![Primitives: Semantic HTML & Headless UI](https://img.shields.io/badge/Primitives-Semantic%20HTML%20%26%20Headless%20UI-4285F4.svg)](#3-semantic-html--headless-primitives-radix-ui--base-ui)
 [![Tailwind CSS: v3 & v4](https://img.shields.io/badge/Tailwind%20CSS-v3%20%26%20v4-38B2AC.svg)](https://tailwindcss.com)
 [![Auditor: 4-Tier Rules](https://img.shields.io/badge/Auditor-4--Tier%20Verified-success.svg)](#deterministic-compliance-auditor)
 
@@ -20,11 +20,11 @@ Google's **Material 3 Expressive** introduced profound updates over baseline M3:
 * **Physical motion springs**: Replacing rigid duration/easing curves with harmonic oscillator physics (`linear()` approximations).
 * **Shape morphing transitions**: Controls smoothly change shapes (e.g. Round ↔ Square) upon selection or press.
 
-However, Google's official Web Components library (`@material/web`) was placed into maintenance mode prior to the Expressive release. **This repository bridges that gap**, providing:
-1. Turnkey token bridges for `@material/web`.
-2. Pure HTML/CSS/JS recipes for the missing Expressive components.
+Instead of wrapping legacy custom elements or fighting Shadow DOM style encapsulation, **this repository unifies the entire design system on native semantic HTML + Headless UI primitives + MD3E CSS tokens**, providing:
+1. Direct bindings from MD3E CSS tokens (`--md-sys-*`) onto semantic `<button>`, `<input>`, `<dialog>`, and `<nav>` elements — or unstyled Headless UI primitives (Radix UI, Base UI, React Aria) for complex composite overlays.
+2. Pure HTML/CSS/JS recipes for all Expressive components (`references/components/expressive-recipes.md`) backed by zero-dependency vanilla JS spring physics, contour-aligned morphing, and browser HCT colour extraction engines.
 3. Tailwind CSS v3 & v4 presets.
-4. A deterministic static compliance auditor (`audit_md3e.py`) to eliminate hallucinations and off-spec regressions.
+4. A deterministic 4-tier static compliance auditor (`audit_md3e.py`) verifying semantic ARIA contracts, token bindings, contrast/motion/blur accessibility, and off-spec regressions.
 
 ---
 
@@ -49,10 +49,8 @@ md3e-frontend/
 │       ├── md3e-blur.css                    # Translucent scrims & prefers-reduced-transparency fallbacks
 │       ├── md3e-spring.js                   # Real-time damped harmonic oscillator spring runtime
 │       ├── md3e-morph.js                    # Cubic Bezier contour-aligned shape morph interpolator
-│       ├── md3e-dynamic-color.js            # Browser HCT QuantizerCelebi + Score + SPEC_2025 engine
-│       └── md3e-material-web.css            # Turnkey bridge layer for @material/web
+│       └── md3e-dynamic-color.js            # Browser HCT QuantizerCelebi + Score + SPEC_2025 engine
 ├── references/
-│   ├── material-web.md                      # Complete @material/web integration & framework guide
 │   ├── tailwind.md                          # Tailwind CSS integration guide
 │   ├── color.md                             # Layer 1 & 2: 47 color roles, HCT variants & Web mixing rules
 │   ├── typography.md                        # Layer 1: 15 baseline + 15 emphasized type styles & GRAD/ROND
@@ -105,14 +103,12 @@ Copy `SKILL.md` and the `references/` directory into your project's `.cursor/rul
 Import the token files into your project:
 ```html
 <!-- Google Material Symbols Icons (axes MUST be strictly alphabetical for v2 API) -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:FILL,GRAD,ops,wght@0..1,-50..200,20..48,100..700">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:FILL,GRAD,opsz,wght@0..1,-50..200,20..48,100..700&display=block">
 
 <!-- MD3E Token Layer -->
 <link rel="stylesheet" href="./styles/md3e-tokens.css">
 <link rel="stylesheet" href="./styles/md3e-motion.css">
-
-<!-- Optional: Bridge for @material/web -->
-<link rel="stylesheet" href="./styles/md3e-material-web.css">
+<link rel="stylesheet" href="./styles/md3e-shapes.css">
 ```
 
 Activate dark mode or vibrant expressive color variants on `<html>`:
@@ -122,40 +118,46 @@ Activate dark mode or vibrant expressive color variants on `<html>`:
 
 ---
 
-### 3. Using `@material/web` with MD3E
+### 3. Semantic HTML & Headless Primitives (Radix UI / Base UI)
 
-Use Google's official Web Components and apply MD3E size and shape classes:
+Style native semantic HTML controls directly with MD3E CSS classes (`md3e-btn`, `md3e-icon-btn`, `md3e-fab`, `md3e-switch`, `md3e-dialog`) — zero Shadow DOM encapsulation or custom-element polyfills:
 ```html
-<script type="module" src="https://esm.run/@material/web/all.js"></script>
-
-<!-- Medium 56dp Filled Button with Emphasized Label -->
-<md-filled-button class="md3e-size-m">
-  <md-icon slot="icon" aria-hidden="true">send</md-icon>
+<!-- Medium 56dp Primary Filled Action (use sparingly per view) -->
+<button type="button" class="md3e-btn md3e-btn--filled md3e-btn--m">
+  <span class="material-symbols-outlined" aria-hidden="true">send</span>
   Send Message
-</md-filled-button>
+</button>
 
-<!-- Square Button (16dp corner) -->
-<md-outlined-button class="md3e-size-m md3e-shape-square">
+<!-- Square Outlined Button (16dp corner at Medium) -->
+<button type="button" class="md3e-btn md3e-btn--outlined md3e-btn--m md3e-btn--square">
   Square Button
-</md-outlined-button>
+</button>
 
 <!-- Medium FAB (80dp, corner 20dp) -->
-<md-fab class="md3e-fab-medium" aria-label="Compose">
-  <md-icon slot="icon" aria-hidden="true">edit</md-icon>
-</md-fab>
+<button type="button" class="md3e-fab md3e-fab--medium" aria-label="Compose">
+  <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+</button>
+
+<!-- Native Dialog Modal (or Radix UI / Base UI Dialog bound to [data-state="open"]) -->
+<dialog class="md3e-dialog" aria-labelledby="confirm-title">
+  <h3 id="confirm-title">Confirm Action</h3>
+  <button type="button" class="md3e-btn md3e-btn--tonal md3e-btn--s">Close</button>
+</dialog>
 ```
+
+For React, Vue, or Svelte composite widgets (menus, popovers, comboboxes, roving tabs), drop unstyled primitives (**Radix UI**, **Base UI**, **React Aria**) underneath your MD3E stylesheets and map `[data-state="open|checked"]`, `[data-highlighted]`, and `:focus-visible` to `--md-sys-*` tokens.
 
 ---
 
 ### 4. Pure Expressive Component Recipes
 
-For components missing in `@material/web`, use the production-ready recipes in `references/components/expressive-recipes.md`:
+Use the copy-ready zero-dependency semantic HTML/CSS/JS recipes in [`references/components/expressive-recipes.md`](references/components/expressive-recipes.md):
 
-* **Floating Toolbar**: Elevated pill toolbar (replacing deprecated bottom app bar).
-* **Split Button**: Primary action + trailing dropdown menu trigger with continuous silhouette.
-* **Connected Button Groups**: Shared inner borders with asymmetric corner radii.
-* **FAB Menu**: Floating action button morphing into vertical action sheets with spring animation.
-* **Expressive Loading Indicator**: Geometric morphing animation (<5s waits).
+* **Floating & Docked Toolbars**: Pill and docked action bars (replacing deprecated bottom app bar).
+* **Split Button**: Primary action + trailing dropdown menu trigger with continuous/gapped silhouettes.
+* **Connected Button Groups**: Shared inner borders with asymmetric corner radii and click width squeeze.
+* **FAB Menu**: Floating action button expanding into vertical action sheets with focus trapping.
+* **Expressive Loading Indicator & Wavy Progress**: 7-polygon morphing loader + SVG/Canvas waves that straighten at 100%.
 
 ---
 
@@ -175,7 +177,7 @@ module.exports = require('./assets/tailwind/tailwind.config.js');
 ```
 Now use MD3E utility classes directly:
 ```html
-<button class="bg-md-primary text-md-on-primary rounded-md-full px-4 h-10 min-h-[48px]">
+<button type="button" class="bg-md-primary text-md-on-primary rounded-md-full px-4 h-10 min-h-[48px]">
   Confirm
 </button>
 ```
@@ -212,13 +214,13 @@ Add `data-md3e-exempt="data-view"` on specialized workspaces (or rely on automat
 | `MD3E014` | `ERROR` | WCAG A11y | Icon-only control or `<img>` missing accessible name (`aria-label` / `alt`) |
 | `MD3E017` | `ERROR` / `WARNING` | L2 Icons | Material Symbols axes not alphabetical / missing font `<link>` (`ERROR`); invented icon names or no FOUT block guard (`WARNING`) |
 | `MD3E018` | `ERROR` | L2 CSS | Neutral `color-mix(in oklch, ...)` powerless-hue pink/red shift (use `in oklab`) or unitless alpha inside `color-mix()` |
-| `MD3E020` | `ERROR` | HTML DOM | Malformed/mismatched `@material/web` `<md-*>` tag nesting |
-| `MD3E021` | `WARNING` | WCAG A11y | Decorative `<md-icon>` or Material Symbols span missing `aria-hidden="true"` inside labeled control |
+| `MD3E020` | `ERROR` | HTML / ARIA | Legacy custom-element tag / Web Component bridge import, or invalid native/headless ARIA state & `tabindex` contract |
+| `MD3E021` | `WARNING` | WCAG A11y | Decorative Material Symbols span missing `aria-hidden="true"` inside labeled control |
 | `MD3E022` | `ERROR` | L2 Blur | `backdrop-filter: blur(...)` missing `@media (prefers-reduced-transparency: reduce)` solid fallback |
 | `MD3E024` | `ERROR` | L1/WCAG | Contrast failure (`< 4.5:1` / `< 3.0:1` large) or semantic `on-*` role mismatch |
 | `MD3E004` | `WARNING` | L2 Motion | Uncalibrated ad-hoc curve (`md3e-spring.js`, sampled `linear()`, and Google `OFFICIAL_WEB_CURVES` + duration are all valid) |
 | `MD3E008` | `WARNING` | WCAG/M3 | Motion declarations missing `@media (prefers-reduced-motion: reduce)` path |
-| `MD3E011`, `013`, `016`, `019`, `023` | `WARNING` | L2 Web | `border-radius: 50%` on pills, `transition: all`, deprecated 40dp small FAB, `9999px` spring overshoot snap, `box-shadow` on masked shape |
+| `MD3E011`, `013`, `016`, `019`, `023`, `026` | `WARNING` | L2 Web | `border-radius: 50%` on pills, `transition: all`, deprecated 40dp small FAB, `9999px` spring overshoot snap, `box-shadow` on masked shape, or unbound `md3e-*` modifier class |
 | `MD3E001`–`003`, `007`, `010`, `012`, `015`, `025` | `INFO` | Project Prefs | Hardcoded hex/rgb/radii/type scale, shadow elevation, uppercase labels, bottom app bar, or multiple primary filled buttons in one view |
 | `MD3E101`–`104` | `CUSTOM` | L3 Opt-In | Desktop Bento (`--mode=desktop-bento` only, excluded from Official Score): borderless tonal panels, `4+` surface tiers, concentric radii, Hero motifs (auto-exempts analytical data views) |
 

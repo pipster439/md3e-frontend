@@ -2,7 +2,7 @@
 
 Transcribed from the Material Design 3 component spec pages on m3.material.io (retrieved 2026-09-12).
 Any value shown as `—` was not present in the rendered text — the spec presents it only as a diagram, so no value is asserted here.
-Rows marked **[baseline-token]** are cross-referenced from Google's official Material 3 baseline design tokens published in the `@material/web` repository (`tokens/versions/v0_192`, retrieved 2026-09-12); they fill values the spec page shows only as diagrams. Baseline token values, not Expressive-specific updates.
+Rows marked **[baseline-token]** are cross-referenced from Google's official Material 3 baseline design token tables (`v0_192`, retrieved 2026-09-12); they fill values the spec page shows only as diagrams. Baseline token values, not Expressive-specific updates.
 
 ---
 
@@ -93,7 +93,7 @@ Outlined text field — "Outlined text field color roles used for light and dark
 | Input text | On surface |
 | Supporting text (optional) | On surface variant |
 
-Error states and disabled states: the dump contains **no** colour-role values for error or disabled. Both are presented only as state diagrams ("Filled text field error states", "Outlined text field error states") with no role list and no token values. The table below is therefore filled from the official M3 baseline design tokens (`@material/web` v0_192, filled + outlined text-field token sets); roles that differ between the two variants are shown separately:
+Error states and disabled states: the dump contains **no** colour-role values for error or disabled. Both are presented only as state diagrams ("Filled text field error states", "Outlined text field error states") with no role list and no token values. The table below is therefore filled from Google's official M3 baseline design token tables (`v0_192`, filled + outlined text-field token sets); roles that differ between the two variants are shown separately:
 
 | Element | Role (baseline-token) |
 |---|---|

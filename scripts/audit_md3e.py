@@ -5,8 +5,9 @@ Deterministic static checks for the rules that models and humans most often
 break when implementing MD3E: hardcoded colours, off-scale corner radii,
 duration/easing motion instead of springs, unfocusable controls, sub-48px
 targets, off-scale type sizes, icon ligature/font mistakes, unitless
-color-mix(), composite animation delay bugs, 9999px morph snaps, and
-mismatched Material Web tags.
+color-mix(), composite animation delay bugs, 9999px morph snaps, legacy
+custom-element dependencies, invalid native/headless ARIA contracts, and
+unbound MD3E modifier classes.
 
 Usage
 -----
@@ -51,12 +52,13 @@ Finding codes
     MD3E017  invalid Material Symbols icon, URL axes, or missing font (error)
     MD3E018  invalid color-mix() opacity or oklch on neutrals (error)
     MD3E019  composite animation delay or 9999px morph snap (warning)
-    MD3E020  mismatched <md-*> custom element closing tag   (error)
+    MD3E020  legacy <md-*>/@material/web or invalid ARIA contract (error)
     MD3E021  decorative icon missing aria-hidden="true"     (warning)
     MD3E022  backdrop-filter blur lacks reduced-transparency (error)
     MD3E023  box-shadow on masked/morphing shape vs drop-shadow (warning)
     MD3E024  WCAG <4.5:1 contrast or container/on-* mismatch (error)
     MD3E025  multiple enabled filled primary buttons in view (info)
+    MD3E026  unbound md3e-* modifier or legacy MWC bridge class (warning)
     MD3E101  [desktop-bento] 1px border or rectangular box-shadow (custom)
     MD3E102  [desktop-bento] <4 surface-container nesting tiers   (custom)
     MD3E103  [desktop-bento] missing concentric 28px/16px radii   (custom)
@@ -243,10 +245,8 @@ DECORATIVE_SUBELEMENT_RE = re.compile(
     re.IGNORECASE,
 )
 INTERACTIVE_ELEMENT_RE = re.compile(
-    r"<(?:button|a\s|input|select|textarea|md-filled-button|md-outlined-button"
-    r"|md-text-button|md-elevated-button|md-filled-tonal-button|md-icon-button"
-    r"|md-filled-icon-button|md-filled-tonal-icon-button|md-outlined-icon-button"
-    r"|md-fab|md-extended-fab|md-checkbox|md-radio|md-switch|md-chip-set)",
+    r"<(?:button|a\s|input|select|textarea|details|summary)"
+    r"|\brole\s*=\s*[\"'](?:button|switch|checkbox|radio|tab|menuitem|option|slider|combobox)[\"']",
     re.IGNORECASE,
 )
 
@@ -261,8 +261,13 @@ ICON_SPAN_RE = re.compile(
     r"""<span\b([^>]*\bclass\s*=\s*["'][^"']*\bmaterial-symbols-(?:outlined|rounded|sharp)\b[^"']*["'][^>]*)>([^<]*)</span>""",
     re.IGNORECASE,
 )
-MD_ICON_RE = re.compile(rf"""<md-icon\b({TAG_ATTRS_PAT})>([^<]*)</md-icon>""", re.IGNORECASE)
-MD_TAG_RE = re.compile(rf"""<(/?)(md-[a-z0-9-]+)\b({TAG_ATTRS_PAT})>""", re.IGNORECASE)
+LEGACY_MD_TAG_RE = re.compile(rf"""<(/?)(md-[a-z0-9-]+)\b({TAG_ATTRS_PAT})>""", re.IGNORECASE)
+LEGACY_MWC_REF_RE = re.compile(r"@material/web\b|md3e-material-web\.css|esm\.run/@material/web", re.IGNORECASE)
+LEGACY_MWC_CLASS_RE = re.compile(
+    r"(?<![\w-])(?:md3e-size-(?:xs|s|m|l|xl)|md3e-width-(?:narrow|wide)|md3e-fab-(?:medium|large))(?![\w-])",
+    re.IGNORECASE,
+)
+OPEN_TAG_RE = re.compile(rf"""<([a-z][a-z0-9:-]*)\b({TAG_ATTRS_PAT})(/?)>""", re.IGNORECASE)
 COLOR_MIX_RE = re.compile(r"color-mix\s*\(([^()]+|\([^()]*\))*\)")
 COMPOSITE_SPRING_VAR_RE = re.compile(
     r"var\(\s*--md-sys-motion-(?:fast|default|slow)-(?:spatial|effects)(?:-bezier)?\s*\)"
@@ -454,12 +459,11 @@ def strip_html_comments(text: str) -> str:
 
 
 def iter_icon_matches(text: str) -> list[re.Match[str]]:
-    """Return Material Symbols <span> and <md-icon> matches across single/multi-line tags."""
+    """Return Material Symbols <span> matches across single/multi-line tags."""
     matches: list[re.Match[str]] = []
     for m in SPAN_ELEM_RE.finditer(text):
         if MS_CLASS_RE.search(m.group(1)):
             matches.append(m)
-    matches.extend(MD_ICON_RE.finditer(text))
     matches.sort(key=lambda m: m.start())
     return matches
 
@@ -1172,6 +1176,18 @@ class Checker:
 
     def audit_css(self, css_text: str, base_line: int = 1, *, check_file_rules: bool = True, linked_motion_css: bool = False, has_reduced_transparency_doc: bool = False) -> None:
         cleaned_css = strip_css_comments(css_text)
+        if self.ext in CSS_EXTENSIONS and not self.token_file:
+            css_lines = css_text.splitlines()
+            for m in LEGACY_MWC_REF_RE.finditer(cleaned_css):
+                rel_ln = cleaned_css[:m.start()].count("\n")
+                ln = base_line + rel_ln
+                snip = css_lines[rel_ln] if rel_ln < len(css_lines) else m.group(0)
+                self.add(
+                    "MD3E020", "error",
+                    f"Legacy `@material/web` dependency `{m.group(0)}` is no longer supported.",
+                    "Remove `@import` references to `md3e-material-web.css` / `@material/web` and style native elements with MD3E CSS tokens.",
+                    self.path, ln, snip,
+                )
         self._check_ms_font_axes(cleaned_css, base_line=base_line)
         rules = parse_css_rules(css_text, base_line=base_line)
         hit_covered = self._collect_hit_area_selectors(rules)
@@ -1395,13 +1411,8 @@ class Checker:
                 is_enabled_filled = bool(
                     ln not in exempt_lines
                     and not re.search(r"\bdisabled\b", attrs, re.I)
-                    and (
-                        tag == "md-filled-button"
-                        or (
-                            tag == "button"
-                            and re.search(r"(?<![\w-])(?:md3e-btn--filled|btn-filled|btn--filled)(?![\w-])", attrs, re.I)
-                        )
-                    )
+                    and tag in ("button", "a")
+                    and re.search(r"(?<![\w-])(?:md3e-btn--filled|btn-filled|btn--filled)(?![\w-])", attrs, re.I)
                 )
                 if is_enabled_filled:
                     scopes[-1][2] += 1
@@ -1421,12 +1432,177 @@ class Checker:
                         del scopes[idx:]
                         break
 
+    def _check_modern_semantics_and_token_classes(
+        self,
+        markup_clean: str,
+        full_text: str,
+        lines: list[str],
+        exempt_lines: set[int],
+    ) -> None:
+        # 1. Reject legacy @material/web / md3e-material-web.css references (MD3E020)
+        uncommented_full = re.sub(
+            r"(?m)(?<!:)//[^\n]*",
+            "",
+            strip_css_comments(strip_html_comments(full_text)),
+        )
+        full_lines = full_text.splitlines()
+        for m in LEGACY_MWC_REF_RE.finditer(uncommented_full):
+            ln = uncommented_full[:m.start()].count("\n") + 1
+            snip = full_lines[ln - 1] if ln - 1 < len(full_lines) else m.group(0)
+            self.add(
+                "MD3E020", "error",
+                f"Legacy `@material/web` dependency `{m.group(0)}` is no longer supported.",
+                "Remove `@material/web` / `md3e-material-web.css` and style native semantic HTML (`<button>`, `<input>`, `<dialog>`, or Headless UI primitives) directly with MD3E CSS tokens.",
+                self.path, ln, snip,
+            )
+
+        # Reject <md-*> custom element tags (MD3E020)
+        reported_md_lines: set[int] = set()
+        for m in LEGACY_MD_TAG_RE.finditer(markup_clean):
+            ln = markup_clean[:m.start()].count("\n") + 1
+            if ln in reported_md_lines:
+                continue
+            reported_md_lines.add(ln)
+            tag_name = m.group(2).lower()
+            self.add(
+                "MD3E020", "error",
+                f"Legacy Web Component tag `<{tag_name}>` is removed in unified semantic MD3E.",
+                f"Replace `<{tag_name}>` with native semantic HTML (`<button>`, `<input>`, `<dialog>`, `role=\"switch\"`) + `.md3e-*` classes or Headless UI primitives (Radix UI / Base UI).",
+                self.path, ln, lines[ln - 1] if ln - 1 < len(lines) else "",
+            )
+
+        # 2. Validate native/headless ARIA contracts (MD3E020) & MD3E modifier bindings (MD3E026)
+        interactive_roles = {"button", "switch", "checkbox", "tab", "menuitem", "option", "slider", "link"}
+        for m in OPEN_TAG_RE.finditer(markup_clean):
+            tag = m.group(1).lower()
+            attrs = m.group(2)
+            if tag.startswith("md-"):
+                continue
+            ln = markup_clean[:m.start()].count("\n") + 1
+            if ln in exempt_lines:
+                continue
+            line_text = lines[ln - 1] if ln - 1 < len(lines) else ""
+            has_jsx_spread = "{..." in attrs
+
+            # Check boolean / tristate ARIA attribute values when literal
+            for am in re.finditer(
+                r"""\b(aria-(?:pressed|expanded|selected|checked|disabled|modal))\s*=\s*(?:"([^"]*)"|'([^']*)')""",
+                attrs,
+                re.I,
+            ):
+                attr_name = am.group(1).lower()
+                val = (am.group(2) if am.group(2) is not None else am.group(3)).strip().lower()
+                if any(ch in val for ch in ("{", "}", "$")):
+                    continue
+                allowed = {"true", "false"}
+                if attr_name in ("aria-checked", "aria-pressed"):
+                    allowed.update({"mixed", "undefined"})
+                elif attr_name == "aria-expanded":
+                    allowed.add("undefined")
+                if val not in allowed:
+                    self.add(
+                        "MD3E020", "error",
+                        f"Invalid ARIA state literal `{attr_name}=\"{val}\"` on `<{tag}>`.",
+                        f"Set `{attr_name}` to `\"true\"` / `\"false\"` (or valid ARIA token) instead of `{val!r}`.",
+                        self.path, ln, line_text,
+                    )
+
+            role_m = re.search(r"""\brole\s*=\s*(?:"([^"]*)"|'([^']*)')""", attrs, re.I)
+            role = (role_m.group(1) if role_m.group(1) is not None else role_m.group(2)).strip().lower() if role_m else ""
+            if role and not has_jsx_spread:
+                if (role == "switch" or (role == "checkbox" and tag != "input")) and not re.search(r"\baria-checked\s*=", attrs, re.I):
+                    self.add(
+                        "MD3E020", "error",
+                        f"`<{tag} role=\"{role}\">` is missing required `aria-checked` state.",
+                        "Bind `aria-checked=\"true\"` / `\"false\"` (or controlled headless state) cleanly.",
+                        self.path, ln, line_text,
+                    )
+                if (
+                    tag in ("div", "span")
+                    and role in interactive_roles
+                    and not re.search(r"\btabindex\s*=", attrs, re.I)
+                    and not re.search(r"""\bdisabled\b|\baria-disabled\s*=\s*(?:"true"|'true')""", attrs, re.I)
+                ):
+                    self.add(
+                        "MD3E020", "error",
+                        f"Non-semantic `<{tag} role=\"{role}\">` lacks `tabindex` keyboard focusability.",
+                        "Prefer native `<button>` / `<a href>` / `<input>`, or add `tabindex=\"0\"` + Enter/Space handling.",
+                        self.path, ln, line_text,
+                    )
+                if role == "combobox" and not re.search(r"\baria-expanded\s*=", attrs, re.I):
+                    self.add(
+                        "MD3E020", "error",
+                        f"`<{tag} role=\"combobox\">` is missing `aria-expanded` state.",
+                        "Bind `aria-expanded=\"true\"` / `\"false\"` on combobox controls.",
+                        self.path, ln, line_text,
+                    )
+                if role == "slider" and tag != "input" and not re.search(r"\baria-valuenow\s*=", attrs, re.I):
+                    self.add(
+                        "MD3E020", "error",
+                        f"Custom `<{tag} role=\"slider\">` is missing `aria-valuenow`.",
+                        "Prefer native `<input type=\"range\" class=\"md3e-range\">` or provide `aria-valuenow` / `min` / `max`.",
+                        self.path, ln, line_text,
+                    )
+
+            # Check MD3E token class bindings (MD3E026)
+            for cm in re.finditer(r"""\b(?:class|className)\s*=\s*(?:"([^"]*)"|'([^']*)')""", attrs, re.I):
+                raw_cls = cm.group(1) if cm.group(1) is not None else cm.group(2)
+                if any(ch in raw_cls for ch in ("{", "}", "$")):
+                    continue
+                cls_tokens = raw_cls.split()
+                cls_set = set(cls_tokens)
+                if LEGACY_MWC_CLASS_RE.search(raw_cls):
+                    bad_cls = LEGACY_MWC_CLASS_RE.search(raw_cls).group(0)
+                    self.add(
+                        "MD3E026", "warning",
+                        f"Deprecated MWC bridge class `{bad_cls}` has been replaced by native token classes.",
+                        "Use semantic base + modifier classes (e.g. `.md3e-btn .md3e-btn--m .md3e-btn--square` or `.md3e-fab--medium`).",
+                        self.path, ln, line_text,
+                    )
+                btn_mods = [c for c in cls_tokens if c.startswith("md3e-btn--")]
+                if btn_mods and "md3e-btn" not in cls_set:
+                    self.add(
+                        "MD3E026", "warning",
+                        f"MD3E button modifier `{btn_mods[0]}` used without base class `md3e-btn`.",
+                        "Pair modifier classes with the base `.md3e-btn` class.",
+                        self.path, ln, line_text,
+                    )
+                icon_btn_mods = [c for c in cls_tokens if c.startswith("md3e-icon-btn--")]
+                if icon_btn_mods and "md3e-icon-btn" not in cls_set:
+                    self.add(
+                        "MD3E026", "warning",
+                        f"MD3E icon-button modifier `{icon_btn_mods[0]}` used without base class `md3e-icon-btn`.",
+                        "Pair modifier classes with the base `.md3e-icon-btn` class.",
+                        self.path, ln, line_text,
+                    )
+                shape_mods = [c for c in cls_tokens if c.startswith("md3e-shape-") and c != "md3e-shape-shadow-wrap"]
+                if shape_mods and "md3e-shape" not in cls_set:
+                    self.add(
+                        "MD3E026", "warning",
+                        f"MD3E shape mask modifier `{shape_mods[0]}` used without base class `md3e-shape`.",
+                        "Include the base `md3e-shape` class alongside `.md3e-shape-<name>` so CSS mask containment & fallback work.",
+                        self.path, ln, line_text,
+                    )
+                blur_mods = [c for c in cls_tokens if c.startswith("md3e-blur--")]
+                has_blur_base = any(
+                    c == "md3e-blur" or (c.startswith("md3e-blur-") and not c.startswith("md3e-blur--"))
+                    for c in cls_set
+                )
+                if blur_mods and not has_blur_base:
+                    self.add(
+                        "MD3E026", "warning",
+                        f"MD3E blur modifier `{blur_mods[0]}` used without a base `md3e-blur*` surface class.",
+                        "Pair blur size modifiers with `.md3e-blur-surface*` or `.md3e-blur-primary` so reduced-transparency fallbacks apply.",
+                        self.path, ln, line_text,
+                    )
+
     def _audit_html_semantics(self, markup_only: str, *, full_text: str, exempt_lines: set[int] | None = None) -> None:
         markup_clean = strip_html_comments(markup_only)
         lines = markup_clean.splitlines()
         if exempt_lines is None:
             exempt_lines = find_exempt_line_set(markup_clean)
 
+        self._check_modern_semantics_and_token_classes(markup_clean, full_text, lines, exempt_lines)
         self._check_multiple_primary_filled_buttons(markup_clean, lines, exempt_lines)
 
         # Check full document Material Symbols font link (MD3E017)
@@ -1434,10 +1610,7 @@ class Checker:
             not self.is_snippet
             and bool(re.search(r"<!doctype\s+html|<html\b", full_text, re.I))
         )
-        uses_ligature_icons = (
-            bool(re.search(r"\bmaterial-symbols-(?:outlined|rounded|sharp)\b", markup_clean))
-            or bool(re.search(r"<md-icon\b[^>]*>\s*[a-z0-9_ -]+\s*</md-icon>", markup_clean, re.I))
-        )
+        uses_ligature_icons = bool(re.search(r"\bmaterial-symbols-(?:outlined|rounded|sharp)\b", markup_clean))
         has_ms_font_link = bool(
             re.search(r"Material\+Symbols|Material\s+Symbols", full_text)
         )
@@ -1484,7 +1657,7 @@ class Checker:
                     "Replace with a docked or floating toolbar (64dp height).",
                     self.path, i, line,
                 )
-            if re.search(r"<md-fab[^>]*\bsize\s*=\s*[\"']small[\"']", line, re.I) or re.search(r"\b(fab[-_]small|small[-_]fab)\b", line, re.I):
+            if re.search(r"\b(?:md3e-fab--small|fab[-_]small|small[-_]fab)\b", line, re.I):
                 if i not in exempt_lines:
                     self.add(
                         "MD3E016", "warning",
@@ -1493,54 +1666,14 @@ class Checker:
                         self.path, i, line,
                     )
 
-        # Check mismatched or unclosed <md-*> tags across the markup (MD3E020)
-        tag_stack: list[tuple[str, int]] = []
-        for m in MD_TAG_RE.finditer(markup_clean):
-            is_close = m.group(1) == "/"
-            tag_name = m.group(2).lower()
-            attrs = m.group(3)
-            ln = markup_clean[:m.start()].count("\n") + 1
-            if not is_close:
-                if not attrs.rstrip().endswith("/"):
-                    tag_stack.append((tag_name, ln))
-            else:
-                if not tag_stack:
-                    self.add(
-                        "MD3E020", "error",
-                        f"Unexpected closing tag </{tag_name}> with no matching open tag.",
-                        "Match opening and closing <md-*> Web Component tags.",
-                        self.path, ln, lines[ln - 1] if ln - 1 < len(lines) else "",
-                    )
-                elif tag_stack[-1][0] != tag_name:
-                    open_tag, open_ln = tag_stack[-1]
-                    self.add(
-                        "MD3E020", "error",
-                        f"Mismatched closing tag </{tag_name}> for <{open_tag}> opened on line {open_ln}.",
-                        f"Replace </{tag_name}> with </{open_tag}> so subsequent elements are not swallowed.",
-                        self.path, ln, lines[ln - 1] if ln - 1 < len(lines) else "",
-                    )
-                    tag_stack.pop()
-                else:
-                    tag_stack.pop()
-        for open_tag, open_ln in tag_stack:
-            self.add(
-                "MD3E020", "error",
-                f"Unclosed <{open_tag}> custom element tag opened on line {open_ln}.",
-                f"Close <{open_tag}> with </{open_tag}> (or self-close with `/>`).",
-                self.path, open_ln, lines[open_ln - 1] if open_ln - 1 < len(lines) else "",
-            )
-
         # Check decorative icons inside buttons/links missing aria-hidden="true" (MD3E021)
         # and icon-only controls missing accessible names (MD3E014).
         reported_a11y_lines: set[int] = set()
         ctrl_re = re.compile(
-            rf"<(button|a|md-filled-button|md-filled-tonal-button|md-outlined-button|"
-            rf"md-elevated-button|md-text-button|md-icon-button|md-filled-icon-button|"
-            rf"md-filled-tonal-icon-button|md-outlined-icon-button|md-fab|md-extended-fab)\b({TAG_ATTRS_PAT})>([\s\S]*?)</\1>",
+            rf"<(button|a)\b({TAG_ATTRS_PAT})>([\s\S]*?)</\1>",
             re.IGNORECASE,
         )
         for m in ctrl_re.finditer(markup_clean):
-            tag = m.group(1).lower()
             attrs = m.group(2)
             inner = m.group(3)
             ctrl_line = markup_clean[:m.start()].count("\n") + 1
@@ -1552,23 +1685,18 @@ class Checker:
                 )
             )
             inner_no_icons = re.sub(r"<span\b[^>]*\bmaterial-symbols-[^>]*>[^<]*</span>", "", inner, flags=re.I)
-            inner_no_icons = re.sub(r"<md-icon\b[^>]*>[^<]*</md-icon>", "", inner_no_icons, flags=re.I)
             inner_no_icons = re.sub(r"<svg\b[\s\S]*?</svg>", "", inner_no_icons, flags=re.I)
             has_visible_text = bool(re.sub(r"<[^>]+>", "", inner_no_icons).strip())
             has_img_alt = bool(re.search(r'<img\b[^>]*\balt\s*=\s*(?:"[^"]*\S[^"]*"|\'[^\']*\S[^\']*\')', inner, re.I))
             has_svg_title = bool(re.search(r"<svg\b[^>]*>[\s\S]*?<title\b[^>]*>[^<]+</title>", inner, re.I))
             icon_matches = iter_icon_matches(inner)
             has_icon_child = bool(icon_matches or re.search(r"<(?:svg|img)\b", inner, re.I))
-            is_icon_only_tag = tag in (
-                "md-icon-button", "md-filled-icon-button",
-                "md-filled-tonal-icon-button", "md-outlined-icon-button", "md-fab",
-            )
             if (
                 not has_ctrl_label
                 and not has_visible_text
                 and not has_img_alt
                 and not has_svg_title
-                and (has_icon_child or is_icon_only_tag)
+                and has_icon_child
                 and ctrl_line not in reported_a11y_lines
             ):
                 reported_a11y_lines.add(ctrl_line)
@@ -1607,7 +1735,7 @@ class Checker:
                 inline_decls = iter_inline_declarations(style_val)
                 check_role_pairing_and_contrast(
                     self,
-                    [(p, v, i, line) for p, v in inline_decls],
+                    [(p, v, i, raw) for p, v in inline_decls],
                     is_data_view=is_exempt_line,
                 )
                 for prop, val in inline_decls:

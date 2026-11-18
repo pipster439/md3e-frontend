@@ -18,7 +18,7 @@ files, ~3,700 lines total, covering all 36 components:
 | `components/selection.md` | Checkbox · Chips · Radio button · Switch · Sliders |
 | `components/text-input.md` | Text fields · Date pickers · Time pickers |
 
-For ready-to-copy HTML/CSS/JS implementations of the Expressive components absent from `@material/web` (toolbars, split button, connected/standard button groups, FAB menu, 7-polygon loading indicator, toggle buttons, search bar, badges, carousel, responsive nav rail, clock dial, 35-shape containers & frosted chrome), see [`components/expressive-recipes.md`](components/expressive-recipes.md).
+For ready-to-copy semantic HTML/CSS/JS implementations of Expressive components (toolbars, split button, connected/standard button groups, FAB menu, 7-polygon loading indicator, toggle buttons, search bar, badges, carousel, responsive nav rail, clock dial, 35-shape containers & frosted chrome), see [`components/expressive-recipes.md`](components/expressive-recipes.md).
 
 Read the group file for the component you are building. Do not work from
 memory — several of the values below exist nowhere else in a form you could
@@ -161,18 +161,9 @@ chips gained shape morphing in the Expressive update.
 
 Drive every morph with a spatial spring, never a hand-written transition.
 
-## Web implementation reality check
+## Modern Web Architecture (Semantic HTML & Headless Primitives)
 
-- `@material/web` exposes `md-filled-button`, `md-outlined-button`,
-  `md-text-button`, `md-elevated-button`, `md-filled-tonal-button`,
-  `md-icon-button`, `md-fab`, `md-extended-fab`, `md-checkbox`, `md-radio`,
-  `md-switch`, `md-linear-progress`, `md-circular-progress`. It is in
-  maintenance mode — no new Expressive components are being added to it.
-- Split button, button group, toolbar, FAB menu and loading indicator have **no**
-  `@material/web` element. Build them from tokens, [`components/expressive-recipes.md`](components/expressive-recipes.md),
-  and the measurements in the group files, treating the result as a spec-aligned approximation.
-- React / Vue / Svelte have no official Material library. Use CSS custom
-  properties plus thin wrapper components.
-- Per-component tokens follow `--md-<component>-<part>-<property>`
-  (e.g. `--md-filled-button-container-shape`), and component tokens should point
-  at system tokens, never at raw values.
+- Build UI primitives directly on **native semantic HTML** (`<button type="button">`, `<input>`, `<select>`, `<dialog>`, `<nav>`) styled with MD3E CSS custom properties (`--md-sys-*`) and token utility classes (`.md3e-btn`, `.md3e-icon-btn`, `.md3e-fab`, `.md3e-switch`). Native elements expose zero Shadow DOM encapsulation barriers, full Tailwind utility composability, and rock-solid baseline accessibility.
+- For complex composite widgets with demanding focus/keyboard plumbing (Comboboxes, Dropdown Menus, Roving Tabs, Popovers, Nested Dialogs) in React, Vue, or Svelte apps, adopt unstyled **Headless UI primitives** (**Radix UI**, **Base UI**, **React Aria**, or **Ark UI**) and bind their exposed ARIA / data-state attributes (`[data-state="open"]`, `[data-state="checked"]`, `[data-highlighted]`) directly to MD3E colour roles, state layers, and `--md-sys-motion-*` springs.
+- Split buttons, connected button groups, floating/docked toolbars, FAB menus, and the 7-polygon loading indicator also ship ready-to-copy vanilla recipes in [`components/expressive-recipes.md`](components/expressive-recipes.md).
+- When defining component-scoped variables (`--md-comp-<component>-<part>-<property>`), bind them strictly to `--md-sys-*` system tokens — never hardcode raw hex colours, pixel corners, or arbitrary curves.

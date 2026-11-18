@@ -14,13 +14,12 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:FILL,GRAD,opsz,wght@0..1,-50..200,20..48,100..700&display=block">
 
-<!-- MD3E Design Tokens, Blur Layer, Multi-Seed Palettes, 35 Shapes, Motion Springs & @material/web Bridge -->
+<!-- MD3E Design Tokens, Blur Layer, Multi-Seed Palettes, 35 Shapes & Motion Springs -->
 <link rel="stylesheet" href="../tokens/md3e-tokens.css">
 <link rel="stylesheet" href="../tokens/md3e-blur.css">
 <link rel="stylesheet" href="../tokens/md3e-palettes.css">
 <link rel="stylesheet" href="../tokens/md3e-shapes.css">
 <link rel="stylesheet" href="../tokens/md3e-motion.css">
-<link rel="stylesheet" href="../tokens/md3e-material-web.css">
 
 <style>
   *, *::before, *::after { box-sizing: border-box; }
@@ -2581,78 +2580,66 @@
     transition-delay: calc(var(--md-sys-motion-fast-effects-duration) * 0.4);
   }
 
-  /* --- Resilient Offline / :not(:defined) Fallbacks for @material/web --- */
-  md-filled-tonal-button:not(:defined),
-  md-elevated-button:not(:defined),
-  md-outlined-button:not(:defined) {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--md-sys-spacing-2);
-    min-height: var(--md-sys-touch-target-min);
-    padding-inline: var(--md-sys-spacing-5);
-    border-radius: var(--md-sys-shape-corner-large-increased);
-    font-family: var(--md-sys-typescale-plain-font);
-    font-size: var(--md-sys-typescale-label-large-size);
-    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
-    cursor: pointer;
-  }
-  md-filled-tonal-button:not(:defined) {
-    background: var(--md-sys-color-secondary-container);
-    color: var(--md-sys-color-on-secondary-container);
-  }
-  md-elevated-button:not(:defined) {
-    background: var(--md-sys-color-surface-container-low);
-    color: var(--md-sys-color-primary);
-    box-shadow: var(--md-sys-elevation-level1);
-  }
-  md-outlined-button:not(:defined) {
-    background: transparent;
-    color: var(--md-sys-color-primary);
-    border: 1px solid var(--md-sys-color-outline);
-  }
-  md-outlined-button.md3e-shape-square:not(:defined) {
-    border-radius: var(--md-sys-shape-corner-large);
-  }
-  md-fab {
-    position: relative;
-  }
-  md-fab:not(:defined) {
+  /* --- Native Semantic Controls (.md3e-fab--medium, .md3e-switch, .md3e-checkbox, .md3e-text-field, .md3e-range, .md3e-dialog) --- */
+  .md3e-fab--medium {
     position: relative;
     display: inline-grid;
     place-items: center;
     width: 80px;
     height: 80px;
+    padding: 0;
+    border: none;
     border-radius: var(--md-sys-shape-corner-large-increased);
     background: var(--md-sys-color-primary-container);
     color: var(--md-sys-color-on-primary-container);
     box-shadow: var(--md-sys-elevation-level3);
+    --md-sys-icon-size: 28px;
+    --md-sys-icon-opsz: 24;
     cursor: pointer;
+    transition: transform var(--md-sys-motion-fast-spatial),
+                border-radius var(--md-sys-motion-fast-spatial),
+                background-color var(--md-sys-motion-fast-effects);
   }
-  md-icon:not(:defined) {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-family: "Material Symbols Outlined";
-    font-size: var(--md-sys-icon-size);
-    line-height: 1;
-    font-style: normal;
+  .md3e-fab--medium::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-sys-motion-fast-effects);
   }
-  md-switch:not(:defined) {
+  .md3e-fab--medium:hover::after { opacity: var(--md-sys-state-hover-state-layer-opacity); }
+  .md3e-fab--medium:focus-visible::after { opacity: var(--md-sys-state-focus-state-layer-opacity); }
+  .md3e-fab--medium:active::after { opacity: var(--md-sys-state-pressed-state-layer-opacity); }
+  .md3e-fab--medium:active {
+    border-radius: var(--md-sys-shape-corner-medium);
+    transform: scale(0.97);
+  }
+  .md3e-fab--medium:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .md3e-switch {
+    appearance: none;
     position: relative;
     display: inline-flex;
     align-items: center;
+    flex-shrink: 0;
     width: 52px;
     height: 32px;
+    margin: 0;
     padding: 4px;
     border-radius: var(--md-sys-shape-corner-large);
     border: 2px solid var(--md-sys-color-outline);
     background: var(--md-sys-color-surface-container-highest);
     cursor: pointer;
-    transition: background-color var(--md-sys-motion-fast-effects);
+    transition: background-color var(--md-sys-motion-fast-effects),
+                border-color var(--md-sys-motion-fast-effects);
   }
-  md-switch:not(:defined)::before {
+  .md3e-switch::before {
     content: "";
     position: absolute;
     inset-block: -8px;
@@ -2660,80 +2647,156 @@
     min-width: var(--md-sys-touch-target-min);
     min-height: var(--md-sys-touch-target-min);
   }
-  md-switch:not(:defined)::after {
+  .md3e-switch::after {
     content: "";
     width: 16px;
     height: 16px;
     border-radius: var(--md-sys-shape-corner-full);
     background: var(--md-sys-color-outline);
-    transition: transform var(--md-sys-motion-fast-spatial);
+    transition: transform var(--md-sys-motion-fast-spatial),
+                width var(--md-sys-motion-fast-effects),
+                height var(--md-sys-motion-fast-effects),
+                background-color var(--md-sys-motion-fast-effects);
   }
-  md-switch[checked]:not(:defined) {
+  .md3e-switch:checked {
     background: var(--md-sys-color-primary);
     border-color: var(--md-sys-color-primary);
   }
-  md-switch[checked]:not(:defined)::after {
+  .md3e-switch:checked::after {
     width: 24px;
     height: 24px;
     background: var(--md-sys-color-on-primary);
     transform: translateX(18px);
   }
-  md-checkbox:not(:defined) {
+  .md3e-switch:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .md3e-checkbox {
+    appearance: none;
     position: relative;
     display: inline-grid;
     place-items: center;
+    flex-shrink: 0;
     width: 20px;
     height: 20px;
+    margin: 0;
     border-radius: var(--md-sys-shape-corner-extra-small);
     border: 2px solid var(--md-sys-color-on-surface-variant);
     background: transparent;
     cursor: pointer;
+    transition: background-color var(--md-sys-motion-fast-effects),
+                border-color var(--md-sys-motion-fast-effects);
   }
-  md-checkbox:not(:defined)::before {
+  .md3e-checkbox::before {
     content: "";
     position: absolute;
     inset: -14px;
     min-width: var(--md-sys-touch-target-min);
     min-height: var(--md-sys-touch-target-min);
   }
-  md-checkbox[checked]:not(:defined) {
+  .md3e-checkbox:checked {
     background: var(--md-sys-color-primary);
     border-color: var(--md-sys-color-primary);
   }
-  md-checkbox[checked]:not(:defined)::after {
+  .md3e-checkbox:checked::after {
     content: "\2713";
     color: var(--md-sys-color-on-primary);
     font-size: var(--md-sys-typescale-label-medium-size);
     font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
+    line-height: 1;
   }
-  md-outlined-text-field:not(:defined) {
-    display: block;
+  .md3e-checkbox:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .md3e-text-field {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     min-height: 56px;
-    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-3);
+    padding: var(--md-sys-spacing-1) var(--md-sys-spacing-4);
     border: 1px solid var(--md-sys-color-outline);
     border-radius: var(--md-sys-shape-corner-extra-small);
     background: var(--md-sys-color-surface);
   }
-  .mwc-fallback-input {
+  .md3e-text-field:focus-within {
+    border-color: var(--md-sys-color-primary);
+    box-shadow: inset 0 0 0 1px var(--md-sys-color-primary);
+  }
+  .md3e-text-field__label {
+    font-size: var(--md-sys-typescale-body-small-size);
+    line-height: var(--md-sys-typescale-body-small-line-height);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+  .md3e-text-field__input {
     width: 100%;
+    min-height: var(--md-sys-touch-target-min);
     border: none;
     background: transparent;
     color: var(--md-sys-color-on-surface);
     font: inherit;
-    min-height: 32px;
+    padding: 0;
+    outline: 2px solid transparent;
   }
-  .mwc-fallback-input:focus-visible {
+  .md3e-text-field__input:focus-visible {
     outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
     outline-offset: var(--md-sys-focus-ring-gap);
+    border-radius: var(--md-sys-shape-corner-extra-small);
   }
-  md-slider:not(:defined) {
-    display: block;
-    min-height: var(--md-sys-touch-target-min);
-  }
-  .mwc-fallback-range {
+
+  .md3e-range {
     width: 100%;
     min-height: var(--md-sys-touch-target-min);
     accent-color: var(--md-sys-color-primary);
+    cursor: pointer;
+  }
+  .md3e-range:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+    border-radius: var(--md-sys-shape-corner-small);
+  }
+
+  .md3e-dialog {
+    border: none;
+    border-radius: var(--md-sys-shape-corner-extra-large);
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface);
+    padding: var(--md-sys-spacing-6);
+    width: min(420px, calc(100vw - var(--md-sys-spacing-8)));
+    box-shadow: var(--md-sys-elevation-level3);
+  }
+  .md3e-dialog::backdrop {
+    background: color-mix(in oklab, var(--md-sys-color-scrim) 32%, transparent);
+  }
+  .md3e-dialog__title {
+    margin: 0 0 var(--md-sys-spacing-2);
+    font-size: var(--md-sys-typescale-headline-small-size);
+    line-height: var(--md-sys-typescale-headline-small-line-height);
+    color: var(--md-sys-color-on-surface);
+  }
+  .md3e-dialog__body {
+    margin: 0 0 var(--md-sys-spacing-5);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: var(--md-sys-typescale-body-medium-line-height);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+  .md3e-dialog__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--md-sys-spacing-2);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .md3e-fab--medium,
+    .md3e-fab--medium::after,
+    .md3e-switch,
+    .md3e-switch::after,
+    .md3e-checkbox {
+      transition: none;
+    }
   }
 
   /* --- Form & Misc Utilities --- */
@@ -2915,9 +2978,9 @@
     <span class="material-symbols-outlined" aria-hidden="true">animation</span>
     Expressive Components
   </a>
-  <a class="nav-sheet__link" href="#section-mwc">
+  <a class="nav-sheet__link" href="#section-primitives">
     <span class="material-symbols-outlined" aria-hidden="true">widgets</span>
-    Material Web Bridge
+    Semantic Primitives
   </a>
 </aside>
 
@@ -2950,9 +3013,9 @@
         <span class="nav-rail__pill"><span class="material-symbols-outlined" aria-hidden="true">animation</span></span>
         <span>Expressive</span>
       </a>
-      <a class="nav-rail__item" href="#section-mwc">
+      <a class="nav-rail__item" href="#section-primitives">
         <span class="nav-rail__pill"><span class="material-symbols-outlined" aria-hidden="true">widgets</span></span>
-        <span>Web Bridge</span>
+        <span>Primitives</span>
       </a>
     </div>
     <div class="nav-rail__footer">
@@ -3531,59 +3594,71 @@
       </div>
     </section>
 
-    <!-- Section 6: Official @material/web Bridge (Online CDN + Offline Resilient Fallback) -->
-    <section class="section-card section-card--wide" id="section-mwc">
-      <h2>6. @material/web Bridge</h2>
-      <p>Google's Web Components wired to MD3E roles, 5-size classes, square shapes, and Medium FAB tokens via <code>md3e-material-web.css</code>, with seamless progressive fallback when offline.</p>
+    <!-- Section 6: Native Semantic HTML & Headless Primitives -->
+    <section class="section-card section-card--wide" id="section-primitives">
+      <h2>6. Native Semantic HTML &amp; Headless Primitives</h2>
+      <p>Standard interactive controls built directly on native semantic HTML elements (<code>&lt;button&gt;</code>, <code>&lt;input&gt;</code>, <code>&lt;dialog&gt;</code>, <code>role="switch"</code>) wired cleanly to MD3E tokens with zero Shadow DOM wrappers — ready for vanilla apps or Headless UI primitives (Radix UI / Base UI).</p>
 
       <div class="demo-row">
-        <md-filled-tonal-button class="md3e-size-s" id="mwc-tonal-btn">
-          <md-icon slot="icon" aria-hidden="true">cloud_upload</md-icon>
-          MWC Small (40)
-        </md-filled-tonal-button>
+        <button type="button" class="md3e-btn md3e-btn--tonal md3e-btn--s" id="prim-tonal-btn">
+          <span class="material-symbols-outlined" aria-hidden="true">cloud_upload</span>
+          Tonal Small (40)
+        </button>
 
-        <md-elevated-button class="md3e-size-m" id="mwc-elevated-btn">
-          <md-icon slot="icon" aria-hidden="true">star</md-icon>
-          MWC Medium (56)
-        </md-elevated-button>
+        <button type="button" class="md3e-btn md3e-btn--elevated md3e-btn--m" id="prim-elevated-btn">
+          <span class="material-symbols-outlined" aria-hidden="true">star</span>
+          Elevated Medium (56)
+        </button>
 
-        <md-outlined-button class="md3e-size-m md3e-shape-square" id="mwc-outlined-btn">
-          <md-icon slot="icon" aria-hidden="true">crop_square</md-icon>
-          MWC Square
-        </md-outlined-button>
+        <button type="button" class="md3e-btn md3e-btn--outlined md3e-btn--m md3e-btn--square" id="prim-outlined-btn">
+          <span class="material-symbols-outlined" aria-hidden="true">crop_square</span>
+          Square Outlined
+        </button>
 
-        <md-fab class="md3e-fab-medium" id="mwc-fab" aria-label="Compose message">
-          <md-icon slot="icon" aria-hidden="true">edit</md-icon>
-        </md-fab>
+        <button type="button" class="md3e-btn md3e-btn--filled md3e-btn--s" id="prim-dialog-open" aria-haspopup="dialog" aria-controls="prim-dialog">
+          <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+          Open Native Dialog
+        </button>
+
+        <button type="button" class="md3e-fab--medium" id="prim-fab" aria-label="Compose message">
+          <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+        </button>
       </div>
 
       <div class="demo-row">
-        <label class="field-label">
-          <md-switch id="mwc-switch" checked aria-label="Wi-Fi"></md-switch>
+        <label class="field-label" for="prim-switch">
+          <input type="checkbox" role="switch" class="md3e-switch" id="prim-switch" checked aria-checked="true">
           <span>Wi-Fi</span>
         </label>
 
-        <label class="field-label">
-          <md-checkbox id="mwc-checkbox" checked aria-label="Notifications"></md-checkbox>
+        <label class="field-label" for="prim-checkbox">
+          <input type="checkbox" class="md3e-checkbox" id="prim-checkbox" checked>
           <span>Notifications</span>
         </label>
 
-        <span class="inline-status" id="mwc-status" role="status">Initializing @material/web…</span>
+        <span class="inline-status" id="prim-status" role="status">Native semantic primitives active</span>
       </div>
 
       <div class="demo-row">
-        <md-outlined-text-field
-          class="text-field-grow"
-          id="mwc-text-field"
-          label="Workspace Name"
-          value="antigravity-project"
-        ></md-outlined-text-field>
+        <div class="md3e-text-field text-field-grow">
+          <label class="md3e-text-field__label" for="prim-text-field">Workspace Name</label>
+          <input type="text" class="md3e-text-field__input" id="prim-text-field" value="antigravity-project">
+        </div>
 
         <div class="slider-block">
           <label class="slider-block__label" for="volume-slider">Volume (<span id="volume-readout">75</span>%)</label>
-          <md-slider id="volume-slider" value="75" aria-label="Volume"></md-slider>
+          <input type="range" class="md3e-range" id="volume-slider" min="0" max="100" value="75">
         </div>
       </div>
+
+      <dialog class="md3e-dialog" id="prim-dialog" aria-labelledby="prim-dialog-title">
+        <h3 class="md3e-dialog__title" id="prim-dialog-title">Native <code>&lt;dialog&gt;</code> &amp; Headless Token Pattern</h3>
+        <p class="md3e-dialog__body">Built on native top-layer focus trapping and <code>Escape</code> dismissal. In React/Vue/Svelte apps, drop unstyled Radix UI or Base UI primitives underneath and bind <code>[data-state="open"]</code> to <code>--md-sys-color-surface-container-high</code> and <code>--md-sys-motion-default-spatial</code>.</p>
+        <div class="md3e-dialog__actions">
+          <button type="button" class="md3e-btn md3e-btn--text md3e-btn--s" id="prim-dialog-cancel">Cancel</button>
+          <button type="button" class="md3e-btn md3e-btn--filled md3e-btn--s" id="prim-dialog-confirm">Got it</button>
+        </div>
+      </dialog>
     </section>
 
   </main>
@@ -3643,9 +3718,9 @@
     <span class="nav-bar__pill"><span class="material-symbols-outlined" aria-hidden="true">animation</span></span>
     <span>UI</span>
   </a>
-  <a class="nav-bar__item" href="#section-mwc">
+  <a class="nav-bar__item" href="#section-primitives">
     <span class="nav-bar__pill"><span class="material-symbols-outlined" aria-hidden="true">widgets</span></span>
-    <span>Web</span>
+    <span>Primitives</span>
   </a>
 </nav>
 
@@ -4927,107 +5002,69 @@
     }
   });
 
-  // --- Section 6: Resilient @material/web CDN Loader + Offline Progressive Fallbacks ---
-  const mwcStatus = document.getElementById('mwc-status');
-  const mwcSwitch = document.getElementById('mwc-switch');
-  const mwcCheckbox = document.getElementById('mwc-checkbox');
-  const mwcTextField = document.getElementById('mwc-text-field');
-  const mwcSlider = document.getElementById('volume-slider');
+  // --- Section 6: Native Semantic HTML & Headless Primitives Wiring ---
+  const primStatus = document.getElementById('prim-status');
+  const primSwitch = document.getElementById('prim-switch');
+  const primCheckbox = document.getElementById('prim-checkbox');
+  const primTextField = document.getElementById('prim-text-field');
+  const volumeSlider = document.getElementById('volume-slider');
   const volumeReadout = document.getElementById('volume-readout');
+  const primDialog = document.getElementById('prim-dialog');
+  const primDialogOpen = document.getElementById('prim-dialog-open');
+  const primDialogCancel = document.getElementById('prim-dialog-cancel');
+  const primDialogConfirm = document.getElementById('prim-dialog-confirm');
 
-  function activateMwcFallback() {
-    mwcStatus.textContent = 'Offline resilient fallback active';
-    if (!customElements.get('md-switch')) {
-      [mwcSwitch, mwcCheckbox].forEach((el) => {
-        el.setAttribute('tabindex', '0');
-        el.setAttribute('role', el === mwcSwitch ? 'switch' : 'checkbox');
-        el.setAttribute('aria-checked', String(el.hasAttribute('checked')));
-        const toggle = () => {
-          const next = el.getAttribute('aria-checked') !== 'true';
-          el.setAttribute('aria-checked', String(next));
-          el.toggleAttribute('checked', next);
-          mwcStatus.textContent = `${el.getAttribute('aria-label')}: ${next ? 'ON' : 'OFF'}`;
-        };
-        el.addEventListener('click', toggle);
-        el.addEventListener('keydown', (e) => {
-          if (e.key === ' ' || e.key === 'Enter') {
-            e.preventDefault();
-            toggle();
-          }
-        });
-      });
-
-      document.querySelectorAll('md-filled-tonal-button, md-elevated-button, md-outlined-button, md-fab').forEach((btn) => {
-        btn.setAttribute('tabindex', '0');
-        btn.setAttribute('role', 'button');
-        btn.addEventListener('click', () => showToast(`${btn.getAttribute('aria-label') || btn.textContent.trim()} clicked`));
-      });
-
-      if (!mwcTextField.querySelector('input')) {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'mwc-fallback-input';
-        input.value = mwcTextField.getAttribute('value') || '';
-        input.setAttribute('aria-label', mwcTextField.getAttribute('label') || 'Workspace Name');
-        input.addEventListener('input', () => {
-          mwcTextField.setAttribute('value', input.value);
-          mwcStatus.textContent = `Workspace: ${input.value}`;
-        });
-        mwcTextField.appendChild(input);
-      }
-
-      if (!mwcSlider.querySelector('input')) {
-        const range = document.createElement('input');
-        range.type = 'range';
-        range.min = '0';
-        range.max = '100';
-        range.className = 'mwc-fallback-range';
-        range.value = mwcSlider.getAttribute('value') || '75';
-        range.setAttribute('aria-label', mwcSlider.getAttribute('aria-label') || 'Volume');
-        range.addEventListener('input', () => {
-          mwcSlider.setAttribute('value', range.value);
-          volumeReadout.textContent = range.value;
-        });
-        mwcSlider.appendChild(range);
-      }
-    }
-  }
-
-  function wireMwcLiveListeners() {
-    mwcStatus.textContent = '@material/web CDN live';
-    mwcSwitch.addEventListener('change', () => {
-      mwcStatus.textContent = `Wi-Fi: ${mwcSwitch.selected ? 'ON' : 'OFF'}`;
-    });
-    mwcCheckbox.addEventListener('change', () => {
-      mwcStatus.textContent = `Notifications: ${mwcCheckbox.checked ? 'ON' : 'OFF'}`;
-    });
-    mwcTextField.addEventListener('input', () => {
-      mwcStatus.textContent = `Workspace: ${mwcTextField.value}`;
-    });
-    mwcSlider.addEventListener('input', () => {
-      volumeReadout.textContent = String(mwcSlider.value);
-    });
-    document.querySelectorAll('#section-mwc md-filled-tonal-button, #section-mwc md-elevated-button, #section-mwc md-outlined-button, #section-mwc md-fab').forEach((btn) => {
-      btn.addEventListener('click', () => showToast(`${btn.getAttribute('aria-label') || btn.textContent.trim()} clicked`));
+  if (primSwitch && primStatus) {
+    primSwitch.addEventListener('change', () => {
+      primSwitch.setAttribute('aria-checked', String(primSwitch.checked));
+      primStatus.textContent = `Wi-Fi: ${primSwitch.checked ? 'ON' : 'OFF'}`;
     });
   }
-
-  (async () => {
-    try {
-      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('CDN timeout')), 4000));
-      await Promise.race([import('https://esm.run/@material/web/all.js'), timeout]);
-      if (customElements.get('md-switch')) {
-        // Remove fallback inputs if MWC upgraded cleanly
-        mwcTextField.querySelector('.mwc-fallback-input')?.remove();
-        mwcSlider.querySelector('.mwc-fallback-range')?.remove();
-        wireMwcLiveListeners();
+  if (primCheckbox && primStatus) {
+    primCheckbox.addEventListener('change', () => {
+      primStatus.textContent = `Notifications: ${primCheckbox.checked ? 'ON' : 'OFF'}`;
+    });
+  }
+  if (primTextField && primStatus) {
+    primTextField.addEventListener('input', () => {
+      primStatus.textContent = `Workspace: ${primTextField.value}`;
+    });
+  }
+  if (volumeSlider && volumeReadout) {
+    volumeSlider.addEventListener('input', () => {
+      volumeReadout.textContent = String(volumeSlider.value);
+    });
+  }
+  document.querySelectorAll('#prim-tonal-btn, #prim-elevated-btn, #prim-outlined-btn, #prim-fab').forEach((btn) => {
+    btn.addEventListener('click', () => showToast(`${btn.getAttribute('aria-label') || btn.textContent.trim()} clicked`));
+  });
+  if (primDialog && primDialogOpen) {
+    primDialogOpen.addEventListener('click', () => {
+      if (typeof primDialog.showModal === 'function') {
+        primDialog.showModal();
       } else {
-        activateMwcFallback();
+        primDialog.setAttribute('open', '');
       }
-    } catch {
-      activateMwcFallback();
-    }
-  })();
+      primStatus && (primStatus.textContent = 'Native <dialog> modal open');
+    });
+    const closePrimDialog = (msg) => {
+      if (typeof primDialog.close === 'function' && primDialog.open) {
+        primDialog.close();
+      } else {
+        primDialog.removeAttribute('open');
+      }
+      if (msg && primStatus) primStatus.textContent = msg;
+      primDialogOpen.focus();
+    };
+    primDialogCancel?.addEventListener('click', () => closePrimDialog('Dialog dismissed'));
+    primDialogConfirm?.addEventListener('click', () => {
+      closePrimDialog('Dialog confirmed');
+      showToast('Native <dialog> confirmed');
+    });
+    primDialog.addEventListener('click', (e) => {
+      if (e.target === primDialog) closePrimDialog('Dialog dismissed');
+    });
+  }
 
   // --- Phase 2 Labs: md3e-morph.js Real-Time Morph, Wavy SVG+Canvas Progress, Squeeze & Bidirectional Toolbar ---
   const realtimeMorphPath = document.getElementById('realtime-morph-path');
