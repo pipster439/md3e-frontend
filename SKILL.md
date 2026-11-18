@@ -1,6 +1,6 @@
 ---
 name: md3e-frontend
-description: Builds, restyles, or reviews front-end UI so it complies with Material 3 Expressive (M3E), the May 2025 evolution of Material Design 3. Use when a request involves Material Design 3, MD3, M3E, Material You, "material design" styling, m3.material.io, or any of its systems — dynamic colour roles, the emphasized type scale, the shape library and corner-radius scale, motion springs, expressive components (toolbars, split button, button groups, FAB menu, loading indicator), or adaptive breakpoints. Supplies complete design tokens, per-system reference data, and a deterministic compliance auditor for HTML/CSS/JS/TS/Vue/Svelte.
+description: Builds, restyles, or reviews front-end UI so it complies with Material 3 Expressive (M3E), the May 2025 evolution of Material Design 3. Use when a request involves Material Design 3, MD3, M3E, Material You, "material design" styling, m3.material.io, or any of its systems — dynamic colour roles, the emphasized type scale, the shape library and corner-radius scale, real-time cubic Bézier shape morphing (`md3e-morph.js`), accessible backdrop blur (`md3e-blur.css`), motion springs, wavy progress indicators, expressive components (toolbars, split button, button groups, FAB menu, loading indicator), adaptive breakpoints, or the opt-in Desktop Bento dashboard layer (`--mode=desktop-bento`). Supplies complete design tokens, per-system reference data, and a dual-mode deterministic compliance auditor for HTML/CSS/JS/TS/Vue/Svelte.
 agent_created: true
 ---
 
@@ -18,10 +18,32 @@ uppercase button labels, no `border-radius: 50%`, no duration/easing pairs.
 | Job | Do this |
 |---|---|
 | New UI from scratch | Follow the six phases below in order |
+| Desktop Bento workspace / dashboard | Opt into `references/desktop-bento.md` after Phase 1 and audit with `--mode=desktop-bento` |
 | Restyle existing UI | Run phase 1, then the auditor, then fix by severity |
 | Review someone's UI | Run `scripts/audit_md3e.py`, then read the code against the references |
 | Answer a spec question | Read the relevant reference file; do not answer from memory |
 | Pick colours / shapes / motion values | Read the reference; never guess a hex or a radius |
+
+## Context Budget & Progressive Disclosure (Mandatory)
+
+Downstream agents operate with a finite context window. Preserve token budget strictly:
+
+1. **NEVER read oversized static palette or full showcase HTML files into context in full.**
+   - Forbidden full reads: `assets/tokens/md3e-palettes.css` (~575 KB) and large showcase HTML files (`assets/starter/index.html`, `assets/starter/desktop-bento.html`).
+   - Instead of reading `md3e-palettes.css`, link it directly in `<head>` and select themes via `data-seed` / `data-color-variant` / `data-contrast`, or generate a single compact CSS file with `python scripts/color_to_css.py --seed ... --emit-css ...`.
+   - Instead of scraping full showcase HTML files, read the compact Markdown reference docs (`references/*.md`, `references/components/*.md`); when inspecting a showcase HTML pattern, read only targeted `<= 120`-line ranges located via search.
+2. **Import core token and runtime modules on demand:**
+   - **Always link core base:** `assets/tokens/md3e-tokens.css` and `assets/tokens/md3e-motion.css`.
+   - **Link/import conditionally per feature:**
+     - Floating frosted chrome -> `assets/tokens/md3e-blur.css`
+     - 35 `MaterialShapes` CSS masks & 7-polygon CSS loader -> `assets/tokens/md3e-shapes.css`
+     - Real-time cubic Bézier SVG shape morphing -> `assets/tokens/md3e-morph.js` + `assets/tokens/md3e-spring.js`
+     - Client-side wallpaper/image HCT palette extraction -> `assets/tokens/md3e-dynamic-color.js`
+     - Multi-seed preset schemes -> `assets/tokens/md3e-palettes.css`
+     - `@material/web` components -> `assets/tokens/md3e-material-web.css`
+3. **Keep Mobile/Universal M3E decoupled from Desktop Bento Overrides:**
+   - Default apps follow standard official M3E (`references/layout.md`, `references/components.md`, audited via `--mode=strict`).
+   - High-density desktop dashboards (`data-layout-profile="desktop-bento"`) explicitly opt into `references/desktop-bento.md` and are audited via `--mode=desktop-bento`. Do not leak desktop Bento overrides (`32px–36px` dense table rows, high-stiffness `150ms–250ms` springs, zero-border card rules) into mobile or general marketing/app UIs.
 
 ## Non-negotiables & Authority Tiers
 
@@ -40,15 +62,18 @@ Rules below distinguish **Official Spec**, **Recommended Guidance**, and **Proje
 
 ## Phase 1 — Install the token layer
 
-Copy the token files into the project (never emit broken `/styles/md3e-*.css` paths unless those files actually exist at that path; for standalone single-file HTML deliverables, copy the stylesheets alongside the HTML with relative `./tokens/` links or inline `md3e-tokens.css` + `md3e-motion.css` directly) and import them first, in this order:
+Copy the token files into the project (never emit broken `/styles/md3e-*.css` paths unless those files actually exist at that path; for standalone single-file HTML deliverables, copy the stylesheets alongside the HTML with relative `./tokens/` links or inline `md3e-tokens.css` + `md3e-motion.css` directly) and import them on demand, in this order:
 
 ```
-assets/tokens/md3e-tokens.css         colour roles (5 variants + 3 contrast levels + frosted helper), type, shape, state, icons
-assets/tokens/md3e-palettes.css       (optional) multi-seed colour scheme presets (ocean, emerald, amber, rose, teal)
+assets/tokens/md3e-tokens.css         (core) colour roles (5 variants + 3 contrast levels), type, shape, state, icons
+assets/tokens/md3e-motion.css         (core) motion springs + -duration/-easing/-bezier tokens (generated)
+assets/tokens/md3e-blur.css           (optional) floating backdrop-filter blur + prefers-reduced-transparency solid fallbacks
+assets/tokens/md3e-palettes.css       (optional, link-only) multi-seed colour scheme presets (ocean, emerald, amber, rose, teal)
 assets/tokens/md3e-shapes.css         (optional) 35 official MaterialShapes masks & 7-polygon LoadingIndicator
-assets/tokens/md3e-motion.css         motion springs + -duration/-easing/-bezier tokens (generated)
 assets/tokens/md3e-material-web.css   (optional) bridge for @material/web components
 assets/tokens/md3e-spring.js          (optional) velocity-preserving interruptible JS spring helper
+assets/tokens/md3e-morph.js           (optional) AndroidX RoundedPolygon + Morph cubic Bézier real-time shape interpolator
+assets/tokens/md3e-dynamic-color.js   (optional) runtime browser/SSR HCT palette extraction from uploaded images/seeds
 ```
 
 ```html
@@ -61,6 +86,7 @@ assets/tokens/md3e-spring.js          (optional) velocity-preserving interruptib
 
 <link rel="stylesheet" href="./tokens/md3e-tokens.css">
 <link rel="stylesheet" href="./tokens/md3e-palettes.css">
+<link rel="stylesheet" href="./tokens/md3e-blur.css">
 <link rel="stylesheet" href="./tokens/md3e-shapes.css">
 <link rel="stylesheet" href="./tokens/md3e-motion.css">
 <link rel="stylesheet" href="./tokens/md3e-material-web.css">
@@ -168,6 +194,8 @@ shortcuts (`aria-keyshortcuts`, roving `tabindex`, `Escape`), Bottom Sheet ->
 Side Sheet (`400px`) swaps, and `112px` bottom scroll clearance under fixed
 Floating Toolbars.
 
+> **Opt-In Override Layer — High-Density Desktop Bento Dashboards:** When building desktop telemetry consoles, AI/dev workspaces, or compact Bento dashboards (`data-layout-profile="desktop-bento"`), read `references/desktop-bento.md` and see `assets/starter/desktop-bento.html` (targeted line ranges only). This override layer stays cleanly decoupled from standard mobile/universal MD3E and is audited via `--mode=desktop-bento`.
+
 ## Phase 6 — Apply Expressive tactics, then audit
 
 Read `references/expressive-tactics.md`.
@@ -179,11 +207,12 @@ emphasis budget there. Expression is not a licence to break the token layer.
 Then run the auditor and regression tests, and fix by severity:
 
 ```bash
-python scripts/audit_md3e.py src
+python scripts/audit_md3e.py src --mode=strict
+python scripts/audit_md3e.py src --mode=desktop-bento --fail-on warn
 python scripts/audit_md3e.py src --json            # machine-readable
-python scripts/audit_md3e.py src --fail-on warn    # stricter gate
-python scripts/audit_md3e.py docs --markdown       # audit HTML/CSS fences inside Markdown
-python scripts/test_md3e.py -v                     # full token, generator, and auditor test suite
+python scripts/audit_md3e.py src --fail-on warn    # stricter CI gate
+python scripts/audit_md3e.py docs --markdown       # audit HTML/CSS fences inside .md
+python scripts/test_md3e.py -v                     # full token, generator, morph, and auditor test suite
 ```
 
 ### Finding codes
@@ -195,7 +224,7 @@ python scripts/test_md3e.py -v                     # full token, generator, and 
 | MD3E003 | error | Corner radius off the shape scale |
 | MD3E004 | error | Duration/easing instead of a motion spring |
 | MD3E005 | error | Focus indicator removed or missing |
-| MD3E006 | warn | Interactive target under 48px |
+| MD3E006 | warn | Interactive target under 48px (dense `32px–36px` table/list rows exempted in `--mode=desktop-bento`) |
 | MD3E007 | warn | Font size off the type scale |
 | MD3E008 | warn | No `prefers-reduced-motion` path |
 | MD3E009 | warn | Colour roles without a dark scheme |
@@ -207,13 +236,18 @@ python scripts/test_md3e.py -v                     # full token, generator, and 
 | MD3E015 | info | Deprecated bottom app bar |
 | MD3E016 | warn | Deprecated small FAB (40dp) |
 | MD3E017 | error | Hallucinated/invalid Material Symbols icon name, missing font `<link>`, or non-alphabetical Google Fonts axes |
-| MD3E018 | error | Unitless opacity inside `color-mix()` (needs `%`) |
+| MD3E018 | error / warn | Unitless opacity inside `color-mix()` (`error`), or `in oklch` on neutrals (`warn` in `strict`, `error` in `desktop-bento`) |
 | MD3E019 | warn | Composite spring token inside `animation:` shorthand (delay bug) or `9999px` radius morph snap |
 | MD3E020 | error | Mismatched `<md-*>` custom element closing tag |
 | MD3E021 | warn | Decorative icon inside labelled button missing `aria-hidden="true"` |
 | MD3E022 | warn | `backdrop-filter` blur used without `prefers-reduced-transparency: reduce` fallback |
+| MD3E023 | warn / error | Rectangular `box-shadow` used directly on `.md3e-shape*`/masked/morphing shape instead of wrapper `filter: drop-shadow()` |
+| MD3E101 | error | *(desktop-bento)* `1px` border or rectangular `box-shadow` on Bento cards/containers (outside `:focus-visible` / `forced-colors: active`) |
+| MD3E102 | error | *(desktop-bento)* Fewer than 4 `surface-container-*` luminance nesting tiers used across a full Bento document |
+| MD3E103 | warn | *(desktop-bento)* Missing concentric `corner-extra-large` (28px) / `corner-large` (16px) corner step-down tokens |
+| MD3E104 | warn | *(desktop-bento)* Missing Desktop Bento Hero expressive anchors (morphing/masked CTA + `drop-shadow`, wave/sparkline motif, or dual-tier density) |
 
-`audit_md3e.py` is a heuristic static checker (supporting `.html`, `.css`, `.js/.ts/.jsx/.tsx/.vue/.svelte`, inline `style="..."`, `<style>` blocks, and `--markdown` doc snippets). A zero-finding run is a minimum gate, not full visual/runtime proof—always follow up with rendered browser inspection. Token and theme files are auto-detected and exempted from hardcoded-colour checks.
+`audit_md3e.py` is a heuristic static checker (supporting `.html`, `.css`, `.js/.ts/.jsx/.tsx/.vue/.svelte`, inline `style="..."`, `--mode=strict|desktop-bento`, and `--markdown` doc snippets). A zero-finding run is a minimum gate, not full visual/runtime proof—always follow up with rendered browser inspection. Token and theme files are auto-detected and exempted from hardcoded-colour checks.
 
 ## Regenerating colour, shape & motion tokens
 
@@ -235,10 +269,11 @@ python scripts/spring_to_css.py --stiffness 500 --damping 0.7   # custom spring
 |---|---|
 | `references/icons.md` | Material Symbols `<head>` setup, offline SVG fallback, hallucination-prevention name table, variable axes, a11y rules |
 | `references/material-web.md` | Google `@material/web` component catalogue, token mappings, framework setups (React/Vue/Svelte/Next) |
-| `references/components/expressive-recipes.md` | Production HTML/CSS/JS recipes for Expressive components & patterns (Toolbars, Split button, Button groups, FAB menu, 7-polygon Loader, Toggle buttons, Search, Badges, Carousel, Nav rail, Clock dial, 35-Shape masks & frosted chrome) |
+| `references/components/expressive-recipes.md` | Production HTML/CSS/JS recipes for Expressive components & patterns (Toolbars, Split button, Button groups, FAB menu, 7-polygon Loader, real-time `md3e-morph.js` button, Wavy SVG+Canvas progress bar, Toggle & variable-width icon buttons, Flexible Top App Bar, Carousel, Nav rail, Clock dial & `md3e-blur.css` chrome) |
+| `references/desktop-bento.md` | Opt-in Desktop High-Expressiveness Bento override layer (frameless shell, `32–36px` dense tables vs `44–64px` chunky controls, borderless 4+ tonal nesting, `28px/16px` concentric radii, Hero wave/sparkline/morph anchors, `150–250ms` desktop springs) |
 | `references/tailwind.md` | Tailwind CSS v3 & v4 integration guide, theme extension mapping, `@theme` block |
 | `references/color.md` | tonal palettes, 47 colour roles (including 12 Fixed roles), role→tone mapping, state layers, fixed roles, contrast levels |
-| `references/typography.md` | 30 type styles with values, emphasized rule, typefaces, variable-font axes, language height |
+| `references/typography.md` | 30 type styles with values, emphasized rule, typefaces, `GRAD`/`ROND`/`wght` spring axes, View Transitions container expansion, language height |
 | `references/shape.md` | ten-step corner scale, 35 shapes, morph, optical roundness, tension |
 | `references/motion.md` | spring parameters, scheme/type/speed selection, CSS implementation, legacy layer |
 | `references/components.md` | index + shared rules: button emphasis and size tables, corner radii, state completeness, web reality check |

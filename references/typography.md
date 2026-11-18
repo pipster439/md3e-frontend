@@ -100,30 +100,168 @@ move available, and it is a token change, not a redesign:
 M3E leans on variable font axes to express emotion without changing layout.
 Google Sans Flex and Roboto Flex expose:
 
-| Axis | Range | Effect |
-|---|---|---|
-| `wght` | 100–1000 | stroke thickness |
-| `opsz` | 6–144 | letterform proportions at a given size |
-| `ROND` | 0–100 | corner and terminal curvature, sharp → round |
-| `wdth` | 25%–151% | compression, ultra-condensed → expanded |
-| `slnt` | −10°–0° | slant |
+| Axis | Range | Effect | Zero reflow? |
+|---|---|---|---|
+| `wght` | `100–1000` | stroke thickness | Near-zero (minor glyph advance shift unless tabular/paired with `GRAD`) |
+| `GRAD` | `-50–200` (Google Sans Flex) / `-200–150` (Roboto Flex) | optical grade / weight density at fixed advance width | **100% zero reflow** |
+| `ROND` | `0–100` (Google Sans Flex) | corner and terminal curvature, sharp → round | **100% zero reflow** |
+| `opsz` | `6–144` / `8–144` | optical letterform proportions at display vs caption scale | Static per role |
+| `wdth` | `25%–151%` | horizontal compression, ultra-condensed → expanded | Layout-affecting |
 
-Two Expressive uses worth knowing:
+Google Fonts CSS2 `<head>` loading (axes **must** be strictly sorted alphabetically, uppercase A–Z before lowercase):
 
-1. **Roundness matches your shapes.** `ROND` is why M3 shapes and Google Sans
-   Flex look like they belong together. If you use the shape library, set a
-   non-zero `ROND` so type and containers share a roundness story.
-2. **Axes as motion.** Animating `wght` or `wdth` on a label is a legitimate
-   Expressive feedback channel — a toggle that thickens when it activates. Keep
-   it short and driven by an effects spring (axis changes do not move the
-   element, so no overshoot).
-
-```css
-.label { font-variation-settings: "wght" 500, "opsz" 14, "ROND" 25; }
+```html
+<!-- Google Sans Flex (GRAD, ROND, opsz, wdth, wght) + Roboto Flex fallback -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:GRAD,ROND,opsz,wdth,wght@-50..200,0..100,6..144,25..151,100..1000&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:GRAD,opsz,wdth,wght@-200..150,8..144,25..151,100..1000&display=swap">
 ```
 
-Never animate `font-size` to get emphasis — it reflows text and drops frames.
-Animate weight instead.
+### Spring-Driven `GRAD` / `ROND` / `wght` Transitions
+
+Never animate `font-size` to get emphasis — it reflows text and drops frames. Register custom axis properties with `@property` so CSS spring tokens drive `GRAD`, `ROND`, and `wght` smoothly in real time:
+
+- **Color/grade/weight emphasis (`GRAD`, `wght`)**: drive with `--md-sys-motion-fast-effects` (critically damped — no wobble).
+- **Shape-matched terminal rounding (`ROND`)**: drive `0 -> 100` with `--md-sys-motion-default-spatial` (or `createSpringAnimator` in `md3e-spring.js`) when an adjacent button or chip morphs between square and pill/cookie!
+
+```css
+@property --md3e-vf-wght { syntax: "<number>"; inherits: false; initial-value: 500; }
+@property --md3e-vf-grad { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --md3e-vf-rond { syntax: "<number>"; inherits: false; initial-value: 25; }
+
+.md3e-vf-expressive-label {
+  --md3e-vf-wght: 500;
+  --md3e-vf-grad: 0;
+  --md3e-vf-rond: 20;
+  font-family: "Google Sans Flex", "Roboto Flex", var(--md-sys-typescale-plain-font);
+  font-variation-settings:
+    "wght" var(--md3e-vf-wght),
+    "GRAD" var(--md3e-vf-grad),
+    "ROND" var(--md3e-vf-rond),
+    "opsz" 16;
+  transition:
+    --md3e-vf-wght var(--md-sys-motion-fast-effects),
+    --md3e-vf-grad var(--md-sys-motion-fast-effects),
+    --md3e-vf-rond var(--md-sys-motion-default-spatial);
+}
+
+.md3e-vf-expressive-label:hover {
+  --md3e-vf-grad: 60;
+  --md3e-vf-rond: 80;
+}
+
+.md3e-vf-expressive-label:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+}
+
+.md3e-vf-expressive-label[aria-pressed="true"] {
+  --md3e-vf-wght: 650;
+  --md3e-vf-grad: 110;
+  --md3e-vf-rond: 100;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-vf-expressive-label {
+    transition: none;
+  }
+}
+```
+
+## View Transitions Container Expansion (M3E Spatial Container Transform)
+
+For card-to-detail expansions, filter chips expanding into search sheets, or docked/floating toolbar mode swaps, pair the **View Transitions API** with M3E's `default-spatial` spring tokens (`--md-sys-motion-default-spatial-duration` and `--md-sys-motion-default-spatial-easing`):
+
+1. Prefer element-scoped `scopeEl.startViewTransition(...)` when supported (`'startViewTransition' in Element.prototype`) so page chrome and popovers stay interactive; fall back cleanly to `document.startViewTransition(...)` or immediate DOM updates.
+2. Assign a matching `view-transition-name` to only **one** visible source element before the DOM update and **one** visible destination element after it (duplicate names abort the transition), then remove temporary names in `transition.finished.finally(...)`.
+3. Set `width: fit-content;` on shared headline elements so aspect ratios do not smear horizontally, catch rapid-retrigger `transition.ready.catch(() => {})`, route keyboard focus to the revealed heading (`tabindex="-1"`), and suppress View Transition animations under `@media (prefers-reduced-motion: reduce)`.
+
+```css
+.md3e-vt-card {
+  border-radius: var(--md-sys-shape-corner-extra-large);
+  background: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface);
+  cursor: pointer;
+}
+
+.md3e-vt-card.is-vt-active,
+.md3e-vt-detail[data-open="true"] {
+  view-transition-name: md3e-hero-container;
+}
+
+.md3e-vt-card.is-vt-active .md3e-vt-title,
+.md3e-vt-detail[data-open="true"] .md3e-vt-title {
+  view-transition-name: md3e-hero-title;
+  width: fit-content;
+}
+
+::view-transition-group(md3e-hero-container),
+::view-transition-group(md3e-hero-title) {
+  animation-duration: var(--md-sys-motion-default-spatial-duration);
+  animation-timing-function: var(--md-sys-motion-default-spatial-easing);
+}
+
+::view-transition-old(md3e-hero-container),
+::view-transition-new(md3e-hero-container) {
+  height: 100%;
+  border-radius: var(--md-sys-shape-corner-extra-large);
+  overflow: clip;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+```
+
+```javascript
+export function expandWithContainerTransform(sourceCard, detailDialog, { returnFocusTo = sourceCard } = {}) {
+  const detailHeading = detailDialog.querySelector('[data-vt-heading]');
+  sourceCard.classList.add('is-vt-active');
+
+  const applyOpen = () => {
+    sourceCard.classList.remove('is-vt-active');
+    sourceCard.hidden = true;
+    detailDialog.dataset.open = 'true';
+    detailDialog.hidden = false;
+  };
+
+  if (typeof document.startViewTransition !== 'function') {
+    applyOpen();
+    detailHeading?.focus();
+    return;
+  }
+
+  const transition = document.startViewTransition(applyOpen);
+  transition.ready.catch(() => {});
+  transition.finished.finally(() => {
+    detailHeading?.focus();
+  });
+
+  detailDialog.addEventListener('close', () => {
+    const closeDom = () => {
+      detailDialog.dataset.open = 'false';
+      detailDialog.hidden = true;
+      sourceCard.hidden = false;
+      sourceCard.classList.add('is-vt-active');
+    };
+    if (typeof document.startViewTransition !== 'function') {
+      closeDom();
+      sourceCard.classList.remove('is-vt-active');
+      returnFocusTo?.focus();
+      return;
+    }
+    const back = document.startViewTransition(closeDom);
+    back.ready.catch(() => {});
+    back.finished.finally(() => {
+      sourceCard.classList.remove('is-vt-active');
+      returnFocusTo?.focus();
+    });
+  }, { once: true });
+}
+```
 
 ## Language height (do not skip this for CJK)
 

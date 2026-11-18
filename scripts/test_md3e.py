@@ -576,17 +576,26 @@ class AuditorTests(unittest.TestCase):
     def _findings(self, text: str, filename: str = "sample.html", *, is_snippet: bool = False) -> list[audit_md3e.Finding]:
         return audit_md3e.Checker(pathlib.Path(filename), is_snippet=is_snippet).run(text)
 
-    def test_shipped_assets_and_all_20_markdown_docs_pass_compliance(self) -> None:
-        reports, scanned = audit_md3e.audit([str(ROOT_DIR / "assets")], [])
-        self.assertEqual(scanned, 10)
-        self.assertEqual(reports, [], f"Unexpected asset findings: {reports}")
+    def test_shipped_assets_and_all_21_markdown_docs_pass_compliance(self) -> None:
+        reports, scanned = audit_md3e.audit([str(ROOT_DIR / "assets")], [], mode="strict")
+        self.assertEqual(scanned, 13)
+        self.assertEqual(reports, [], f"Unexpected strict asset findings: {reports}")
+
+        bento_reports, bento_scanned = audit_md3e.audit(
+            [str(ROOT_DIR / "assets" / "starter" / "desktop-bento.html")],
+            [],
+            mode="desktop-bento",
+        )
+        self.assertEqual(bento_scanned, 1)
+        self.assertEqual(bento_reports, [], f"Unexpected desktop-bento HTML findings: {bento_reports}")
 
         md_reports, md_scanned = audit_md3e.audit(
             [str(SKILL_MD), str(OFFICIAL_AUDIT_MD), str(REFERENCES_DIR)],
             [],
             include_markdown=True,
+            mode="strict",
         )
-        self.assertEqual(md_scanned, 20)
+        self.assertEqual(md_scanned, 21)
         warn_or_error = [
             (r.path, f)
             for r in md_reports
@@ -594,6 +603,21 @@ class AuditorTests(unittest.TestCase):
             if f.severity in ("error", "warn")
         ]
         self.assertEqual(warn_or_error, [], f"Unexpected markdown error/warn findings: {warn_or_error}")
+
+        bento_md_reports, bento_md_scanned = audit_md3e.audit(
+            [str(REFERENCES_DIR / "desktop-bento.md")],
+            [],
+            include_markdown=True,
+            mode="desktop-bento",
+        )
+        self.assertEqual(bento_md_scanned, 1)
+        bento_md_we = [
+            (r.path, f)
+            for r in bento_md_reports
+            for f in r.findings
+            if f.severity in ("error", "warn")
+        ]
+        self.assertEqual(bento_md_we, [], f"Unexpected desktop-bento markdown findings: {bento_md_we}")
 
     def test_md3e017_catches_non_alphabetical_google_fonts_axes(self) -> None:
         bad_html = (
@@ -855,9 +879,196 @@ console.log(JSON.stringify({ cands: ext.candidates.map((c) => c.hex), schemes })
     def test_starter_wires_accessible_image_upload_and_copy(self) -> None:
         html = STARTER_HTML.read_text(encoding="utf-8")
         self.assertIn("../tokens/md3e-dynamic-color.js", html)
+        self.assertIn("../tokens/md3e-blur.css", html)
+        self.assertIn("../tokens/md3e-morph.js", html)
         self.assertRegex(html, r'<input\b[^>]*id="image-theme-input"[^>]*class="visually-hidden"')
         self.assertRegex(html, r'\.visually-hidden\s*\{[^}]*clip-path:\s*inset\(50%\)')
         self.assertRegex(html, r'<button\b[^>]*id="btn-copy-theme-css"[^>]*command="--copy"[^>]*commandfor="generated-theme-css"')
+
+
+class PhaseFourAndDesktopBentoTests(unittest.TestCase):
+    def test_skill_md_enforces_context_budget_and_decoupled_bento_layer(self) -> None:
+        skill = SKILL_MD.read_text(encoding="utf-8")
+        self.assertIn("Context Budget", skill)
+        self.assertIn("md3e-palettes.css", skill)
+        self.assertIn("desktop-bento.html", skill)
+        self.assertIn("references/desktop-bento.md", skill)
+        self.assertIn("--mode=desktop-bento", skill)
+
+    def test_blur_css_accessibility_and_oklab_rules(self) -> None:
+        blur_css = (ROOT_DIR / "assets" / "tokens" / "md3e-blur.css").read_text(encoding="utf-8")
+        blur_rules_only = audit_md3e.strip_css_comments(blur_css)
+        self.assertIn(".md3e-blur-surface", blur_rules_only)
+        self.assertIn(".md3e-blur-primary", blur_rules_only)
+        self.assertIn("in oklab", blur_rules_only)
+        self.assertNotIn("in oklch", blur_rules_only)
+        self.assertIn("-webkit-backdrop-filter", blur_rules_only)
+        self.assertIn("backdrop-filter", blur_rules_only)
+        self.assertRegex(blur_rules_only, r"@media\s*\(prefers-reduced-transparency\s*:\s*reduce\)")
+        self.assertRegex(blur_rules_only, r"@media\s*\(prefers-contrast\s*:\s*more\)")
+        self.assertRegex(blur_rules_only, r"@media\s*\(forced-colors\s*:\s*active\)")
+
+    def test_morph_js_35_shapes_and_bezier_interpolation(self) -> None:
+        node_bin = shutil.which("node")
+        if not node_bin:
+            self.skipTest("node runtime unavailable")
+
+        js_driver = r"""
+import { SHAPE_NAMES, Morph, buildShape, createShapeMorpher } from './assets/tokens/md3e-morph.js';
+
+const polys = SHAPE_NAMES.map((name) => {
+  const p = buildShape(name);
+  const b = p.bounds();
+  return { name, cubics: p.cubics.length, bounds: b };
+});
+
+const pairs = [
+  ['square', 'cookie-9-sided'],
+  ['triangle', 'clover-8-leaf'],
+  ['pixel-circle', 'heart'],
+];
+const checks = pairs.map(([a, b]) => {
+  const m = new Morph(a, b);
+  const paths = {};
+  for (const p of [0, 0.25, 0.5, 1, 1.12]) {
+    paths[String(p)] = m.toSvgPath(p);
+  }
+  const b0 = m.toPolygon(0).bounds();
+  const aBounds = buildShape(a).bounds();
+  const b1 = m.toPolygon(1).bounds();
+  const bBounds = buildShape(b).bounds();
+  return {
+    pair: `${a}->${b}`,
+    segments: m.morphMatch.length,
+    c0: m.asCubics(0).length,
+    c1: m.asCubics(1).length,
+    paths,
+    b0, aBounds, b1, bBounds,
+  };
+});
+
+let lastD = '';
+const mockEl = { setAttribute(k, v) { if (k === 'd') lastD = v; } };
+const morpher = createShapeMorpher(mockEl, { initialShape: 'square' });
+const dInit = lastD;
+morpher.morphTo('cookie-9-sided', { immediate: true });
+const dSnapped = lastD;
+
+console.log(JSON.stringify({ shapeNames: SHAPE_NAMES, polys, checks, dInit, dSnapped }));
+"""
+        raw = subprocess.check_output(
+            [node_bin, "--input-type=module", "-e", js_driver],
+            cwd=str(ROOT_DIR),
+            text=True,
+        )
+        out = json.loads(raw)
+        self.assertEqual(tuple(out["shapeNames"]), shapes_to_css.SHAPE_NAMES)
+        for item in out["polys"]:
+            self.assertGreater(item["cubics"], 0)
+            b = item["bounds"]
+            self.assertGreaterEqual(b[0], -1e-4)
+            self.assertGreaterEqual(b[1], -1e-4)
+            self.assertLessEqual(b[2], 1.0001)
+            self.assertLessEqual(b[3], 1.0001)
+
+        for chk in out["checks"]:
+            self.assertGreater(chk["segments"], 0)
+            self.assertEqual(chk["c0"], chk["segments"])
+            self.assertEqual(chk["c1"], chk["segments"])
+            for p_str, path_d in chk["paths"].items():
+                self.assertTrue(path_d.startswith("M") and path_d.endswith("Z"), f"{chk['pair']} p={p_str}")
+                self.assertNotIn("NaN", path_d)
+            for v0, va in zip(chk["b0"], chk["aBounds"]):
+                self.assertAlmostEqual(v0, va, places=6)
+            for v1, vb in zip(chk["b1"], chk["bBounds"]):
+                self.assertAlmostEqual(v1, vb, places=6)
+
+        self.assertNotEqual(out["dInit"], out["dSnapped"])
+
+    def test_dual_mode_auditor_strict_vs_desktop_bento(self) -> None:
+        shape_shadow_css = ".md3e-shape-sunny { box-shadow: var(--md-sys-elevation-level2); }"
+        strict_f = [f for f in audit_md3e.Checker(pathlib.Path("s.css"), mode="strict").run(shape_shadow_css) if f.code == "MD3E023"]
+        bento_f = [f for f in audit_md3e.Checker(pathlib.Path("s.css"), mode="desktop-bento").run(shape_shadow_css) if f.code == "MD3E023"]
+        self.assertEqual(len(strict_f), 1)
+        self.assertEqual(strict_f[0].severity, "warn")
+        self.assertEqual(len(bento_f), 1)
+        self.assertEqual(bento_f[0].severity, "error")
+
+        good_drop_css = ".md3e-shape-shadow-wrap { filter: drop-shadow(0 4px 10px color-mix(in oklab, var(--md-sys-color-shadow) 24%, transparent)); }"
+        self.assertEqual(audit_md3e.Checker(pathlib.Path("good.css"), mode="desktop-bento").run(good_drop_css), [])
+
+        oklch_css = ".card { background: color-mix(in oklch, var(--md-sys-color-surface-container) 80%, transparent); }"
+        oklch_strict = [f for f in audit_md3e.Checker(pathlib.Path("o.css"), mode="strict").run(oklch_css) if f.code == "MD3E018"]
+        oklch_bento = [f for f in audit_md3e.Checker(pathlib.Path("o.css"), mode="desktop-bento").run(oklch_css) if f.code == "MD3E018"]
+        self.assertEqual(oklch_strict[0].severity, "warn")
+        self.assertEqual(oklch_bento[0].severity, "error")
+
+        bento_violations = """
+        .bento-card { border: 1px solid var(--md-sys-color-outline-variant); box-shadow: var(--md-sys-elevation-level1); }
+        @media (forced-colors: active) { .bento-card { border: 1px solid CanvasText; } }
+        """
+        m101 = [f for f in audit_md3e.Checker(pathlib.Path("b.css"), mode="desktop-bento").run(bento_violations) if f.code == "MD3E101"]
+        self.assertEqual(len(m101), 2)
+
+        incomplete_bento_html = (
+            "<!doctype html><html><head><style>"
+            ".bento-card { background: var(--md-sys-color-surface-container); border-radius: var(--md-sys-shape-corner-medium); }"
+            "</style></head><body><main>Hi</main></body></html>"
+        )
+        bento_codes = {f.code for f in audit_md3e.Checker(pathlib.Path("bento.html"), mode="desktop-bento").run(incomplete_bento_html)}
+        self.assertIn("MD3E102", bento_codes)
+        self.assertIn("MD3E103", bento_codes)
+        self.assertIn("MD3E104", bento_codes)
+
+        # Verify CLI --mode=desktop-bento exit code on shipped desktop-bento.html
+        rc = audit_md3e.main([str(ROOT_DIR / "assets" / "starter" / "desktop-bento.html"), "--mode=desktop-bento", "--fail-on=info", "--json"])
+        self.assertEqual(rc, 0)
+
+    def test_multiline_transition_catches_corner_full_overshoot_rectangle(self) -> None:
+        bad_pill_css = """
+        .bento-action-btn {
+          height: 48px;
+          border-radius: var(--md-sys-shape-corner-full);
+          transition: background-color var(--md-bento-motion-fast-effects),
+                      border-radius var(--md-bento-motion-fast-spatial),
+                      transform var(--md-bento-motion-fast-spatial);
+        }
+        .bento-action-btn:active {
+          border-radius: var(--md-sys-shape-corner-large);
+        }
+        """
+        strict_findings = [
+            f for f in audit_md3e.Checker(pathlib.Path("bad.css"), mode="strict").run(bad_pill_css)
+            if f.code == "MD3E019"
+        ]
+        bento_findings = [
+            f for f in audit_md3e.Checker(pathlib.Path("bad.css"), mode="desktop-bento").run(bad_pill_css)
+            if f.code == "MD3E019"
+        ]
+        self.assertEqual(len(strict_findings), 1)
+        self.assertEqual(strict_findings[0].severity, "warn")
+        self.assertEqual(len(bento_findings), 1)
+        self.assertEqual(bento_findings[0].severity, "error")
+
+        good_pill_css = """
+        .bento-action-btn {
+          height: 48px;
+          border-radius: calc(var(--md-bento-control-height, 48px) / 2);
+          transition: background-color var(--md-bento-motion-fast-effects),
+                      border-radius var(--md-bento-motion-fast-spatial),
+                      transform var(--md-bento-motion-fast-spatial);
+        }
+        .bento-action-btn:active {
+          border-radius: var(--md-sys-shape-corner-medium);
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .bento-action-btn {
+            transition: none;
+          }
+        }
+        """
+        self.assertEqual(audit_md3e.Checker(pathlib.Path("good.css"), mode="strict").run(good_pill_css), [])
+        self.assertEqual(audit_md3e.Checker(pathlib.Path("good.css"), mode="desktop-bento").run(good_pill_css), [])
 
 
 if __name__ == "__main__":

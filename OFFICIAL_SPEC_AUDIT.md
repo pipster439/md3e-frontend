@@ -7,9 +7,10 @@
 > - **第一轮**：本文档最初列出的 12 项问题（2 项 P1 + 10 项 P2）以及后续排查出的图标防幻觉/FOUT 保护、WAAPI/形态变形动画、Tailwind 动效映射与响应式示例缺陷已在当前版本全部落地修复，并新增 `references/icons.md`、回归测试 `scripts/test_md3e.py` 与静态检查器规则 `MD3E017`–`MD3E021`（完整规则集现涵盖 `MD3E001`–`MD3E022`）。
 > - **第二轮（配色方案 + 异形容器 + 模糊 + 动效 + 桌面优化对齐）**：修复了 `[data-color-variant="vibrant"]` 在暗色下完全无变化、深色模式下 `surface` (`#1C1B1F` N10) 与 `surface-container-low` (`#1D1B20` N10) 阶梯坍塌的问题，改为 `N98 #FEF7FF` / `N6 #141218`；新增纯标准库 CAM16/HCT + MCU `SPEC_2025` 生成器 `scripts/color_to_css.py`、多主题预设 `assets/tokens/md3e-palettes.css`（6 个种子色 × 5 种变体 × 3 档对比度 + `@media (forced-colors: active)`）；移植 AOSP `MaterialShapes.kt` 全部 35 种官方异形容器及 7 边形 `LoadingIndicator` 变形序列至 `scripts/shapes_to_css.py` / `assets/tokens/md3e-shapes.css`；完善动效生成器 `scripts/spring_to_css.py` 与 `assets/tokens/md3e-motion.css`，新增动效 `-bezier` 官方曲线对照驱动与可打断速度继承物理弹簧 `assets/tokens/md3e-spring.js`；明确区分官网无 `md.sys.blur.*` 令牌与 Android 16 系统窗口模糊，新增受保护的 `.md3e-frosted-surface` 与检查器规则 `MD3E022`，并补全桌面多窗格布局、Navigation Rail 折叠/展开及视觉密度（`data-density`）规范。
 > - **当前工具与资产清单**：
->   - **5 个脚本（`scripts/`）**：`color_to_css.py`（支持 `--seed` 与 `--image` 传图取色）、`shapes_to_css.py`、`spring_to_css.py`、`audit_md3e.py`（规则 `MD3E001`–`MD3E022`）、`test_md3e.py`。
->   - **7 个令牌与运行时文件（`assets/tokens/`）**：`md3e-tokens.css`、`md3e-palettes.css`、`md3e-shapes.css`、`md3e-motion.css`、`md3e-material-web.css`、`md3e-spring.js`、`md3e-dynamic-color.js`（浏览器端上传图片取色 `QuantizerCelebi` + `Score` + `SPEC_2025` 实时换肤）。
->   - **Tailwind 与 Starter 资产**：`assets/tailwind/md3e-theme.css`、`assets/tailwind/tailwind.config.js`、`assets/starter/index.html`。
+>   - **5 个脚本（`scripts/`）**：`color_to_css.py`（支持 `--seed` 与 `--image` 传图取色）、`shapes_to_css.py`、`spring_to_css.py`、`audit_md3e.py`（支持 `--mode=strict` 与 `--mode=desktop-bento`，规则涵盖 `MD3E001`–`MD3E023` 与 `MD3E101`–`MD3E104`）、`test_md3e.py`。
+>   - **9 个令牌与运行时文件（`assets/tokens/`）**：`md3e-tokens.css`、`md3e-palettes.css`、`md3e-blur.css`（带 `@media (prefers-reduced-transparency: reduce)` 自动纯色回退）、`md3e-shapes.css`、`md3e-motion.css`、`md3e-material-web.css`、`md3e-spring.js`、`md3e-morph.js`（AndroidX `RoundedPolygon` + `Morph` 三阶贝塞尔实时形变插值器）、`md3e-dynamic-color.js`（浏览器端上传图片取色 `QuantizerCelebi` + `Score` + `SPEC_2025` 实时换肤）。
+>   - **Tailwind 与 Starter 资产**：`assets/tailwind/md3e-theme.css`、`assets/tailwind/tailwind.config.js`、`assets/starter/index.html`、`assets/starter/desktop-bento.html`（独立桌面端高密度 Bento 仪表盘演示页）。
+> - **第三轮（Web 原生完备度 + 桌面端高密度 Bento 系统升级）**：在 `SKILL.md` 建立上下文预算防溢出机制与 `references/desktop-bento.md` 可选覆写层解耦；新增 `md3e-blur.css`、`md3e-morph.js`，并在 `expressive-recipes.md` / `typography.md` / `starter` 示例中补齐实时贝塞尔形变、100% 自动拉直双实现波浪进度条（SVG + Canvas）、悬浮/停靠双向工具栏、按钮组邻居宽度挤压、可变字体 `GRAD`/`ROND`/`wght` 弹簧过渡及 View Transitions 容器展开配方。
 
 ## 结论（初版审查快照）
 

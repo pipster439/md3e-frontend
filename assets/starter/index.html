@@ -10,11 +10,13 @@
 <!-- Google Fonts & Material Symbols Icons (strictly alphabetical axes; &display=block prevents FOUT) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:GRAD,ROND,opsz,wdth,wght@-50..200,0..100,6..144,25..151,100..1000&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:FILL,GRAD,opsz,wght@0..1,-50..200,20..48,100..700&display=block">
 
-<!-- MD3E Design Tokens, Multi-Seed Palettes, 35 Shapes, Motion Springs & @material/web Bridge -->
+<!-- MD3E Design Tokens, Blur Layer, Multi-Seed Palettes, 35 Shapes, Motion Springs & @material/web Bridge -->
 <link rel="stylesheet" href="../tokens/md3e-tokens.css">
+<link rel="stylesheet" href="../tokens/md3e-blur.css">
 <link rel="stylesheet" href="../tokens/md3e-palettes.css">
 <link rel="stylesheet" href="../tokens/md3e-shapes.css">
 <link rel="stylesheet" href="../tokens/md3e-motion.css">
@@ -93,7 +95,6 @@
     padding-block: var(--md-sys-spacing-2);
     padding-inline: var(--md-sys-spacing-3);
     background: var(--md-sys-color-surface-container);
-    border-bottom: 1px solid var(--md-sys-color-outline-variant);
     position: sticky;
     top: 0;
     z-index: 50;
@@ -144,7 +145,7 @@
     gap: var(--md-sys-spacing-1);
     height: var(--md3e-control-h);
     padding-inline: var(--md-sys-spacing-3);
-    border: 1px solid var(--md-sys-color-outline-variant);
+    border: none;
     border-radius: var(--md-sys-shape-corner-large-increased);
     background: var(--md-sys-color-surface-container-high);
     color: var(--md-sys-color-on-surface);
@@ -156,8 +157,7 @@
     cursor: pointer;
     transition: border-radius var(--md-sys-motion-fast-spatial),
                 background-color var(--md-sys-motion-fast-effects),
-                color var(--md-sys-motion-fast-effects),
-                border-color var(--md-sys-motion-fast-effects);
+                color var(--md-sys-motion-fast-effects);
   }
 
   .header-chip::before {
@@ -187,7 +187,6 @@
   .header-chip[aria-expanded="true"] {
     background: var(--md-sys-color-secondary-container);
     color: var(--md-sys-color-on-secondary-container);
-    border-color: transparent;
     border-radius: var(--md-sys-shape-corner-medium);
     font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
     --md-sys-icon-fill: 1;
@@ -216,7 +215,7 @@
     display: none;
     padding: 1px 6px;
     border-radius: var(--md-sys-shape-corner-extra-small);
-    border: 1px solid var(--md-sys-color-outline-variant);
+    border: none;
     background: var(--md-sys-color-surface-container-highest);
     color: var(--md-sys-color-on-surface-variant);
     font-family: ui-monospace, monospace;
@@ -250,8 +249,7 @@
     min-height: calc(68px + env(safe-area-inset-bottom, 0px));
     padding-bottom: env(safe-area-inset-bottom, 0px);
     padding-inline: var(--md-sys-spacing-1);
-    background: var(--md-sys-color-surface-container);
-    border-top: 1px solid var(--md-sys-color-outline-variant);
+    background: var(--md-sys-color-surface-container-high);
     box-shadow: var(--md-sys-elevation-level2);
   }
 
@@ -322,7 +320,6 @@
     padding-block: var(--md-sys-spacing-4);
     padding-inline: var(--md-sys-spacing-2);
     background: var(--md-sys-color-surface-container);
-    border-inline-end: 1px solid var(--md-sys-color-outline-variant);
     flex-direction: column;
     align-items: center;
     gap: var(--md-sys-spacing-2);
@@ -647,7 +644,6 @@
     color: var(--md-sys-color-on-surface);
     border-start-start-radius: var(--md-sys-shape-corner-extra-large);
     border-start-end-radius: var(--md-sys-shape-corner-extra-large);
-    border-top: 1px solid var(--md-sys-color-outline-variant);
     box-shadow: var(--md-sys-elevation-level3);
     padding: var(--md-sys-spacing-5);
     display: flex;
@@ -673,9 +669,7 @@
       max-height: calc(100dvh - 64px);
       width: 0;
       padding: 0;
-      border-top: none;
-      border-radius: 0;
-      border-inline-start: 0 solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-corner-extra-large) 0 0 var(--md-sys-shape-corner-extra-large);
       box-shadow: none;
       overflow-x: hidden;
       flex-shrink: 0;
@@ -688,7 +682,6 @@
       width: 380px;
       padding: var(--md-sys-spacing-5);
       padding-block-end: 104px;
-      border-inline-start-width: 1px;
     }
   }
 
@@ -714,7 +707,7 @@
     padding: var(--md-sys-spacing-3);
     border-radius: var(--md-sys-shape-corner-medium);
     background: var(--md-sys-color-surface);
-    border: 1px solid var(--md-sys-color-outline-variant);
+    border: none;
     font-size: var(--md-sys-typescale-label-medium-size);
   }
   .inspector-list dt {
@@ -746,9 +739,8 @@
     padding: var(--md-sys-spacing-5);
     background: var(--md-sys-color-surface-container-low);
     border-radius: var(--md-sys-shape-corner-large);
-    border: 1px solid var(--md-sys-color-outline-variant);
+    border: none;
     transition: background-color var(--md-sys-motion-fast-effects),
-                border-color var(--md-sys-motion-fast-effects),
                 padding var(--md-sys-motion-fast-spatial);
   }
 
@@ -847,9 +839,9 @@
     gap: var(--md-sys-spacing-2);
     height: var(--md3e-control-h);
     padding-inline: var(--md-sys-spacing-3);
-    border: 1px solid var(--md-sys-color-outline-variant);
+    border: none;
     border-radius: var(--md-sys-shape-corner-small);
-    background: var(--md-sys-color-surface);
+    background: var(--md-sys-color-surface-container-high);
     color: var(--md-sys-color-on-surface);
     font-family: var(--md-sys-typescale-plain-font);
     font-size: var(--md-sys-typescale-label-large-size);
@@ -885,7 +877,6 @@
   .choice-chip[aria-pressed="true"] {
     background: var(--md-sys-color-secondary-container);
     color: var(--md-sys-color-on-secondary-container);
-    border-color: transparent;
     border-radius: var(--md-sys-shape-corner-large-increased);
     font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
     --md-sys-icon-fill: 1;
@@ -934,7 +925,7 @@
     padding: var(--md-sys-spacing-4);
     border-radius: var(--md-sys-shape-corner-large);
     background: var(--md-sys-color-surface-container);
-    border: 1px solid var(--md-sys-color-outline-variant);
+    border: none;
     display: flex;
     flex-direction: column;
     gap: var(--md-sys-spacing-3);
@@ -992,7 +983,7 @@
     height: var(--md-sys-spacing-12);
     object-fit: cover;
     border-radius: var(--md-sys-shape-corner-small);
-    border: 1px solid var(--md-sys-color-outline-variant);
+    border: none;
     flex-shrink: 0;
   }
 
@@ -1003,8 +994,8 @@
     min-block-size: var(--md-sys-touch-target-min);
     padding-inline: var(--md-sys-spacing-3);
     border-radius: var(--md-sys-shape-corner-small);
-    border: 1px solid var(--md-sys-color-outline-variant);
-    background: var(--md-sys-color-surface);
+    border: none;
+    background: var(--md-sys-color-surface-container-high);
     color: var(--md-sys-color-on-surface);
     font-size: var(--md-sys-typescale-label-large-size);
     line-height: var(--md-sys-typescale-label-large-line-height);
@@ -1064,12 +1055,15 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
     gap: var(--md-sys-spacing-2);
+    padding: var(--md-sys-spacing-3);
+    border-radius: var(--md-sys-shape-corner-large);
+    background: color-mix(in oklab, var(--md-sys-color-primary) 7%, var(--md-sys-color-surface-container));
   }
 
   .swatch-tile {
     padding: var(--md-sys-spacing-3);
     border-radius: var(--md-sys-shape-corner-medium);
-    border: 1px solid var(--md-sys-color-outline-variant);
+    border: none;
     display: flex;
     flex-direction: column;
     gap: var(--md-sys-spacing-1);
@@ -1084,9 +1078,9 @@
   .swatch-tile--container { background: var(--md-sys-color-surface-container); color: var(--md-sys-color-on-surface); }
   .swatch-tile--high { background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface); }
   .swatch-tile--highest { background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface); }
-  .swatch-tile--primary { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); border-color: transparent; }
-  .swatch-tile--secondary { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); border-color: transparent; }
-  .swatch-tile--tertiary { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); border-color: transparent; }
+  .swatch-tile--primary { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+  .swatch-tile--secondary { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+  .swatch-tile--tertiary { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
 
   .swatch-tile__name {
     font-size: var(--md-sys-typescale-label-medium-size);
@@ -1146,14 +1140,13 @@
     gap: var(--md-sys-spacing-1);
     padding: var(--md-sys-spacing-2) var(--md-sys-spacing-3);
     border-radius: var(--md-sys-shape-corner-small);
-    background: var(--md-sys-color-surface);
-    border: 1px solid var(--md-sys-color-outline-variant);
+    background: var(--md-sys-color-surface-container-high);
+    border: none;
     font-size: var(--md-sys-typescale-label-medium-size);
   }
   .icon-calibration__item--filled {
     background: var(--md-sys-color-primary-container);
     color: var(--md-sys-color-on-primary-container);
-    border-color: transparent;
     --md-sys-icon-fill: 1;
   }
   .icon-calibration__item--large {
@@ -1217,19 +1210,17 @@
     min-width: var(--md-sys-touch-target-min);
     min-height: var(--md-sys-touch-target-min);
     padding: var(--md-sys-spacing-1);
-    border: 1px solid var(--md-sys-color-outline-variant);
+    border: none;
     border-radius: var(--md-sys-shape-corner-medium);
-    background: var(--md-sys-color-surface);
+    background: var(--md-sys-color-surface-container-low);
     color: var(--md-sys-color-on-surface);
     cursor: pointer;
     transition: background-color var(--md-sys-motion-fast-effects),
-                border-color var(--md-sys-motion-fast-effects),
                 transform var(--md-sys-motion-fast-spatial);
   }
 
   .shape-tile-btn[aria-pressed="true"] {
     background: var(--md-sys-color-secondary-container);
-    border-color: var(--md-sys-color-primary);
   }
 
   .shape-tile-btn:active {
@@ -1259,7 +1250,7 @@
     padding-inline: var(--md-sys-spacing-2);
     border-radius: var(--md-sys-shape-corner-full);
     background: var(--md-sys-color-surface-container-highest);
-    border: 1px solid var(--md-sys-color-outline-variant);
+    border: none;
     display: flex;
     align-items: center;
     overflow: hidden;
@@ -1614,7 +1605,7 @@
     max-width: calc(100vw - var(--md-sys-spacing-8));
     padding: var(--md-sys-spacing-1);
     background: var(--md-sys-color-surface-container);
-    border: 1px solid var(--md-sys-color-outline-variant);
+    border: none;
     border-radius: var(--md-sys-shape-corner-small);
     box-shadow: var(--md-sys-elevation-level2);
     z-index: 60;
@@ -1849,8 +1840,228 @@
     align-items: center;
     justify-content: space-around;
     background: var(--md-sys-color-surface-container);
-    border: 1px solid var(--md-sys-color-outline-variant);
+    border: none;
     border-radius: var(--md-sys-shape-corner-large);
+  }
+
+  /* --- Real-Time md3e-morph.js Interactive Lab --- */
+  .morph-lab {
+    margin-block: var(--md-sys-spacing-4);
+    padding: var(--md-sys-spacing-4);
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-surface-container-low);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--md-sys-spacing-4);
+  }
+  .morph-btn {
+    position: relative;
+    display: grid;
+    place-items: center;
+    inline-size: 64px;
+    block-size: 64px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--md-sys-color-on-primary);
+    cursor: pointer;
+  }
+  .morph-btn__svg {
+    inline-size: 100%;
+    block-size: 100%;
+    fill: var(--md-sys-color-primary);
+  }
+  .morph-btn__icon {
+    position: absolute;
+    pointer-events: none;
+    color: var(--md-sys-color-on-primary);
+  }
+  .morph-btn:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+    border-radius: var(--md-sys-shape-corner-large);
+  }
+
+  /* --- Wavy Progress Indicators (SVG + Canvas Dual Implementation, 100% Straighten) --- */
+  .wavy-lab {
+    margin-block: var(--md-sys-spacing-4);
+    padding: var(--md-sys-spacing-4);
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-surface-container-low);
+    display: grid;
+    gap: var(--md-sys-spacing-3);
+  }
+  .wavy-track-row {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--md-sys-spacing-3);
+  }
+  .wavy-track-label {
+    font-size: var(--md-sys-typescale-label-medium-size);
+    line-height: var(--md-sys-typescale-label-medium-line-height);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+  .md3e-wavy-progress {
+    inline-size: 100%;
+    block-size: 16px;
+    display: flex;
+    align-items: center;
+    content-visibility: auto;
+    contain-intrinsic-size: auto none auto 16px;
+  }
+  .md3e-wavy-progress svg,
+  .md3e-wavy-progress canvas {
+    inline-size: 100%;
+    block-size: 16px;
+    display: block;
+  }
+  .md3e-wavy__track {
+    fill: none;
+    stroke: var(--md-sys-color-secondary-container);
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+  .md3e-wavy__active {
+    fill: none;
+    stroke: var(--md-sys-color-primary);
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+  .md3e-wavy__stop { fill: var(--md-sys-color-primary); }
+  .md3e-wavy-ring {
+    inline-size: 52px;
+    block-size: 52px;
+    flex-shrink: 0;
+  }
+  .wavy-slider {
+    min-height: var(--md-sys-touch-target-min);
+    accent-color: var(--md-sys-color-primary);
+  }
+
+  /* --- Bidirectional Floating <-> Docked Toolbar Stage & Squeeze Button Group --- */
+  .toolbar-adaptive-stage {
+    margin-block-start: var(--md-sys-spacing-3);
+    padding: var(--md-sys-spacing-4);
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-surface-container-low);
+  }
+  .md3e-toolbar-adaptive {
+    view-transition-name: md3e-starter-adaptive-toolbar;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--md-sys-spacing-2);
+    height: 64px;
+    padding-inline: var(--md-sys-spacing-3);
+    border-radius: var(--md-sys-shape-corner-extra-large-increased);
+    box-shadow: var(--md-sys-elevation-level2);
+    transition: border-radius var(--md-sys-motion-default-spatial),
+                background-color var(--md-sys-motion-fast-effects);
+  }
+  .md3e-toolbar-adaptive[data-toolbar-mode="floating"] {
+    inline-size: fit-content;
+    margin-inline: auto;
+  }
+  .md3e-toolbar-adaptive[data-toolbar-mode="docked"] {
+    inline-size: 100%;
+    justify-content: space-between;
+    padding-inline: var(--md-sys-spacing-6);
+    border-radius: var(--md-sys-shape-corner-none);
+    box-shadow: var(--md-sys-elevation-level0);
+  }
+
+  .btn-group--squeeze {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    inline-size: min(100%, 280px);
+  }
+  .squeeze-btn {
+    position: relative;
+    flex: 1 1 0;
+    min-inline-size: 48px;
+    height: 40px;
+    border: none;
+    border-radius: var(--md-sys-shape-corner-small);
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface-variant);
+    font-family: var(--md-sys-typescale-plain-font);
+    font-size: var(--md-sys-typescale-label-medium-size);
+    cursor: pointer;
+    transition: flex-grow var(--md-sys-motion-fast-spatial),
+                border-radius var(--md-sys-motion-fast-spatial),
+                background-color var(--md-sys-motion-fast-effects);
+  }
+  .squeeze-btn::before {
+    content: "";
+    position: absolute;
+    inset-block: -4px;
+    inset-inline: 0;
+    min-height: var(--md-sys-touch-target-min);
+  }
+  .squeeze-btn:first-child { border-start-start-radius: var(--md-sys-shape-corner-large-increased); border-end-start-radius: var(--md-sys-shape-corner-large-increased); }
+  .squeeze-btn:last-child { border-start-end-radius: var(--md-sys-shape-corner-large-increased); border-end-end-radius: var(--md-sys-shape-corner-large-increased); }
+  .squeeze-btn:is(:active, [aria-pressed="true"]) {
+    flex-grow: 1.5;
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    border-radius: var(--md-sys-shape-corner-large-increased);
+  }
+  .squeeze-btn:has(+ .squeeze-btn:is(:active, [aria-pressed="true"])),
+  .squeeze-btn:is(:active, [aria-pressed="true"]) + .squeeze-btn {
+    flex-grow: 0.72;
+  }
+  .squeeze-btn:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+    z-index: 1;
+  }
+
+  .var-icon-row {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-3);
+  }
+  .var-icon-btn {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    height: 40px;
+    border: none;
+    border-radius: var(--md-sys-shape-corner-large-increased);
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface-variant);
+    cursor: pointer;
+    transition: inline-size var(--md-sys-motion-fast-spatial),
+                border-radius var(--md-sys-motion-fast-spatial),
+                background-color var(--md-sys-motion-fast-effects);
+  }
+  .var-icon-btn--narrow { inline-size: 32px; }
+  .var-icon-btn--default { inline-size: 40px; }
+  .var-icon-btn--wide { inline-size: 52px; }
+  .var-icon-btn::before {
+    content: "";
+    position: absolute;
+    inset: -4px -8px;
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+  }
+  .var-icon-btn[aria-pressed="true"] {
+    background: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+    border-radius: var(--md-sys-shape-corner-medium);
+    --md-sys-icon-fill: 1;
+  }
+  .var-icon-btn:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) {
+      animation: none !important;
+    }
   }
 
   /* --- Desktop Visual Density (-1 Compact) preserving >= 48x48px touch targets --- */
@@ -2319,6 +2530,11 @@
     .header-chip,
     .section-card,
     .optical-card,
+    .image-studio,
+    .inspector-list,
+    .shape-tile-btn,
+    .split-menu,
+    .swatch-tile,
     .toolbar-floating,
     .toolbar-docked,
     .nav-bar,
@@ -2380,6 +2596,10 @@
       <span class="header-chip__label-secondary">Inspector</span>
       <kbd class="kbd-hint" aria-hidden="true">]</kbd>
     </button>
+    <a class="header-chip" href="./desktop-bento.html" aria-label="Open Desktop Bento Studio">
+      <span class="material-symbols-outlined" aria-hidden="true">dashboard</span>
+      <span class="header-chip__label-secondary">Desktop Bento</span>
+    </a>
   </div>
 </header>
 
@@ -2662,6 +2882,28 @@
         <button type="button" class="choice-chip" id="btn-shape-shadow" aria-pressed="true">Shadow Wrap</button>
       </div>
 
+      <!-- Real-time md3e-morph.js Interactive Press/Toggle Cubic Bezier Morph Lab -->
+      <div class="morph-lab" id="morph-lab">
+        <span class="md3e-shape-shadow-wrap">
+          <button type="button" class="morph-btn" id="btn-realtime-morph" aria-label="Interactive real-time shape morph button" aria-pressed="false">
+            <svg class="morph-btn__svg" viewBox="0 0 100 100" aria-hidden="true">
+              <path id="realtime-morph-path" d="" />
+            </svg>
+            <span class="material-symbols-outlined morph-btn__icon" aria-hidden="true">auto_awesome</span>
+          </button>
+        </span>
+        <div class="md3e-loading-indicator md3e-loading-indicator--contained" id="js-morph-loader" role="status" aria-label="Real-time JS Morph 7-polygon loader">
+          <svg class="md3e-loading-indicator__svg" viewBox="0 0 100 100" aria-hidden="true">
+            <path id="js-morph-loader-path" fill="currentColor" d="" />
+          </svg>
+        </div>
+        <div class="shape-spotlight__meta">
+          <strong>Real-Time <code>md3e-morph.js</code> Spring Morph</strong>
+          <div class="inline-status" id="morph-status">Press or click button: square ↔ sunny (cookie-9-sided on press)</div>
+        </div>
+        <button type="button" class="choice-chip" id="btn-morph-cycle">Morph Next Preset</button>
+      </div>
+
       <div class="shape-grid" id="shape-grid" role="group" aria-label="Official 35 MaterialShapes presets"></div>
     </section>
 
@@ -2839,6 +3081,73 @@
           </span>
           <span class="optical-card__body"><code>surface</code> + crisp <code>outline-variant</code> perimeter for dense catalog grids.</span>
         </button>
+      </div>
+
+      <div class="subsection-label">Wavy Progress Indicators (SVG + HiDPI Canvas — Auto-Straightens at 100%)</div>
+      <div class="wavy-lab" id="wavy-lab">
+        <div class="demo-row">
+          <input type="range" class="wavy-slider" id="wavy-progress-slider" min="0" max="100" value="68" aria-label="Wavy progress percentage">
+          <button type="button" class="choice-chip" id="btn-wavy-100">Complete (100%)</button>
+          <button type="button" class="choice-chip" id="btn-wavy-68">Reset (68%)</button>
+          <span class="inline-status" id="wavy-status">68% (wavy amplitude active)</span>
+        </div>
+        <div class="wavy-track-row">
+          <span class="wavy-track-label">SVG Linear Wavy</span>
+          <div class="md3e-wavy-progress" id="svg-wavy-host" role="progressbar" aria-label="SVG linear wavy progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="68">
+            <svg viewBox="0 0 320 16" aria-hidden="true">
+              <path class="md3e-wavy__track" id="svg-wavy-track" d="" />
+              <path class="md3e-wavy__active" id="svg-wavy-active" d="" />
+              <circle class="md3e-wavy__stop" cx="316" cy="8" r="2" />
+            </svg>
+          </div>
+          <svg class="md3e-wavy-ring" id="svg-wavy-ring" viewBox="0 0 52 52" aria-label="Circular wavy progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="68">
+            <circle fill="none" stroke="var(--md-sys-color-secondary-container)" stroke-width="4" cx="26" cy="26" r="19" />
+            <path id="svg-wavy-ring-active" fill="none" stroke="var(--md-sys-color-primary)" stroke-width="4" stroke-linecap="round" d="" />
+          </svg>
+        </div>
+        <div class="wavy-track-row">
+          <span class="wavy-track-label">Canvas HiDPI Wavy</span>
+          <div class="md3e-wavy-progress" id="canvas-wavy-host" role="progressbar" aria-label="Canvas linear wavy progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="68">
+            <canvas id="canvas-wavy-el" aria-hidden="true"></canvas>
+          </div>
+          <span class="inline-status" id="canvas-amp-readout">amp: 3.0px</span>
+        </div>
+      </div>
+
+      <div class="subsection-label">Neighbor Width Squeeze (`animateWidth`) &amp; Variable-Width Icon Buttons</div>
+      <div class="demo-row">
+        <div class="btn-group--squeeze" id="squeeze-group" role="group" aria-label="Neighbor squeeze group">
+          <button type="button" class="squeeze-btn" aria-pressed="true" data-squeeze-val="Overview">Overview</button>
+          <button type="button" class="squeeze-btn" aria-pressed="false" data-squeeze-val="Metrics">Metrics</button>
+          <button type="button" class="squeeze-btn" aria-pressed="false" data-squeeze-val="Logs">Logs</button>
+        </div>
+        <div class="var-icon-row" role="group" aria-label="Variable-width icon buttons">
+          <button type="button" class="var-icon-btn var-icon-btn--narrow" aria-label="Narrow filter toggle" aria-pressed="false">
+            <span class="material-symbols-outlined" aria-hidden="true">filter_list</span>
+          </button>
+          <button type="button" class="var-icon-btn var-icon-btn--default" aria-label="Default star toggle" aria-pressed="true">
+            <span class="material-symbols-outlined" aria-hidden="true">star</span>
+          </button>
+          <button type="button" class="var-icon-btn var-icon-btn--wide" aria-label="Wide tune toggle" aria-pressed="false">
+            <span class="material-symbols-outlined" aria-hidden="true">tune</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="subsection-label">Bidirectional Floating ↔ Docked Morphing Toolbar (`md3e-blur.css` + View Transitions)</div>
+      <div class="toolbar-adaptive-stage">
+        <div class="md3e-toolbar-adaptive md3e-blur-surface" id="adaptive-toolbar-demo" role="toolbar" aria-label="Bidirectional toolbar" data-toolbar-mode="floating">
+          <button type="button" class="toolbar-btn" aria-label="Select tool" aria-pressed="true" data-toolbar-action="Adaptive: Select">
+            <span class="material-symbols-outlined" aria-hidden="true">arrow_selector_tool</span>
+          </button>
+          <button type="button" class="toolbar-btn" aria-label="Draw annotation" aria-pressed="false" data-toolbar-action="Adaptive: Draw">
+            <span class="material-symbols-outlined" aria-hidden="true">draw</span>
+          </button>
+          <div class="toolbar-divider" role="separator" aria-orientation="vertical"></div>
+          <button type="button" class="toolbar-btn toolbar-btn--primary" id="btn-toggle-toolbar-dock" aria-label="Dock toolbar to edge" aria-pressed="false">
+            <span class="material-symbols-outlined" id="toolbar-dock-icon" aria-hidden="true">dock_to_bottom</span>
+          </button>
+        </div>
       </div>
 
       <div class="subsection-label">Docked Toolbar (64dp Full-Width Chrome)</div>
@@ -3032,6 +3341,7 @@
 
 <script type="module">
   import { createSpringAnimator, resolveSpringPreset } from '../tokens/md3e-spring.js';
+  import { createShapeMorpher, LOADING_SEQUENCE, SHAPE_NAMES as MORPH_SHAPES } from '../tokens/md3e-morph.js';
   import {
     applyDynamicSeed,
     clearDynamicSeed,
@@ -3052,6 +3362,17 @@
   let activeCustomHex = null;
   let lastCopiedAnnouncement = '';
   let copyTimer = null;
+
+  const STORAGE_THEME_KEY = 'md3e-shared-theme';
+  const STORAGE_SEED_KEY = 'md3e-shared-seed';
+
+  function saveSharedPref(key, value) {
+    try { localStorage.setItem(key, value); } catch {}
+  }
+
+  function loadSharedPref(key) {
+    try { return localStorage.getItem(key); } catch { return null; }
+  }
 
   const root = document.documentElement;
   const appBar = document.getElementById('app-bar');
@@ -3176,7 +3497,7 @@
   const themeModes = ['system', 'dark', 'light'];
   const themeIconMap = { system: 'contrast', dark: 'dark_mode', light: 'light_mode' };
 
-  function applyTheme(mode) {
+  function applyTheme(mode, { persist = true } = {}) {
     const normalized = themeModes.includes(mode) ? mode : 'system';
     if (normalized === 'system') {
       delete root.dataset.theme;
@@ -3192,6 +3513,7 @@
     document.querySelectorAll('[data-theme-choice]').forEach((btn) => {
       btn.setAttribute('aria-pressed', String(btn.dataset.themeChoice === normalized));
     });
+    if (persist) saveSharedPref(STORAGE_THEME_KEY, normalized);
     refreshSwatches();
   }
 
@@ -3229,7 +3551,7 @@
   });
 
   // --- Seed & Contrast Pickers + Image Extraction ---
-  function applyCustomSeedHex(hex, { toastMsg = '' } = {}) {
+  function applyCustomSeedHex(hex, { toastMsg = '', persist = true } = {}) {
     const norm = normalizeHex(hex);
     activeCustomHex = norm;
     applyDynamicSeed(norm, { specVersion: '2025' });
@@ -3237,16 +3559,18 @@
     document.querySelectorAll('[data-seed-choice]').forEach((b) => {
       b.setAttribute('aria-pressed', String(b.dataset.seedChoice === 'custom'));
     });
+    if (persist) saveSharedPref(STORAGE_SEED_KEY, norm);
     syncCustomControlsUI();
     refreshSwatches();
     if (toastMsg) showToast(toastMsg);
   }
 
-  function applySeed(seed) {
+  function applySeed(seed, { persist = true } = {}) {
     if (seed === 'custom' && activeCustomHex) {
-      applyCustomSeedHex(activeCustomHex);
+      applyCustomSeedHex(activeCustomHex, { persist });
       return;
     }
+    clearDynamicSeed();
     const s = seed && PRESET_SEED_HEX[seed] ? seed : 'purple';
     if (s === 'purple') {
       delete root.dataset.seed;
@@ -3257,6 +3581,7 @@
     document.querySelectorAll('[data-seed-choice]').forEach((b) => {
       b.setAttribute('aria-pressed', String(b.dataset.seedChoice === s));
     });
+    if (persist) saveSharedPref(STORAGE_SEED_KEY, s);
     syncCustomControlsUI();
     refreshSwatches();
   }
@@ -3655,8 +3980,9 @@
   frostedBtn.addEventListener('click', () => {
     const active = frostedBtn.getAttribute('aria-pressed') === 'true';
     frostedBtn.setAttribute('aria-pressed', String(!active));
+    floatingToolbar.classList.toggle('md3e-blur-surface', !active);
     floatingToolbar.classList.toggle('md3e-frosted-surface', !active);
-    showToast(!active ? 'Frosted translucent chrome enabled' : 'Opaque surface container chrome restored');
+    showToast(!active ? 'md3e-blur.css translucent chrome enabled' : 'Opaque surface container chrome restored');
   });
 
   // --- Adaptive Navigation & Modal Inert Controller (Desktop Rail <-> Mobile Drawer/Bottom Inspector) ---
@@ -4121,6 +4447,248 @@
       activateMwcFallback();
     }
   })();
+
+  // --- Phase 2 Labs: md3e-morph.js Real-Time Morph, Wavy SVG+Canvas Progress, Squeeze & Bidirectional Toolbar ---
+  const realtimeMorphPath = document.getElementById('realtime-morph-path');
+  const realtimeMorphBtn = document.getElementById('btn-realtime-morph');
+  const morphStatusEl = document.getElementById('morph-status');
+  const morphCycleBtn = document.getElementById('btn-morph-cycle');
+  const jsMorphLoaderPath = document.getElementById('js-morph-loader-path');
+
+  if (realtimeMorphPath && realtimeMorphBtn) {
+    const ctaMorpher = createShapeMorpher(realtimeMorphPath, { initialShape: 'square', spring: 'fast-spatial' });
+    ctaMorpher.bindPressMorph(realtimeMorphBtn, {
+      restShape: 'square',
+      pressedShape: 'cookie-9-sided',
+      toggleShape: 'sunny',
+    });
+    const cyclePresets = ['square', 'cookie-9-sided', 'clover-4-leaf', 'sunny', 'heart', 'flower'];
+    let cycleIdx = 0;
+    realtimeMorphBtn.addEventListener('click', () => {
+      const pressed = realtimeMorphBtn.getAttribute('aria-pressed') === 'true';
+      morphStatusEl.textContent = `Active shape: ${pressed ? 'sunny' : 'square'} (press morph -> cookie-9-sided)`;
+    });
+    morphCycleBtn?.addEventListener('click', () => {
+      cycleIdx = (cycleIdx + 1) % cyclePresets.length;
+      const targetShape = cyclePresets[cycleIdx];
+      ctaMorpher.morphTo(targetShape);
+      morphStatusEl.textContent = `Morphed in rAF -> ${targetShape}`;
+      showToast(`Real-time Morph -> ${targetShape}`);
+    });
+  }
+
+  if (jsMorphLoaderPath) {
+    const loaderMorpher = createShapeMorpher(jsMorphLoaderPath, {
+      initialShape: LOADING_SEQUENCE[0],
+      scale: 0.84,
+    });
+    loaderMorpher.startSequence(LOADING_SEQUENCE, {
+      intervalMs: 650,
+      stiffness: 200,
+      damping: 0.6,
+    });
+  }
+
+  // Dual Wavy Progress Controller (SVG Linear + HiDPI Canvas Linear + SVG Circular Wavy)
+  const wavySlider = document.getElementById('wavy-progress-slider');
+  const svgWavyHost = document.getElementById('svg-wavy-host');
+  const svgWavyActive = document.getElementById('svg-wavy-active');
+  const svgWavyTrack = document.getElementById('svg-wavy-track');
+  const svgWavyRing = document.getElementById('svg-wavy-ring');
+  const svgWavyRingActive = document.getElementById('svg-wavy-ring-active');
+  const canvasWavyHost = document.getElementById('canvas-wavy-host');
+  const canvasWavyEl = document.getElementById('canvas-wavy-el');
+  const wavyStatusEl = document.getElementById('wavy-status');
+  const canvasAmpEl = document.getElementById('canvas-amp-readout');
+
+  if (svgWavyHost && svgWavyActive && svgWavyTrack && canvasWavyEl) {
+    let wavyPct = 68;
+    let wavePhase = 0;
+    let waveAmpScale = 1;
+    let wavyRaf = null;
+    let wavySkipped = false;
+    const rmQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    const targetFactor = (pct) => {
+      if (pct <= 2 || pct >= 100) return 0;
+      if (pct >= 94) return (100 - pct) / 6;
+      if (pct <= 8) return (pct - 2) / 6;
+      return 1;
+    };
+
+    const makeWavePath = (x0, x1, midY, amp, wl, ph) => {
+      const span = Math.max(0, x1 - x0);
+      if (span <= 0.5) return '';
+      if (amp <= 0.04) return `M${x0.toFixed(2)} ${midY} L${x1.toFixed(2)} ${midY}`;
+      let d = '';
+      for (let x = 0; x <= span; x += 2.5) {
+        const y = midY + Math.sin((x / wl) * Math.PI * 2 - ph) * amp;
+        d += `${x === 0 ? 'M' : 'L'}${(x0 + x).toFixed(2)} ${y.toFixed(2)} `;
+      }
+      const endY = midY + Math.sin((span / wl) * Math.PI * 2 - ph) * amp;
+      return `${d}L${x1.toFixed(2)} ${endY.toFixed(2)}`;
+    };
+
+    const makeCircularWavePath = (cx, cy, r, frac, amp, ph) => {
+      if (frac <= 0.01) return '';
+      const totalA = Math.min(0.999, frac) * Math.PI * 2;
+      const steps = Math.max(12, Math.round(frac * 96));
+      let d = '';
+      for (let i = 0; i <= steps; i++) {
+        const a = -Math.PI / 2 + (totalA * i) / steps;
+        const rr = r + Math.sin(a * 8 - ph) * (amp * 0.72);
+        const px = cx + Math.cos(a) * rr;
+        const py = cy + Math.sin(a) * rr;
+        d += `${i === 0 ? 'M' : 'L'}${px.toFixed(2)} ${py.toFixed(2)} `;
+      }
+      return frac >= 0.999 ? `${d}Z` : d;
+    };
+
+    const drawWavy = () => {
+      const tgt = targetFactor(wavyPct);
+      waveAmpScale += (tgt - waveAmpScale) * (rmQuery.matches ? 1 : 0.25);
+      if (Math.abs(tgt - waveAmpScale) < 0.01) waveAmpScale = tgt;
+      const amp = 3 * waveAmpScale;
+
+      const activeEnd = 4 + (308 * wavyPct) / 100;
+      svgWavyActive.setAttribute('d', makeWavePath(4, activeEnd, 8, amp, 40, wavePhase));
+      const trackStart = Math.min(316, activeEnd + 6);
+      svgWavyTrack.setAttribute('d', trackStart < 316 ? `M${trackStart.toFixed(2)} 8 L316 8` : '');
+      svgWavyHost.dataset.waveAmplitude = amp.toFixed(2);
+
+      if (svgWavyRingActive) {
+        svgWavyRingActive.setAttribute('d', makeCircularWavePath(26, 26, 19, wavyPct / 100, amp, wavePhase));
+        svgWavyRing?.setAttribute('aria-valuenow', String(wavyPct));
+      }
+
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = Math.max(120, canvasWavyEl.clientWidth || 320);
+      const cssH = 16;
+      if (canvasWavyEl.width !== Math.round(cssW * dpr) || canvasWavyEl.height !== Math.round(cssH * dpr)) {
+        canvasWavyEl.width = Math.round(cssW * dpr);
+        canvasWavyEl.height = Math.round(cssH * dpr);
+      }
+      const ctx = canvasWavyEl.getContext('2d');
+      const cs = getComputedStyle(canvasWavyEl);
+      const primaryCol = cs.getPropertyValue('--md-sys-color-primary').trim();
+      const trackCol = cs.getPropertyValue('--md-sys-color-secondary-container').trim();
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, cssW, cssH);
+      const pad = 4;
+      const midY = cssH / 2;
+      const cEnd = pad + ((cssW - pad * 3) * wavyPct) / 100;
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      if (cEnd + 6 < cssW - pad) {
+        ctx.strokeStyle = trackCol;
+        ctx.beginPath();
+        ctx.moveTo(cEnd + 6, midY);
+        ctx.lineTo(cssW - pad, midY);
+        ctx.stroke();
+      }
+      if (cEnd > pad + 0.5) {
+        ctx.strokeStyle = primaryCol;
+        ctx.beginPath();
+        for (let x = pad; x <= cEnd; x += 2) {
+          const y = midY + Math.sin(((x - pad) / 40) * Math.PI * 2 - wavePhase) * amp;
+          if (x === pad) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.lineTo(cEnd, midY + Math.sin(((cEnd - pad) / 40) * Math.PI * 2 - wavePhase) * amp);
+        ctx.stroke();
+      }
+      ctx.fillStyle = primaryCol;
+      ctx.beginPath();
+      ctx.arc(cssW - pad, midY, 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      canvasWavyHost.dataset.waveAmplitude = amp.toFixed(2);
+      canvasAmpEl.textContent = `amp: ${amp.toFixed(1)}px`;
+    };
+
+    const tickWavy = () => {
+      drawWavy();
+      const settledFlat = waveAmpScale <= 0.005 && targetFactor(wavyPct) === 0;
+      if (!wavySkipped && !rmQuery.matches && !settledFlat) {
+        wavePhase = (wavePhase + 0.14) % (Math.PI * 2);
+        wavyRaf = requestAnimationFrame(tickWavy);
+      } else {
+        wavyRaf = null;
+      }
+    };
+
+    const setWavyPct = (next) => {
+      wavyPct = Math.max(0, Math.min(100, Math.round(Number(next) || 0)));
+      if (wavySlider) wavySlider.value = String(wavyPct);
+      svgWavyHost.setAttribute('aria-valuenow', String(wavyPct));
+      canvasWavyHost.setAttribute('aria-valuenow', String(wavyPct));
+      wavyStatusEl.textContent = wavyPct >= 100
+        ? '100% (auto-straightened: amp -> 0px)'
+        : `${wavyPct}% (wavy amplitude active)`;
+      if (!wavyRaf) tickWavy();
+      else drawWavy();
+    };
+
+    wavySlider?.addEventListener('input', () => setWavyPct(wavySlider.value));
+    document.getElementById('btn-wavy-100')?.addEventListener('click', () => setWavyPct(100));
+    document.getElementById('btn-wavy-68')?.addEventListener('click', () => setWavyPct(68));
+    [svgWavyHost, canvasWavyHost].forEach((host) => {
+      host.addEventListener('contentvisibilityautostatechange', (e) => {
+        wavySkipped = e.skipped;
+        if (!wavySkipped && !wavyRaf) tickWavy();
+      });
+    });
+    tickWavy();
+  }
+
+  // Bidirectional Floating <-> Docked Toolbar + Squeeze Group + Variable Icon Buttons
+  const adaptiveToolbarDemo = document.getElementById('adaptive-toolbar-demo');
+  const adaptiveDockToggle = document.getElementById('btn-toggle-toolbar-dock');
+  const adaptiveDockIcon = document.getElementById('toolbar-dock-icon');
+  adaptiveDockToggle?.addEventListener('click', () => {
+    const next = adaptiveToolbarDemo.dataset.toolbarMode === 'docked' ? 'floating' : 'docked';
+    const apply = () => {
+      adaptiveToolbarDemo.dataset.toolbarMode = next;
+      adaptiveDockToggle.setAttribute('aria-pressed', String(next === 'docked'));
+      adaptiveDockToggle.setAttribute('aria-label', next === 'docked' ? 'Undock floating toolbar' : 'Dock toolbar to edge');
+      if (adaptiveDockIcon) adaptiveDockIcon.textContent = next === 'docked' ? 'picture_in_picture' : 'dock_to_bottom';
+      showToast(`Adaptive toolbar -> ${next}`);
+    };
+    if (typeof document.startViewTransition === 'function' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.startViewTransition(apply).ready.catch(() => {});
+    } else {
+      apply();
+    }
+  });
+
+  document.querySelectorAll('#squeeze-group .squeeze-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#squeeze-group .squeeze-btn').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+      btn.setAttribute('aria-pressed', 'true');
+      showToast(`Squeeze group -> ${btn.dataset.squeezeVal}`);
+    });
+  });
+
+  document.querySelectorAll('.var-icon-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const next = btn.getAttribute('aria-pressed') !== 'true';
+      btn.setAttribute('aria-pressed', String(next));
+      showToast(`${btn.getAttribute('aria-label')}: ${next ? 'ON' : 'OFF'}`);
+    });
+  });
+
+  const savedTheme = loadSharedPref(STORAGE_THEME_KEY);
+  const savedSeed = loadSharedPref(STORAGE_SEED_KEY);
+  if (savedTheme && themeModes.includes(savedTheme)) {
+    applyTheme(savedTheme, { persist: false });
+  }
+  if (savedSeed) {
+    if (savedSeed.startsWith('#')) {
+      try { applyCustomSeedHex(savedSeed, { persist: false }); } catch {}
+    } else if (PRESET_SEED_HEX[savedSeed]) {
+      applySeed(savedSeed, { persist: false });
+    }
+  }
 
   syncResponsiveNavMode();
   refreshSwatches();

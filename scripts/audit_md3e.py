@@ -11,6 +11,7 @@ mismatched Material Web tags.
 Usage
 -----
     python audit_md3e.py <path>...            # files or directories
+    python audit_md3e.py src --mode=desktop-bento --fail-on warn
     python audit_md3e.py src --json           # machine-readable
     python audit_md3e.py src --fail-on warn   # stricter CI gate
     python audit_md3e.py docs --markdown      # audit HTML/CSS fences in .md
@@ -44,6 +45,11 @@ Finding codes
     MD3E020  mismatched <md-*> custom element closing tag   (error)
     MD3E021  decorative icon missing aria-hidden="true"     (warn)
     MD3E022  backdrop-filter blur lacks reduced-transparency (warn)
+    MD3E023  box-shadow on masked/morphing shape vs drop-shadow (warn/error)
+    MD3E101  [desktop-bento] 1px border or rectangular box-shadow (error)
+    MD3E102  [desktop-bento] <4 surface-container nesting tiers   (error)
+    MD3E103  [desktop-bento] missing concentric 28px/16px radii   (warn)
+    MD3E104  [desktop-bento] missing Hero wave/sparkline/morph anchors (warn)
 """
 
 from __future__ import annotations
@@ -57,6 +63,7 @@ from dataclasses import dataclass, field
 
 SEVERITIES = ("error", "warn", "info")
 SEVERITY_RANK = {s: i for i, s in enumerate(SEVERITIES)}
+AUDIT_MODES = ("strict", "desktop-bento")
 
 CODE_EXTENSIONS = {
     ".html", ".htm", ".css", ".scss", ".sass", ".less", ".styl",
@@ -68,6 +75,20 @@ SKIP_DIRS = {
     "node_modules", "dist", "build", ".next", ".nuxt", "vendor",
     "coverage", ".git", ".cache", "__pycache__",
 }
+
+BORDER_PROPS = {
+    "border", "border-top", "border-right", "border-bottom", "border-left",
+    "border-inline", "border-inline-start", "border-inline-end",
+    "border-block", "border-block-start", "border-block-end",
+}
+SHAPE_SELECTOR_RE = re.compile(
+    r"(?:\.md3e-shape(?:-[a-z0-9-]+)?\b|\.bento-morph-cta\b|\.morph-btn\b|\[data-morph)",
+    re.IGNORECASE,
+)
+DENSE_ROW_SELECTOR_RE = re.compile(
+    r"(?:^|[\s,>+~.:#\[])(?:tr|td|th|bento-table|bento-log|dense-row|data-row|table-row)\b",
+    re.IGNORECASE,
+)
 
 # --- Design system facts the checks are built on ---------------------------
 
@@ -151,7 +172,7 @@ EASING_KEYWORD_RE = re.compile(
 )
 CURVE_FUNC_RE = re.compile(r"\b(cubic-bezier|steps)\s*\(")
 CUBIC_BEZIER_CALL_RE = re.compile(r"cubic-bezier\s*\([^)]+\)")
-PROP_VALUE_RE = re.compile(r"^(?P<prop>-{0,2}[a-zA-Z][\w-]*)\s*:\s*(?P<value>.*?)\s*$")
+PROP_VALUE_RE = re.compile(r"^(?P<prop>-{0,2}[a-zA-Z][\w-]*)\s*:\s*(?P<value>[\s\S]*?)\s*$")
 
 MOTION_PROPS = (
     "transition", "transition-duration", "transition-timing-function",
@@ -238,6 +259,7 @@ class RuleBlock:
     start_line: int
     in_reduced_motion: bool
     declarations: list[tuple[str, str, int, str]] = field(default_factory=list)
+    in_forced_colors: bool = False
 
 
 # ===========================================================================
@@ -289,10 +311,10 @@ def iter_icon_matches(text: str) -> list[re.Match[str]]:
 
 
 def parse_css_rules(css_text: str, base_line: int = 1) -> list[RuleBlock]:
-    """Brace-aware CSS rule extractor that tracks @media (prefers-reduced-motion)."""
+    """Brace-aware CSS rule extractor tracking reduced-motion & forced-colors."""
     cleaned = strip_css_comments(css_text)
     rules: list[RuleBlock] = []
-    stack: list[tuple[str, bool, int]] = []
+    stack: list[tuple[str, bool, bool, int]] = []
     current_decls: dict[int, list[tuple[str, str, int, str]]] = {}
     buf: list[str] = []
     buf_start_line = base_line
@@ -316,7 +338,7 @@ def parse_css_rules(css_text: str, base_line: int = 1) -> list[RuleBlock]:
             prop = m.group("prop").lower()
             if prop.startswith("--"):
                 continue
-            out.append((prop, m.group("value"), piece_line, stripped))
+            out.append((prop, m.group("value"), piece_line, re.sub(r"\s+", " ", stripped)))
         return out
 
     i = 0
@@ -358,8 +380,10 @@ def parse_css_rules(css_text: str, base_line: int = 1) -> list[RuleBlock]:
                 )
                 header = nested_sel.strip()
             is_rm = bool(re.search(r"prefers-reduced-motion\s*:\s*reduce", header, re.I))
+            is_fc = bool(re.search(r"forced-colors\s*:\s*active", header, re.I))
             parent_rm = stack[-1][1] if stack else False
-            stack.append((header, parent_rm or is_rm, lineno))
+            parent_fc = stack[-1][2] if stack else False
+            stack.append((header, parent_rm or is_rm, parent_fc or is_fc, lineno))
             current_decls[len(stack) - 1] = []
             buf = []
             buf_start_line = lineno
@@ -367,10 +391,10 @@ def parse_css_rules(css_text: str, base_line: int = 1) -> list[RuleBlock]:
             body = "".join(buf)
             if stack:
                 idx = len(stack) - 1
-                sel, in_rm, sel_line = stack.pop()
+                sel, in_rm, in_fc, sel_line = stack.pop()
                 decls = current_decls.pop(idx, []) + flush_declarations(body, buf_start_line)
                 if sel and not sel.startswith("@") and decls:
-                    rules.append(RuleBlock(sel, sel_line, in_rm, decls))
+                    rules.append(RuleBlock(sel, sel_line, in_rm, decls, in_fc))
             buf = []
             buf_start_line = lineno
         else:
@@ -522,7 +546,8 @@ def check_color_mix(cx, value, lineno, line) -> None:
                    cx.path, lineno, line)
 
         if top_args and re.match(r"^\s*in\s+oklch\b", top_args[0], re.I) and NEUTRAL_OKLCH_RE.search(inner):
-            cx.add("MD3E018", "warn",
+            sev = "error" if getattr(cx, "mode", "strict") == "desktop-bento" else "warn"
+            cx.add("MD3E018", sev,
                    "color-mix(in oklch, ...) on neutral or surface colours can trigger Chromium's powerless-hue reddish shift.",
                    "Use `color-mix(in oklab, ...)` when tinting or mixing neutral, surface, outline, shadow, or `currentColor` values.",
                    cx.path, lineno, line)
@@ -634,6 +659,27 @@ def check_shadow(cx, prop, value, lineno, line) -> None:
                cx.path, lineno, line)
 
 
+def check_bento_decl(cx, prop, value, lineno, line, *, in_forced_colors: bool = False) -> None:
+    if getattr(cx, "mode", "strict") != "desktop-bento" or cx.token_file or in_forced_colors:
+        return
+    clean_v = strip_important(value).lower()
+    if prop in BORDER_PROPS:
+        if re.search(r"\b1px\b", clean_v) and "transparent" not in clean_v and clean_v not in ("none", "0", "0px"):
+            cx.add(
+                "MD3E101", "error",
+                f"1px border (`{prop}`) violates borderless Desktop Bento tonal nesting.",
+                "Remove card/container borders and express depth with 4+ `--md-sys-color-surface-container-*` luminance tiers (keep borders only inside `@media (forced-colors: active)`).",
+                cx.path, lineno, line,
+            )
+    elif prop == "box-shadow" and clean_v not in ("none", "inherit", "unset", ""):
+        cx.add(
+            "MD3E101", "error",
+            "Rectangular `box-shadow` used on Desktop Bento container.",
+            "Replace rectangular `box-shadow` with `surface-container-*` tonal steps, or use wrapper `filter: drop-shadow(...)` for non-rectangular shapes.",
+            cx.path, lineno, line,
+        )
+
+
 def check_misc(cx, prop, value, lineno, line) -> None:
     if prop == "text-transform" and "uppercase" in value:
         cx.add("MD3E012", "info",
@@ -664,12 +710,13 @@ def check_misc(cx, prop, value, lineno, line) -> None:
 # ===========================================================================
 
 class Checker:
-    def __init__(self, path: pathlib.Path, *, is_snippet: bool = False) -> None:
+    def __init__(self, path: pathlib.Path, *, is_snippet: bool = False, mode: str = "strict") -> None:
         self.path_obj = path
         self.path = str(path)
         self.ext = path.suffix.lower()
         self.token_file = is_token_file(path)
         self.is_snippet = is_snippet
+        self.mode = mode
         self.findings: list[Finding] = []
 
     def add(self, code, severity, message, fix, path, line, snippet="") -> None:
@@ -719,6 +766,11 @@ class Checker:
 
     def _audit_rule_block(self, rule: RuleBlock, hit_covered: set[str], morphing_bases: set[str]) -> bool:
         has_motion = False
+        is_shape_rule = bool(SHAPE_SELECTOR_RE.search(rule.selector)) or any(
+            (p in ("mask-image", "-webkit-mask-image") and strip_important(v).lower() != "none")
+            or (p == "clip-path" and bool(re.search(r"\b(?:polygon|path|url)\s*\(", v, re.I)))
+            for p, v, _, _ in rule.declarations
+        )
         for prop, value, lineno, raw in rule.declarations:
             check_hex(self, value, lineno, raw)
             check_func_color(self, value, lineno, raw)
@@ -726,10 +778,24 @@ class Checker:
             check_radius(self, prop, value, lineno, raw)
             check_font_size(self, prop, value, lineno, raw)
             check_motion(self, prop, value, lineno, raw, in_reduced_motion=rule.in_reduced_motion)
-            check_shadow(self, prop, value, lineno, raw)
+            if is_shape_rule and prop == "box-shadow" and strip_important(value).lower() not in ("none", "inherit", "unset", ""):
+                self.add(
+                    "MD3E023",
+                    "error" if self.mode == "desktop-bento" else "warn",
+                    "Rectangular `box-shadow` applied directly on a non-rectangular masked/morphing shape.",
+                    "Remove `box-shadow` and apply `filter: drop-shadow(...)` on a parent wrapper (e.g. `.md3e-shape-shadow-wrap`).",
+                    self.path, lineno, raw,
+                )
+            else:
+                check_shadow(self, prop, value, lineno, raw)
+                check_bento_decl(self, prop, value, lineno, raw, in_forced_colors=rule.in_forced_colors)
             check_misc(self, prop, value, lineno, raw)
 
-            if prop in MOTION_PROPS and (TIME_RE.search(value) or "var(--md-sys-motion-" in value):
+            if prop in MOTION_PROPS and (
+                TIME_RE.search(value)
+                or "var(--md-sys-motion-" in value
+                or "var(--md-bento-motion-" in value
+            ):
                 has_motion = True
 
         # Check 9999px radius on a rule whose base selector transitions border-radius
@@ -739,10 +805,13 @@ class Checker:
                 for prop, value, lineno, raw in rule.declarations:
                     if prop in RADIUS_PROPS and FULL_RADIUS_VALUE_RE.search(value):
                         self.add(
-                            "MD3E019", "warn",
-                            "`border-radius: var(--md-sys-shape-corner-full)` (9999px) snaps when animated.",
-                            "Use the bounded half-height radius (e.g. 20px `--md-sys-shape-corner-large-increased` "
-                            "on a 40dp pill) so the spring interpolates visibly across every frame.",
+                            "MD3E019",
+                            "error" if self.mode == "desktop-bento" else "warn",
+                            "`border-radius: var(--md-sys-shape-corner-full)` (9999px) snaps or flashes a `0px` "
+                            "sharp rectangle under spring overshoot (`> 1.0`) when animated.",
+                            "Use a bounded `height / 2` radius (e.g. `20px` `--md-sys-shape-corner-large-increased` on "
+                            "40px controls, `24px`, or `calc(var(--md-bento-control-height, 48px) / 2)`) so underdamped "
+                            "springs never drive `border-radius` negative and clamp to `0px`.",
                             self.path, lineno, raw,
                         )
 
@@ -761,6 +830,8 @@ class Checker:
             and not DECORATIVE_SUBELEMENT_RE.search(s)
         ]
         if not interactive:
+            return
+        if self.mode == "desktop-bento" and all(DENSE_ROW_SELECTOR_RE.search(s) for s in interactive):
             return
 
         decl_map: dict[str, tuple[str, int, str]] = {}
@@ -860,17 +931,17 @@ class Checker:
         for rule in rules:
             if self._audit_rule_block(rule, hit_covered, morphing_bases):
                 has_motion = True
-            if not self.token_file and blur_hit is None:
+            if blur_hit is None:
                 for prop, value, lineno, raw in rule.declarations:
                     if prop in ("backdrop-filter", "-webkit-backdrop-filter") and "blur(" in value:
                         blur_hit = (lineno, raw)
                         break
 
-        if blur_hit and not has_reduced_transparency and not self.token_file:
+        if blur_hit and not has_reduced_transparency:
             self.add(
                 "MD3E022", "warn",
                 "`backdrop-filter: blur(...)` used without a `@media (prefers-reduced-transparency: reduce)` fallback.",
-                "Prefer opaque tonal `surface-container-*` elevation first, or use `.md3e-frosted-surface` / pair blur with `color-mix(in oklab, ...)` and `@media (prefers-reduced-transparency: reduce)`.",
+                "Prefer opaque tonal `surface-container-*` elevation first, or use `.md3e-blur-surface` / pair blur with `color-mix(in oklab, ...)` and `@media (prefers-reduced-transparency: reduce)`.",
                 self.path, blur_hit[0], blur_hit[1],
             )
 
@@ -906,6 +977,54 @@ class Checker:
                 f"{role_defs} colour roles defined without a dark scheme.",
                 'Redefine the roles under `[data-theme="dark"]` and `@media (prefers-color-scheme: dark)`.',
                 self.path, 0, "",
+            )
+
+    def _audit_desktop_bento_document(self, text: str, combined_css: str, markup_only: str) -> None:
+        if self.mode != "desktop-bento" or self.is_snippet or self.token_file:
+            return
+        is_full_doc = bool(re.search(r"<!doctype\s+html|<html\b", text, re.I))
+        if not is_full_doc:
+            return
+
+        surface_tiers = set(
+            re.findall(
+                r"--md-sys-color-surface-container(?:-(?:lowest|low|high|highest))?\b",
+                combined_css,
+            )
+        )
+        if len(surface_tiers) < 4:
+            self.add(
+                "MD3E102", "error",
+                f"Desktop Bento document uses only {len(surface_tiers)} `surface-container-*` tier(s) (minimum 4 required for borderless depth).",
+                "Layer at least 4 distinct luminance tokens (`surface-container-lowest`, `-low`, `surface-container`, `-high`, `-highest`).",
+                self.path, 1, "",
+            )
+
+        has_outer = bool(re.search(r"--md-sys-shape-corner-extra-large\b|\b28px\b", combined_css))
+        has_inner = bool(re.search(r"--md-sys-shape-corner-large\b|\b16px\b", combined_css))
+        if not (has_outer and has_inner):
+            self.add(
+                "MD3E103", "warn",
+                "Desktop Bento document is missing concentric outer (`corner-extra-large` 28px) / inner (`corner-large` 16px) corner radii.",
+                "Use `--md-sys-shape-corner-extra-large` (28px) on Bento cards and step inner wells down to `--md-sys-shape-corner-large` (16px).",
+                self.path, 1, "",
+            )
+
+        has_morph_and_drop = (
+            bool(re.search(r"md3e-morph\.js|\.md3e-shape-", text))
+            and "drop-shadow(" in combined_css
+        )
+        has_wave_and_spark = (
+            bool(re.search(r"wave", text, re.I))
+            and bool(re.search(r"sparkline|spark-line|spark-stroke", text, re.I))
+        )
+        has_kpi_scale = bool(re.search(r"--md-sys-typescale-display-(?:large|medium)-size", combined_css))
+        if not (has_morph_and_drop and has_wave_and_spark and has_kpi_scale):
+            self.add(
+                "MD3E104", "warn",
+                "Desktop Bento Hero card is missing required expressive anchors (morphing shape CTA with `drop-shadow()`, wave + sparkline SVG, or `>=3x` Display KPI).",
+                "Include a Hero Bento card with decorative wave backdrop, edge-bleed sparkline SVG, `md3e-morph.js` CTA (`filter: drop-shadow()`), and `display-large`/`display-medium` KPI.",
+                self.path, 1, "",
             )
 
     def audit_markup_document(self, text: str) -> None:
@@ -958,16 +1077,18 @@ class Checker:
                     check_font_size(self, prop, val, i, line)
                     check_motion(self, prop, val, i, line)
                     check_shadow(self, prop, val, i, line)
+                    check_bento_decl(self, prop, val, i, line)
                     check_misc(self, prop, val, i, line)
                     if not self.token_file and prop in ("backdrop-filter", "-webkit-backdrop-filter") and "blur(" in val:
                         self.add(
                             "MD3E022", "warn",
                             "Inline `backdrop-filter: blur(...)` cannot honour `prefers-reduced-transparency: reduce`.",
-                            "Move frosted glass styles to `.md3e-frosted-surface` or CSS with `@media (prefers-reduced-transparency: reduce)`.",
+                            "Move frosted glass styles to `.md3e-blur-surface` or CSS with `@media (prefers-reduced-transparency: reduce)`.",
                             self.path, i, line,
                         )
 
-        # 3. HTML component, icon, tag, and accessibility checks
+        # 3. HTML component, icon, tag, accessibility & desktop-bento structural checks
+        self._audit_desktop_bento_document(text, combined_css, markup_only)
         self._audit_html_semantics(markup_only, full_text=text)
 
     def _audit_html_semantics(self, markup_only: str, *, full_text: str) -> None:
@@ -1152,6 +1273,7 @@ class Checker:
                     check_font_size(self, prop, val, i, raw)
                     check_motion(self, prop, val, i, raw)
                     check_shadow(self, prop, val, i, raw)
+                    check_bento_decl(self, prop, val, i, raw)
                     check_misc(self, prop, val, i, raw)
                     if not self.token_file and prop in ("backdrop-filter", "-webkit-backdrop-filter") and "blur(" in val:
                         self.add(
@@ -1180,6 +1302,7 @@ class Checker:
                         check_font_size(self, prop, val, i, raw)
                         check_motion(self, prop, val, i, raw)
                         check_shadow(self, prop, val, i, raw)
+                        check_bento_decl(self, prop, val, i, raw)
                         check_misc(self, prop, val, i, raw)
             if "}" in raw:
                 depth = max(0, depth - raw.count("}"))
@@ -1205,7 +1328,7 @@ FENCE_LANG_EXT = {
 }
 
 
-def audit_markdown(path: pathlib.Path, text: str) -> list[Finding]:
+def audit_markdown(path: pathlib.Path, text: str, *, mode: str = "strict") -> list[Finding]:
     findings: list[Finding] = []
     fence_re = re.compile(r"```([a-zA-Z0-9_-]+)\s*\n([\s\S]*?)```")
     for m in fence_re.finditer(text):
@@ -1216,7 +1339,7 @@ def audit_markdown(path: pathlib.Path, text: str) -> list[Finding]:
         code = m.group(2)
         start_line = text[:m.start(2)].count("\n") + 1
         virtual_path = path.with_name(f"{path.name}{ext}")
-        sub_findings = Checker(virtual_path, is_snippet=True).run(code)
+        sub_findings = Checker(virtual_path, is_snippet=True, mode=mode).run(code)
         for f in sub_findings:
             f.path = str(path)
             if f.line > 0:
@@ -1252,7 +1375,7 @@ def iter_files(paths: list[str], exclude: list[str], *, include_markdown: bool =
     return out
 
 
-def audit(paths: list[str], exclude: list[str], *, include_markdown: bool = False) -> tuple[list[FileReport], int]:
+def audit(paths: list[str], exclude: list[str], *, include_markdown: bool = False, mode: str = "strict") -> tuple[list[FileReport], int]:
     files = iter_files(paths, exclude, include_markdown=include_markdown)
     reports: list[FileReport] = []
     for path in files:
@@ -1262,9 +1385,9 @@ def audit(paths: list[str], exclude: list[str], *, include_markdown: bool = Fals
             print(f"warning: cannot read {path}: {exc}", file=sys.stderr)
             continue
         if path.suffix.lower() == ".md":
-            findings = audit_markdown(path, text) if include_markdown else []
+            findings = audit_markdown(path, text, mode=mode) if include_markdown else []
         else:
-            findings = Checker(path).run(text)
+            findings = Checker(path, mode=mode).run(text)
         if findings:
             reports.append(FileReport(str(path), findings))
     return reports, len(files)
@@ -1306,6 +1429,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true", help="emit JSON")
     parser.add_argument("--markdown", action="store_true",
                         help="also audit HTML/CSS fenced code blocks in .md files")
+    parser.add_argument("--mode", choices=AUDIT_MODES, default="strict",
+                        help="audit policy profile: strict (default) or desktop-bento")
     parser.add_argument("--exclude", default="",
                         help="comma-separated substrings to skip")
     parser.add_argument("--fail-on", choices=SEVERITIES, default="error",
@@ -1315,10 +1440,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     exclude = [x.strip() for x in args.exclude.split(",") if x.strip()]
-    reports, scanned = audit(args.paths, exclude, include_markdown=args.markdown)
+    reports, scanned = audit(args.paths, exclude, include_markdown=args.markdown, mode=args.mode)
 
     if args.json:
         print(json.dumps({
+            "mode": args.mode,
             "summary": {
                 s: sum(1 for r in reports for f in r.findings if f.severity == s)
                 for s in SEVERITIES

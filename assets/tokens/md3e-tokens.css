@@ -262,8 +262,8 @@
    * Telugu = large (~30%). Nastaliq = extra large (~100%). If a product ships
    * CJK, bump the line-height tokens; ignoring this collides text.
    * ======================================================================== */
-  --md-sys-typescale-brand-font: "Roboto Flex", "Roboto", system-ui, sans-serif;
-  --md-sys-typescale-plain-font: "Roboto Flex", "Roboto", system-ui, sans-serif;
+  --md-sys-typescale-brand-font: "Google Sans Flex", "Roboto Flex", "Roboto", system-ui, sans-serif;
+  --md-sys-typescale-plain-font: "Google Sans Flex", "Roboto Flex", "Roboto", system-ui, sans-serif;
 
   /* --- Display: hero text and large numbers. Never for body copy. --- */
   --md-sys-typescale-display-large-font: var(--md-sys-typescale-brand-font);

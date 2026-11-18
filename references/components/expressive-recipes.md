@@ -140,6 +140,104 @@ Fixed to screen bottom (e.g. mobile viewport footer) with surface-container styl
 }
 ```
 
+### 1.3 Bidirectional Floating ↔ Docked Morphing Toolbar
+
+Combines `assets/tokens/md3e-blur.css` (`.md3e-blur-surface`) with a spatial state transition so a compact centered floating toolbar morphs smoothly into a full-width docked workspace bar when pinned (`data-toolbar-mode="floating" | "docked"`). Use `document.startViewTransition()` when available so width, corner radius (`32px -> 0px`), and action distribution glide on the compositor without blocking interactions on desktop workspaces:
+
+```html
+<div
+  class="md3e-toolbar-adaptive md3e-blur-surface"
+  id="adaptive-toolbar"
+  role="toolbar"
+  aria-label="Workspace actions"
+  data-toolbar-mode="floating"
+>
+  <button type="button" class="md3e-toolbar-btn" aria-label="Select tool" aria-pressed="true">
+    <span class="material-symbols-outlined" aria-hidden="true">arrow_selector_tool</span>
+  </button>
+  <button type="button" class="md3e-toolbar-btn" aria-label="Annotate" aria-pressed="false">
+    <span class="material-symbols-outlined" aria-hidden="true">draw</span>
+  </button>
+  <div class="md3e-toolbar-divider" role="separator" aria-orientation="vertical"></div>
+  <button
+    type="button"
+    class="md3e-toolbar-btn md3e-toolbar-btn--primary"
+    id="toolbar-dock-toggle"
+    aria-label="Dock toolbar to edge"
+    aria-pressed="false"
+  >
+    <span class="material-symbols-outlined" aria-hidden="true">dock_to_bottom</span>
+  </button>
+</div>
+```
+
+```css
+.md3e-toolbar-adaptive {
+  view-transition-name: md3e-adaptive-toolbar;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--md-sys-spacing-1);
+  height: 64px;
+  padding-inline: var(--md-sys-spacing-3);
+  border-radius: var(--md-sys-shape-corner-extra-large-increased); /* 32px pill */
+  box-shadow: var(--md-sys-elevation-level3);
+  transition:
+    border-radius var(--md-sys-motion-default-spatial),
+    transform var(--md-sys-motion-default-spatial),
+    background-color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-toolbar-adaptive[data-toolbar-mode="floating"] {
+  inline-size: fit-content;
+  margin-inline: auto;
+}
+
+.md3e-toolbar-adaptive[data-toolbar-mode="docked"] {
+  inline-size: 100%;
+  justify-content: space-between;
+  padding-inline: var(--md-sys-spacing-6);
+  border-radius: var(--md-sys-shape-corner-none); /* 0px full edge dock */
+  box-shadow: var(--md-sys-elevation-level0);
+}
+
+::view-transition-group(md3e-adaptive-toolbar) {
+  animation-duration: var(--md-sys-motion-default-spatial-duration);
+  animation-timing-function: var(--md-sys-motion-default-spatial-easing);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-toolbar-adaptive {
+    transition: none;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+```
+
+```javascript
+export function bindBidirectionalToolbar(toolbarEl, toggleBtn) {
+  const apply = () => {
+    const docked = toolbarEl.dataset.toolbarMode === 'docked';
+    const next = docked ? 'floating' : 'docked';
+    toolbarEl.dataset.toolbarMode = next;
+    toggleBtn.setAttribute('aria-pressed', String(next === 'docked'));
+    toggleBtn.setAttribute('aria-label', next === 'docked' ? 'Undock floating toolbar' : 'Dock toolbar to edge');
+  };
+  toggleBtn.addEventListener('click', () => {
+    if (typeof document.startViewTransition === 'function'
+      && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.startViewTransition(apply).ready.catch(() => {});
+    } else {
+      apply();
+    }
+  });
+}
+```
+
 ---
 
 ## 2. Split Button
@@ -431,6 +529,83 @@ Standard button groups use explicit inter-button gaps by size (`18px` XS, `12px`
   display: inline-flex;
   align-items: center;
   gap: var(--md-sys-spacing-3); /* 12px for Small (40dp); use 8px for Medium+ */
+}
+```
+
+### 3.3 Tactile Neighbor Width Squeeze (`animateWidth`)
+
+In AndroidX Compose M3E (`ButtonGroupDefaults.animateWidth`), pressing or toggling an item expands its width while its **immediate adjacent neighbours compress proportionally**, keeping total group width stable so surrounding UI never jumps:
+
+```css
+.md3e-btn-group--squeeze {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  inline-size: min(100%, 320px);
+}
+
+.md3e-squeeze-item {
+  position: relative;
+  flex: 1 1 0;
+  min-inline-size: 48px;
+  height: 40px;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-plain-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  cursor: pointer;
+  transition:
+    flex-grow var(--md-sys-motion-fast-spatial),
+    border-radius var(--md-sys-motion-fast-spatial),
+    background-color var(--md-sys-motion-fast-effects),
+    color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-squeeze-item::before {
+  content: "";
+  position: absolute;
+  inset-block: -4px;
+  inset-inline: 0;
+  min-height: var(--md-sys-touch-target-min);
+}
+
+.md3e-squeeze-item:first-child {
+  border-start-start-radius: var(--md-sys-shape-corner-large-increased);
+  border-end-start-radius: var(--md-sys-shape-corner-large-increased);
+}
+
+.md3e-squeeze-item:last-child {
+  border-start-end-radius: var(--md-sys-shape-corner-large-increased);
+  border-end-end-radius: var(--md-sys-shape-corner-large-increased);
+}
+
+.md3e-squeeze-item:is(:active, [aria-pressed="true"]) {
+  flex-grow: 1.45;
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  border-radius: var(--md-sys-shape-corner-large-increased);
+  font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+}
+
+/* Compress adjacent left & right neighbours smoothly so outer group width stays constant */
+.md3e-squeeze-item:has(+ .md3e-squeeze-item:is(:active, [aria-pressed="true"])),
+.md3e-squeeze-item:is(:active, [aria-pressed="true"]) + .md3e-squeeze-item {
+  flex-grow: 0.78;
+}
+
+.md3e-squeeze-item:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-squeeze-item {
+    transition: none;
+  }
 }
 ```
 
@@ -753,6 +928,27 @@ When shipping a zero-SVG snippet without `md3e-shapes.css`, keep a single semant
 }
 ```
 
+### 5.3 Real-Time JS `Morph` 7-Polygon Cycling Loader (`md3e-morph.js`)
+
+When you want interruptible physics (`stiffness = 200`, `damping = 0.6`), mid-flight retargeting, or custom polygon sequences driven in `requestAnimationFrame` via AndroidX `Morph` control-point subdivision rather than pre-sampled CSS keyframes, drive the SVG `<path>` with `assets/tokens/md3e-morph.js`:
+
+```javascript
+import { LOADING_SEQUENCE, createShapeMorpher } from './tokens/md3e-morph.js';
+
+const pathEl = document.getElementById('js-morph-loader-path');
+const morpher = createShapeMorpher(pathEl, {
+  initialShape: LOADING_SEQUENCE[0],
+  scale: 0.84, // rotation-safe inset inside the 38dp container
+});
+
+// Cycles SoftBurst -> Cookie9Sided -> Pentagon -> Pill -> Sunny -> Cookie4Sided -> Oval
+const stopLoader = morpher.startSequence(LOADING_SEQUENCE, {
+  intervalMs: 650,
+  stiffness: 200,
+  damping: 0.6,
+});
+```
+
 ---
 
 ## 6. Toggle Buttons (Shape Morphing & Animation Physics)
@@ -760,9 +956,9 @@ When shipping a zero-SVG snippet without `md3e-shapes.css`, keep a single semant
 Toggle buttons morph resting shapes: **Round when unselected, Square when selected**.
 
 > [!CAUTION]
-> **Common Pitfall: Why `9999px` breaks shape morph animations**:
-> In CSS, `var(--md-sys-shape-corner-full)` is `9999px`. When animating `border-radius` between `9999px` and `12px`, browsers interpolate numerically from `9999` down to `12`, while visually clamping anything $\ge 20\text{px}$ on a `40px` button. As a result, 99.8% of the transition sits above `20px` and snaps in the final frames!
-> **The Fix**: Use `var(--md-sys-shape-corner-large-increased)` (`20px`) for the resting pill of a `40px` button (`28px` for 56px M, `48px` for 96px L).
+> **Common Pitfall: Why `9999px` breaks shape morph animations and flashes a `0px` rectangle**:
+> In CSS, `var(--md-sys-shape-corner-full)` is `9999px`. When animating `border-radius` between `9999px` and `12px`/`16px`, two bugs happen: (1) visually clamping anything $\ge \text{height}/2$ traps 99.8% of the transition before snapping late, and (2) under an underdamped `linear()` spring with overshoot $> 1.0$ (e.g. `1.07`), CSS evaluates `9999 + 1.07 * (16 - 9999) = -682.8px` and clamps negative values to **`0px`**, flashing a momentary razor-sharp rectangle!
+> **The Fix**: Use the bounded half-height pill radius (`var(--md-sys-shape-corner-large-increased)` = `20px` on `40px` buttons, `calc(var(--md-bento-control-height, 48px) / 2)` = `24px` on `48px` controls -> `12px`, `28px` for 56px M, `48px` for 96px L) so overshoot remains positive (`> 0px`) across every frame.
 
 ```html
 <button
@@ -1191,44 +1387,335 @@ Use `.md3e-shape` paired with any of the 35 official `.md3e-shape-<name>` classe
 }
 ```
 
-### 12.2 Optional Frosted Floating Toolbar (Android 16 M3E Blur Adaptation)
+### 12.2 Accessible Frosted Floating Chrome (`assets/tokens/md3e-blur.css`)
 
-Component surfaces default to opaque tonal `surface-container-*` roles. Or apply the turnkey `.md3e-frosted-surface` class from `assets/tokens/md3e-tokens.css` directly; when writing a custom frosted rule on floating chrome, tint with `color-mix(in oklab, ...)` (`in oklch` causes pink shifts on low-chroma neutrals), guard `-webkit-backdrop-filter` / `backdrop-filter`, and always reset under `@media (prefers-reduced-transparency: reduce)`, high contrast, and `forced-colors: active`:
+Component surfaces default to opaque tonal `surface-container-*` roles. For floating toolbars, quick-settings sheets, or scrims, link `assets/tokens/md3e-blur.css` and apply `.md3e-blur-surface`, `.md3e-blur-surface-high`, `.md3e-blur-primary`, `.md3e-blur-secondary`, `.md3e-blur-tertiary`, or `.md3e-blur-scrim`. All `.md3e-blur-*` classes automatically tint via `color-mix(in oklab, ...)` (never `in oklch`) and revert cleanly to solid opaque `Surface Container` colours under `@media (prefers-reduced-transparency: reduce)`, `prefers-contrast: more`, `[data-contrast="high"]`, and `@media (forced-colors: active)`:
+
+```html
+<div class="md3e-toolbar-floating md3e-blur-surface md3e-blur--lg" role="toolbar" aria-label="Floating blur actions">
+  <button type="button" class="md3e-toolbar-btn" aria-label="Pin layer" aria-pressed="false">
+    <span class="material-symbols-outlined" aria-hidden="true">keep</span>
+  </button>
+</div>
+```
+
+### 12.3 Real-Time Cubic Bézier Shape-Morphing CTA (`md3e-morph.js`)
+
+Use `assets/tokens/md3e-morph.js` + `assets/tokens/md3e-spring.js` when an interactive control must morph cleanly in real time between any two `MaterialShapes` polygons (for example, `square` → `cookie-9-sided` on press/hold, or toggling `square` ↔ `sunny`). Because the rendered shape is non-rectangular, **never** put `box-shadow` on the button itself — wrap it in `.md3e-shape-shadow-wrap` (`filter: drop-shadow(...)`):
+
+```html
+<span class="md3e-shape-shadow-wrap">
+  <button type="button" class="md3e-morph-cta" id="morph-cta-btn" aria-label="Morph action shape" aria-pressed="false">
+    <svg class="md3e-morph-cta__svg" viewBox="0 0 100 100" aria-hidden="true">
+      <path id="morph-cta-path" d="" />
+    </svg>
+    <span class="material-symbols-outlined md3e-morph-cta__icon" aria-hidden="true">auto_awesome</span>
+  </button>
+</span>
+```
 
 ```css
-.md3e-frosted-chrome {
-  background: var(--md-sys-color-surface-container);
+.md3e-morph-cta {
+  position: relative;
+  display: grid;
+  place-items: center;
+  inline-size: 64px;
+  block-size: 64px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--md-sys-color-on-primary-container);
+  cursor: pointer;
 }
 
-@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .md3e-frosted-chrome {
-    background: color-mix(in oklab, var(--md-sys-color-surface-container) 82%, transparent);
-    -webkit-backdrop-filter: blur(var(--md3e-fx-blur-standard, 20px));
-    backdrop-filter: blur(var(--md3e-fx-blur-standard, 20px));
-  }
+.md3e-morph-cta__svg {
+  inline-size: 100%;
+  block-size: 100%;
+  fill: var(--md-sys-color-primary-container);
 }
 
-@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-  .md3e-frosted-chrome {
-    background: var(--md-sys-color-surface-container);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
+.md3e-morph-cta__icon {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
 }
 
-[data-contrast="high"] .md3e-frosted-chrome {
-  background: var(--md-sys-color-surface-container);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+.md3e-morph-cta:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+  border-radius: var(--md-sys-shape-corner-large);
+}
+```
+
+```javascript
+import { createShapeMorpher } from './tokens/md3e-morph.js';
+
+const morpher = createShapeMorpher(document.getElementById('morph-cta-path'), {
+  initialShape: 'square',
+  spring: 'fast-spatial',
+});
+
+morpher.bindPressMorph(document.getElementById('morph-cta-btn'), {
+  restShape: 'square',
+  pressedShape: 'cookie-9-sided',
+  toggleShape: 'sunny',
+});
+```
+
+---
+
+## 13. Sine-Wave Progress Indicators Auto-Straightening at 100% (SVG + HiDPI Canvas)
+
+Per the official M3 Expressive **Wavy Progress Indicator** spec (`references/components/communication.md`):
+- **Track thickness**: `4dp` (`8dp` thicker variant) · **Amplitude**: `3dp` (`0dp` at `0%` / `100%`) · **Wavelength**: `40dp` · **Gap & Stop Dot**: `4dp` stop indicator at track end.
+- **Colour roles**: Active indicator & stop dot use `--md-sys-color-primary`; track uses `--md-sys-color-secondary-container`.
+- **Auto-Straightening (`amplitude -> 0` at `100%`)**: As normalized progress $p \to 1$, target wave amplitude springs smoothly down to `0` (`flattenFactor = smoothstep(0.95 -> 1.0)`), snapping the active indicator cleanly into a flat pill line upon completion!
+- **Accessibility & Battery**: Expose completion natively via `role="progressbar"`, `aria-valuemin="0"`, `aria-valuemax="100"`, and `aria-valuenow` (mark `<svg>` / `<canvas>` `aria-hidden="true"` rather than relying on non-standard `canvas-html`), scale `<canvas>` by `window.devicePixelRatio`, pause off-screen `requestAnimationFrame` loops via `contentvisibilityautostatechange` / `IntersectionObserver`, and halt wave phase travel when `@media (prefers-reduced-motion: reduce)` matches.
+
+```html
+<!-- 1. SVG Linear Wavy Progress (4dp stroke, 3dp amplitude, 40dp wavelength, auto-straightens at 100%) -->
+<div class="md3e-wavy-progress" id="svg-wavy-host" role="progressbar" aria-label="SVG model sync" aria-valuemin="0" aria-valuemax="100" aria-valuenow="68">
+  <svg id="svg-wavy-el" viewBox="0 0 320 14" aria-hidden="true">
+    <path class="md3e-wavy__track" id="svg-wavy-track" d="" />
+    <path class="md3e-wavy__active" id="svg-wavy-active" d="" />
+    <circle class="md3e-wavy__stop" cx="316" cy="7" r="2" />
+  </svg>
+</div>
+
+<!-- 2. High-FPS HiDPI Canvas Linear Wavy Progress -->
+<div class="md3e-wavy-progress md3e-wavy-progress--canvas" id="canvas-wavy-host" role="progressbar" aria-label="Canvas pipeline progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="68">
+  <canvas id="canvas-wavy-el" aria-hidden="true"></canvas>
+</div>
+```
+
+```css
+.md3e-wavy-progress {
+  inline-size: 100%;
+  block-size: 14px;
+  display: flex;
+  align-items: center;
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 14px;
 }
 
-@media (forced-colors: active) {
-  .md3e-frosted-chrome {
-    background: Canvas;
-    color: CanvasText;
-    border: 1px solid CanvasText;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
+.md3e-wavy-progress svg,
+.md3e-wavy-progress canvas {
+  inline-size: 100%;
+  block-size: 14px;
+  display: block;
+}
+
+.md3e-wavy__track {
+  fill: none;
+  stroke: var(--md-sys-color-secondary-container);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.md3e-wavy__active {
+  fill: none;
+  stroke: var(--md-sys-color-primary);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.md3e-wavy__stop {
+  fill: var(--md-sys-color-primary);
+}
+```
+
+```javascript
+export function createWavyProgressController({ svgHost, svgActive, svgTrack, canvasHost, canvasEl, initialProgress = 68 } = {}) {
+  let progress = initialProgress;
+  let phase = 0;
+  let ampScale = progress >= 100 || progress <= 0 ? 0 : 1;
+  let rafId = null;
+  let offscreen = false;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  const targetAmplitudeFactor = (pct) => {
+    if (pct <= 2 || pct >= 100) return 0;
+    if (pct >= 94) return (100 - pct) / 6;
+    if (pct <= 8) return (pct - 2) / 6;
+    return 1;
+  };
+
+  const buildWavePath = (xStart, xEnd, yMid, amp, wavelength, ph) => {
+    const span = Math.max(0, xEnd - xStart);
+    if (span <= 0.5) return '';
+    if (amp <= 0.04) return `M${xStart.toFixed(2)} ${yMid} L${xEnd.toFixed(2)} ${yMid}`;
+    const step = 2.5;
+    let d = '';
+    for (let x = 0; x <= span; x += step) {
+      const y = yMid + Math.sin((x / wavelength) * Math.PI * 2 - ph) * amp;
+      d += `${x === 0 ? 'M' : 'L'}${(xStart + x).toFixed(2)} ${y.toFixed(2)} `;
+    }
+    const endY = yMid + Math.sin((span / wavelength) * Math.PI * 2 - ph) * amp;
+    return `${d}L${xEnd.toFixed(2)} ${endY.toFixed(2)}`;
+  };
+
+  const renderFrame = () => {
+    const targetFactor = targetAmplitudeFactor(progress);
+    ampScale += (targetFactor - ampScale) * (reducedMotion.matches ? 1 : 0.22);
+    if (Math.abs(targetFactor - ampScale) < 0.01) ampScale = targetFactor;
+    const amp = 3 * ampScale;
+
+    if (svgActive && svgTrack) {
+      const W = 320;
+      const midY = 7;
+      const activeEnd = 4 + ((W - 12) * Math.max(0, Math.min(100, progress))) / 100;
+      svgActive.setAttribute('d', buildWavePath(4, activeEnd, midY, amp, 40, phase));
+      const trackStart = Math.min(W - 4, activeEnd + 6);
+      svgTrack.setAttribute('d', trackStart < W - 4 ? `M${trackStart.toFixed(2)} ${midY} L${W - 4} ${midY}` : '');
+      svgHost?.setAttribute('data-wave-amplitude', amp.toFixed(2));
+    }
+
+    if (canvasEl) {
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = Math.max(120, canvasEl.clientWidth || 320);
+      const cssH = 14;
+      if (canvasEl.width !== Math.round(cssW * dpr) || canvasEl.height !== Math.round(cssH * dpr)) {
+        canvasEl.width = Math.round(cssW * dpr);
+        canvasEl.height = Math.round(cssH * dpr);
+      }
+      const ctx = canvasEl.getContext('2d');
+      const cs = getComputedStyle(canvasEl);
+      const primary = cs.getPropertyValue('--md-sys-color-primary').trim();
+      const trackCol = cs.getPropertyValue('--md-sys-color-secondary-container').trim();
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, cssW, cssH);
+
+      const pad = 4;
+      const midY = cssH / 2;
+      const activeEnd = pad + ((cssW - pad * 3) * Math.max(0, Math.min(100, progress))) / 100;
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+
+      if (activeEnd + 6 < cssW - pad) {
+        ctx.strokeStyle = trackCol;
+        ctx.beginPath();
+        ctx.moveTo(activeEnd + 6, midY);
+        ctx.lineTo(cssW - pad, midY);
+        ctx.stroke();
+      }
+
+      if (activeEnd > pad + 0.5) {
+        ctx.strokeStyle = primary;
+        ctx.beginPath();
+        for (let x = pad; x <= activeEnd; x += 2) {
+          const y = midY + Math.sin(((x - pad) / 40) * Math.PI * 2 - phase) * amp;
+          if (x === pad) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.lineTo(activeEnd, midY + Math.sin(((activeEnd - pad) / 40) * Math.PI * 2 - phase) * amp);
+        ctx.stroke();
+      }
+      ctx.fillStyle = primary;
+      ctx.beginPath();
+      ctx.arc(cssW - pad, midY, 2, 0, Math.PI * 2);
+      ctx.fill();
+      canvasHost?.setAttribute('data-wave-amplitude', amp.toFixed(2));
+    }
+  };
+
+  const loop = () => {
+    if (!offscreen && !reducedMotion.matches && ampScale > 0.005) {
+      phase = (phase + 0.14) % (Math.PI * 2);
+      renderFrame();
+      rafId = requestAnimationFrame(loop);
+    } else {
+      rafId = null;
+      renderFrame();
+    }
+  };
+
+  const kick = () => {
+    renderFrame();
+    if (!rafId && !offscreen && !reducedMotion.matches) {
+      rafId = requestAnimationFrame(loop);
+    }
+  };
+
+  [svgHost, canvasHost].filter(Boolean).forEach((host) => {
+    host.addEventListener('contentvisibilityautostatechange', (e) => {
+      offscreen = e.skipped;
+      if (!offscreen) kick();
+    });
+  });
+
+  kick();
+  return {
+    setProgress(nextPct) {
+      progress = Math.max(0, Math.min(100, Number(nextPct) || 0));
+      svgHost?.setAttribute('aria-valuenow', String(Math.round(progress)));
+      canvasHost?.setAttribute('aria-valuenow', String(Math.round(progress)));
+      kick();
+    },
+    destroy() {
+      if (rafId) cancelAnimationFrame(rafId);
+    },
+  };
+}
+```
+
+---
+
+## 14. Additional Native AndroidX Compose M3E (`1.4+`) Capabilities
+
+### 14.1 Variable-Width Icon Buttons (`narrow` / `default` / `wide`)
+
+Standard `40dp` Small Icon Buttons support three native width profiles (`narrow` `32px`, `default` `40px`, `wide` `52px`) while keeping an invisible `48×48px` `::before` hit area and morphing corners (`20px` unselected pill → `12px` selected square):
+
+```css
+.md3e-icon-btn--var {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  height: 40px;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-large-increased);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  transition:
+    inline-size var(--md-sys-motion-fast-spatial),
+    border-radius var(--md-sys-motion-fast-spatial),
+    background-color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-icon-btn--narrow { inline-size: 32px; }
+.md3e-icon-btn--default { inline-size: 40px; }
+.md3e-icon-btn--wide { inline-size: 52px; }
+
+.md3e-icon-btn--var::before {
+  content: "";
+  position: absolute;
+  inset: -4px -8px;
+  min-width: var(--md-sys-touch-target-min);
+  min-height: var(--md-sys-touch-target-min);
+}
+
+.md3e-icon-btn--var[aria-pressed="true"] {
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  border-radius: var(--md-sys-shape-corner-medium);
+  --md-sys-icon-fill: 1;
+}
+
+.md3e-icon-btn--var:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-icon-btn--var {
+    transition: none;
   }
 }
 ```
+
+### 14.2 Flexible Collapsing Top App Bar & Multi-Browse Carousel
+
+- **Flexible Top App Bar (`MediumFlexible` / `LargeFlexible`)**: Expand bar height (`64px` collapsed ↔ `112px` medium / `152px` large) paired with variable-font `'GRAD'` / `'ROND'` / `'wght'` interpolation on the title rather than animating `font-size` across layout frames.
+- **Multi-Browse Hero Carousel**: Pair `scroll-snap-type: x mandatory` (`md3e-carousel`) with focusable `flex-basis` shifts on hovered/focused hero items so focused cards widen with `--md-sys-motion-default-spatial` while preserving keyboard arrow/Tab scroll into view.
+

@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="en" data-motion-scheme="expressive" data-theme="dark" data-layout-profile="desktop-bento">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:,">
+<title>MD3E Desktop Bento Studio — Opt-In High-Density Override Showcase</title>
+
+<!-- Google Fonts (strictly alphabetical axes; Google Sans Flex provides GRAD + ROND; &display=block avoids icon FOUT) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:GRAD,ROND,opsz,wdth,wght@-50..200,0..100,6..144,25..151,100..1000&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:GRAD,opsz,wdth,wght@-200..150,8..144,25..151,100..1000&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:FILL,GRAD,opsz,wght@0..1,-50..200,20..48,100..700&display=block">
+
+<!-- MD3E Core + Blur + Palettes + Shapes + Motion -->
+<link rel="stylesheet" href="../tokens/md3e-tokens.css">
+<link rel="stylesheet" href="../tokens/md3e-blur.css">
+<link rel="stylesheet" href="../tokens/md3e-palettes.css">
+<link rel="stylesheet" href="../tokens/md3e-shapes.css">
+<link rel="stylesheet" href="../tokens/md3e-motion.css">
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  @property --md3e-vf-grad { syntax: "<number>"; inherits: false; initial-value: 0; }
+  @property --md3e-vf-rond { syntax: "<number>"; inherits: false; initial-value: 35; }
+  @property --md3e-vf-wght { syntax: "<number>"; inherits: false; initial-value: 500; }
+
+  :root[data-layout-profile="desktop-bento"] {
+    /* Dual-tier density tokens */
+    --md-bento-row-height: 34px;       /* Strict 32px-36px dense table/log rows */
+    --md-bento-control-height: 48px;   /* Chunky 44px-64px primary controls */
+    --md-bento-hero-cta-size: 60px;    /* Chunky Hero morphing button */
+    --md-bento-rail-width: 64px;       /* Ultra-narrow left icon rail */
+    --md-bento-titlebar-height: 44px;  /* Frameless integrated titlebar */
+
+    /* High-stiffness short desktop springs (150ms-250ms) */
+    --md-bento-motion-fast-effects: 150ms cubic-bezier(0.34, 0.88, 0.34, 1);
+    --md-bento-motion-default-effects: 200ms cubic-bezier(0.34, 0.80, 0.34, 1);
+    --md-bento-motion-fast-spatial: 180ms linear(0, 0.28 16%, 1.07 40%, 0.99 66%, 1);
+    --md-bento-motion-default-spatial-duration: 240ms;
+    --md-bento-motion-default-spatial-easing: linear(0, 0.30 18%, 1.05 42%, 0.99 68%, 1);
+    --md-bento-motion-default-spatial: 240ms linear(0, 0.30 18%, 1.05 42%, 0.99 68%, 1);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: var(--md-sys-spacing-16);
+    scroll-padding-bottom: 96px;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    font-family: "Google Sans Flex", "Roboto Flex", var(--md-sys-typescale-plain-font);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: var(--md-sys-typescale-body-medium-line-height);
+    transition: background-color var(--md-bento-motion-default-effects),
+                color var(--md-bento-motion-default-effects);
+  }
+
+  .skip-link:focus {
+    position: fixed !important;
+    inset-block-start: var(--md-sys-spacing-2);
+    inset-inline-start: var(--md-sys-spacing-2);
+    z-index: 900;
+    clip-path: none !important;
+    width: auto !important;
+    height: auto !important;
+    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-4);
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+    text-decoration: none;
+  }
+
+  /* -------------------------------------------------------------------------
+   * 1. Frameless Integrated Titlebar (Zero 1px border, seamless surface blend)
+   * ----------------------------------------------------------------------- */
+  .bento-titlebar {
+    position: sticky;
+    top: 0;
+    z-index: 120;
+    height: env(titlebar-area-height, var(--md-bento-titlebar-height));
+    padding-inline: var(--md-sys-spacing-4);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--md-sys-spacing-3);
+    background: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+  }
+
+  .titlebar__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+    min-width: 0;
+  }
+
+  .titlebar__badge {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    --md-sys-icon-size: 20px;
+  }
+
+  .titlebar__title {
+    margin: 0;
+    font-size: var(--md-sys-typescale-title-small-size);
+    line-height: var(--md-sys-typescale-title-small-line-height);
+    font-weight: var(--md-sys-typescale-title-small-emphasized-weight);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .titlebar__search {
+    display: none;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+    height: 32px;
+    flex: 0 1 320px;
+    padding-inline: var(--md-sys-spacing-3);
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--md-sys-color-surface-container-high);
+    transition: background-color var(--md-bento-motion-fast-effects);
+  }
+
+  @media (min-width: 720px) {
+    .titlebar__search {
+      display: flex;
+    }
+  }
+
+  .titlebar__search:hover {
+    background: var(--md-sys-color-surface-container-highest);
+  }
+
+  .titlebar__search:focus-within {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .titlebar__search input {
+    width: 100%;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    color: var(--md-sys-color-on-surface);
+    font-family: inherit;
+    font-size: var(--md-sys-typescale-body-small-size);
+    outline: 2px solid transparent;
+  }
+
+  .titlebar__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-1);
+    flex-shrink: 0;
+  }
+
+  .titlebar-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-1);
+    height: 32px;
+    padding-inline: var(--md-sys-spacing-3);
+    border: none;
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface);
+    font-family: inherit;
+    font-size: var(--md-sys-typescale-label-medium-size);
+    font-weight: var(--md-sys-typescale-label-medium-weight);
+    text-decoration: none;
+    cursor: pointer;
+    --md-sys-icon-size: 20px;
+    transition: background-color var(--md-bento-motion-fast-effects),
+                transform var(--md-bento-motion-fast-spatial);
+  }
+
+  .titlebar-chip::before {
+    content: "";
+    position: absolute;
+    inset-block: -8px;
+    inset-inline: -4px;
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+  }
+
+  .titlebar-chip:hover {
+    background: color-mix(in oklab, var(--md-sys-color-on-surface) 8%, var(--md-sys-color-surface-container-high));
+  }
+
+  .titlebar-chip:active {
+    transform: scale(0.96);
+  }
+
+  .titlebar-chip:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .titlebar-chip[aria-pressed="true"] {
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
+  }
+
+  .win-controls {
+    display: none;
+  }
+
+  @media (min-width: 840px) {
+    .win-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--md-sys-spacing-1);
+      margin-inline-start: var(--md-sys-spacing-1);
+    }
+  }
+
+  .win-btn {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: var(--md-sys-shape-corner-full);
+    background: transparent;
+    color: var(--md-sys-color-on-surface-variant);
+    cursor: pointer;
+    --md-sys-icon-size: 20px;
+    transition: background-color var(--md-bento-motion-fast-effects),
+                color var(--md-bento-motion-fast-effects);
+  }
+
+  .win-btn::before {
+    content: "";
+    position: absolute;
+    inset: -8px;
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+  }
+
+  .win-btn:hover {
+    background: color-mix(in oklab, var(--md-sys-color-on-surface) 8%, transparent);
+    color: var(--md-sys-color-on-surface);
+  }
+
+  .win-btn--close:hover {
+    background: var(--md-sys-color-error-container);
+    color: var(--md-sys-color-on-error-container);
+  }
+
+  .win-btn:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  /* -------------------------------------------------------------------------
+   * 2. Ultra-Narrow 64px Navigation Rail + Main Bento Shell
+   * ----------------------------------------------------------------------- */
+  .bento-shell {
+    display: flex;
+    align-items: flex-start;
+    min-height: calc(100dvh - var(--md-bento-titlebar-height));
+  }
+
+  .bento-rail {
+    position: sticky;
+    top: var(--md-bento-titlebar-height);
+    width: var(--md-bento-rail-width);
+    height: calc(100dvh - var(--md-bento-titlebar-height));
+    flex-shrink: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding-block: var(--md-sys-spacing-2) var(--md-sys-spacing-4);
+    gap: var(--md-sys-spacing-2);
+    background: var(--md-sys-color-surface);
+  }
+
+  @media (min-width: 840px) {
+    .bento-rail { display: flex; }
+  }
+
+  .bento-rail__item {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: var(--md-sys-touch-target-min);
+    height: var(--md-sys-touch-target-min);
+    border: none;
+    border-radius: var(--md-sys-shape-corner-large);
+    background: transparent;
+    color: var(--md-sys-color-on-surface-variant);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--md-bento-motion-fast-effects),
+                border-radius var(--md-bento-motion-fast-spatial),
+                color var(--md-bento-motion-fast-effects),
+                transform var(--md-bento-motion-fast-spatial);
+  }
+
+  .bento-rail__item:hover {
+    background: color-mix(in oklab, var(--md-sys-color-on-surface) 8%, transparent);
+    color: var(--md-sys-color-on-surface);
+  }
+
+  .bento-rail__item:active {
+    transform: scale(0.94);
+    border-radius: var(--md-sys-shape-corner-medium);
+  }
+
+  .bento-rail__item[aria-current="page"] {
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    border-radius: var(--md-sys-shape-corner-large);
+    --md-sys-icon-fill: 1;
+  }
+
+  .bento-rail__item:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .bento-rail__spacer {
+    flex: 1 1 auto;
+  }
+
+  /* -------------------------------------------------------------------------
+   * 3. 12-Column Asymmetric Bento Grid (Borderless, Shadowless, Tonal Nesting)
+   * ----------------------------------------------------------------------- */
+  .bento-workspace {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-4) 96px;
+  }
+
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--md-sys-spacing-4);
+    align-items: stretch;
+  }
+
+  @media (min-width: 840px) {
+    .bento-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  }
+
+  @media (min-width: 1200px) {
+    .bento-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  }
+
+  .span-3, .span-4, .span-5, .span-7 {
+    grid-column: span 4;
+  }
+
+  @media (min-width: 840px) {
+    .span-3 { grid-column: span 4; }
+    .span-4 { grid-column: span 4; }
+    .span-5 { grid-column: span 8; }
+    .span-7 { grid-column: span 8; }
+  }
+
+  @media (min-width: 1200px) {
+    .span-3 { grid-column: span 3; }
+    .span-4 { grid-column: span 4; }
+    .span-5 { grid-column: span 5; }
+    .span-7 { grid-column: span 7; }
+  }
+
+  /* Outer Bento Cards: strict 28px corner-extra-large, 12px padding -> 16px concentric inner well, zero 1px border, zero box-shadow */
+  .bento-card {
+    position: relative;
+    overflow: hidden;
+    padding: var(--md-sys-spacing-3);
+    border-radius: var(--md-sys-shape-corner-extra-large); /* 28px outer */
+    background: var(--md-sys-color-surface-container-low);
+    color: var(--md-sys-color-on-surface);
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-sys-spacing-3);
+    transition: background-color var(--md-bento-motion-fast-effects),
+                transform var(--md-bento-motion-fast-spatial);
+  }
+
+  .bento-card:hover {
+    background: color-mix(in oklab, var(--md-sys-color-on-surface) 8%, var(--md-sys-color-surface-container-low));
+  }
+
+  .bento-card--hero-mesh {
+    background: var(--md-sys-color-surface-container);
+    justify-content: space-between;
+  }
+
+  .bento-card--hero-mesh:hover {
+    background: color-mix(in oklab, var(--md-sys-color-on-surface) 8%, var(--md-sys-color-surface-container));
+  }
+
+  .bento-card--hero-rollout {
+    background: var(--md-sys-color-surface-container-high);
+    justify-content: space-between;
+  }
+
+  .bento-card--hero-rollout:hover {
+    background: color-mix(in oklab, var(--md-sys-color-on-surface) 8%, var(--md-sys-color-surface-container-high));
+  }
+
+  /* Concentric Nested Inner Well: 28px outer - 12px padding = 16px corner-large */
+  .bento-well {
+    position: relative;
+    z-index: 1;
+    padding: var(--md-sys-spacing-3);
+    border-radius: var(--md-sys-shape-corner-large); /* 16px inner */
+    background: var(--md-sys-color-surface-container-lowest);
+    color: var(--md-sys-color-on-surface);
+  }
+
+  .bento-well--high {
+    background: var(--md-sys-color-surface-container-high);
+  }
+
+  .bento-well--highest {
+    background: var(--md-sys-color-surface-container-highest);
+  }
+
+  .bento-card__header {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--md-sys-spacing-2);
+  }
+
+  .bento-card__eyebrow {
+    font-size: var(--md-sys-typescale-label-medium-size); /* 12px */
+    line-height: var(--md-sys-typescale-label-medium-line-height);
+    font-weight: var(--md-sys-typescale-label-medium-weight);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  .bento-card__title {
+    margin: 0;
+    font-size: var(--md-sys-typescale-title-medium-size);
+    line-height: var(--md-sys-typescale-title-medium-line-height);
+    font-weight: var(--md-sys-typescale-title-medium-emphasized-weight);
+  }
+
+  /* Hero KPI metrics: >= 3x label font-size (57px / 12px = 4.75x, 45px / 14px = 3.21x) */
+  .hero-kpi-value {
+    margin: 0;
+    font-family: "Google Sans Flex", "Roboto Flex", var(--md-sys-typescale-brand-font);
+    font-size: var(--md-sys-typescale-display-large-size); /* 57px */
+    line-height: var(--md-sys-typescale-display-large-line-height);
+    font-weight: var(--md-sys-typescale-display-large-emphasized-weight);
+    font-variant-numeric: tabular-nums;
+    font-variation-settings: "GRAD" var(--md3e-vf-grad), "ROND" var(--md3e-vf-rond), "wght" var(--md3e-vf-wght);
+    transition: --md3e-vf-grad var(--md-bento-motion-fast-effects),
+                --md3e-vf-rond var(--md-bento-motion-fast-spatial),
+                --md3e-vf-wght var(--md-bento-motion-fast-effects);
+  }
+
+  .bento-card--hero-mesh:hover .hero-kpi-value {
+    --md3e-vf-grad: 70;
+    --md3e-vf-rond: 95;
+    --md3e-vf-wght: 620;
+  }
+
+  .hero-kpi-secondary {
+    margin: 0;
+    font-family: "Google Sans Flex", "Roboto Flex", var(--md-sys-typescale-brand-font);
+    font-size: var(--md-sys-typescale-display-medium-size); /* 45px (vs 14px label = 3.21x) */
+    line-height: var(--md-sys-typescale-display-medium-line-height);
+    font-weight: var(--md-sys-typescale-display-medium-emphasized-weight);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hero-label-sm {
+    font-size: var(--md-sys-typescale-title-small-size); /* 14px */
+    line-height: var(--md-sys-typescale-title-small-line-height);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  /* Fluid Wave Motif & Edge-Bleed Sparkline in Hero Cards */
+  .bento-wave-backdrop {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: 0;
+    inline-size: 100%;
+    block-size: 62%;
+    fill: color-mix(in oklab, var(--md-sys-color-primary-container) 34%, transparent);
+    pointer-events: none;
+  }
+
+  .bento-wave-backdrop--tertiary {
+    fill: color-mix(in oklab, var(--md-sys-color-tertiary-container) 32%, transparent);
+  }
+
+  .bento-sparkline-bleed {
+    position: relative;
+    z-index: 1;
+    display: block;
+    inline-size: calc(100% + var(--md-sys-spacing-6));
+    margin-inline: calc(-1 * var(--md-sys-spacing-3));
+    margin-block-end: calc(-1 * var(--md-sys-spacing-3));
+    block-size: 52px;
+  }
+
+  .spark-area {
+    fill: color-mix(in oklab, var(--md-sys-color-primary) 22%, transparent);
+  }
+
+  .spark-stroke {
+    fill: none;
+    stroke: var(--md-sys-color-primary);
+    stroke-width: 2;
+  }
+
+  /* Hero Morphing Shape CTA — shadow strictly via filter: drop-shadow() */
+  .bento-morph-shadow {
+    display: inline-flex;
+    flex-shrink: 0;
+    filter: drop-shadow(0 6px 14px color-mix(in oklab, var(--md-sys-color-shadow) 32%, transparent));
+  }
+
+  .bento-morph-cta {
+    position: relative;
+    display: grid;
+    place-items: center;
+    inline-size: var(--md-bento-hero-cta-size, 60px); /* 60px chunky Hero CTA */
+    block-size: var(--md-bento-hero-cta-size, 60px);
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--md-sys-color-on-primary);
+    cursor: pointer;
+    transition: transform var(--md-bento-motion-fast-spatial);
+  }
+
+  .bento-morph-cta:hover {
+    transform: scale(1.04);
+  }
+
+  .bento-morph-cta__svg {
+    inline-size: 100%;
+    block-size: 100%;
+    fill: var(--md-sys-color-primary);
+  }
+
+  .bento-morph-cta__icon {
+    position: absolute;
+    pointer-events: none;
+    color: var(--md-sys-color-on-primary);
+  }
+
+  .bento-morph-cta:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+    border-radius: var(--md-sys-shape-corner-large);
+  }
+
+  /* Dual Wavy Progress Bars (SVG + Canvas) */
+  .bento-wavy-stack {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: var(--md-sys-spacing-2);
+  }
+
+  .md3e-wavy-progress {
+    inline-size: 100%;
+    block-size: 16px;
+    display: flex;
+    align-items: center;
+    content-visibility: auto;
+    contain-intrinsic-size: auto none auto 16px;
+  }
+
+  .md3e-wavy-progress svg,
+  .md3e-wavy-progress canvas {
+    inline-size: 100%;
+    block-size: 16px;
+    display: block;
+  }
+
+  .md3e-wavy__track {
+    fill: none;
+    stroke: var(--md-sys-color-secondary-container);
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+
+  .md3e-wavy__active {
+    fill: none;
+    stroke: var(--md-sys-color-primary);
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+
+  .md3e-wavy__stop { fill: var(--md-sys-color-primary); }
+
+  .bento-controls-row {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--md-sys-spacing-2);
+  }
+
+  /* -------------------------------------------------------------------------
+   * 4. Card 3: Chunky Primary Controls (48px-56px height)
+   * ----------------------------------------------------------------------- */
+  .bento-switch {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--md-bento-control-height, 48px);
+    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-3);
+    border: none;
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface);
+    font-family: inherit;
+    font-size: var(--md-sys-typescale-label-large-size);
+    font-weight: var(--md-sys-typescale-label-large-weight);
+    cursor: pointer;
+    transition: background-color var(--md-bento-motion-fast-effects);
+  }
+
+  .bento-switch:hover {
+    background: color-mix(in oklab, var(--md-sys-color-on-surface) 8%, var(--md-sys-color-surface-container-high));
+  }
+
+  .bento-switch:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .bento-switch__track {
+    inline-size: 52px;
+    block-size: 32px;
+    padding: 2px;
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--md-sys-color-surface-container-highest);
+    display: flex;
+    align-items: center;
+    transition: background-color var(--md-bento-motion-fast-effects);
+  }
+
+  .bento-switch__thumb {
+    inline-size: 24px;
+    block-size: 24px;
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--md-sys-color-outline);
+    transition: transform var(--md-bento-motion-fast-spatial),
+                background-color var(--md-bento-motion-fast-effects);
+  }
+
+  .bento-switch[aria-pressed="true"] .bento-switch__track {
+    background: var(--md-sys-color-primary);
+  }
+
+  .bento-switch[aria-pressed="true"] .bento-switch__thumb {
+    background: var(--md-sys-color-on-primary);
+    transform: translateX(22px);
+  }
+
+  .bento-pill-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    inline-size: 100%;
+  }
+
+  .bento-pill {
+    position: relative;
+    flex: 1 1 0;
+    min-inline-size: 48px;
+    height: var(--md-bento-control-height, 48px); /* 48px chunky segmented pill */
+    border: none;
+    border-radius: var(--md-sys-shape-corner-small);
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface-variant);
+    font-family: inherit;
+    font-size: var(--md-sys-typescale-label-medium-size);
+    font-weight: var(--md-sys-typescale-label-medium-weight);
+    cursor: pointer;
+    transition: flex-grow var(--md-bento-motion-fast-spatial),
+                border-radius var(--md-bento-motion-fast-spatial),
+                background-color var(--md-bento-motion-fast-effects),
+                color var(--md-bento-motion-fast-effects);
+  }
+
+  .bento-pill:first-child { border-start-start-radius: var(--md-sys-shape-corner-extra-large); border-end-start-radius: var(--md-sys-shape-corner-extra-large); }
+  .bento-pill:last-child { border-start-end-radius: var(--md-sys-shape-corner-extra-large); border-end-end-radius: var(--md-sys-shape-corner-extra-large); }
+
+  .bento-pill:hover {
+    background: color-mix(in oklab, var(--md-sys-color-on-surface) 8%, var(--md-sys-color-surface-container-high));
+  }
+
+  .bento-pill:is(:active, [aria-pressed="true"]) {
+    flex-grow: 1.45;
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    border-radius: var(--md-sys-shape-corner-extra-large);
+    font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
+  }
+
+  .bento-pill:has(+ .bento-pill:is(:active, [aria-pressed="true"])),
+  .bento-pill:is(:active, [aria-pressed="true"]) + .bento-pill {
+    flex-grow: 0.72;
+  }
+
+  .bento-pill:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+    z-index: 1;
+  }
+
+  .bento-action-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--md-sys-spacing-2);
+    height: var(--md-bento-control-height, 48px); /* 48px chunky CTA */
+    padding-inline: var(--md-sys-spacing-4);
+    border: none;
+    border-radius: calc(var(--md-bento-control-height, 48px) / 2); /* bounded height/2 pill avoids 9999px + spring overshoot 0px snap */
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    font-family: inherit;
+    font-size: var(--md-sys-typescale-label-large-size);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+    cursor: pointer;
+    transition: background-color var(--md-bento-motion-fast-effects),
+                border-radius var(--md-bento-motion-fast-spatial),
+                transform var(--md-bento-motion-fast-spatial);
+  }
+
+  .bento-action-btn:hover {
+    background: color-mix(in oklab, var(--md-sys-color-on-primary-container) 8%, var(--md-sys-color-primary-container));
+  }
+
+  .bento-action-btn:active {
+    transform: scale(0.97);
+    border-radius: var(--md-sys-shape-corner-medium);
+  }
+
+  .bento-action-btn:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .bento-action-btn--sm-pill {
+    --md-bento-sm-pill-height: 36px;
+    height: var(--md-bento-sm-pill-height);
+    border-radius: calc(var(--md-bento-sm-pill-height) / 2);
+    padding-inline: var(--md-sys-spacing-3);
+    font-size: var(--md-sys-typescale-label-medium-size);
+  }
+
+  .bento-action-btn--sm-pill:active {
+    border-radius: var(--md-sys-shape-corner-small);
+  }
+
+  .bento-action-btn--sm-pill::before {
+    content: "";
+    position: absolute;
+    inset-block: -6px;
+    inset-inline: 0;
+    min-width: var(--md-sys-touch-target-min);
+    min-height: var(--md-sys-touch-target-min);
+  }
+
+  /* -------------------------------------------------------------------------
+   * 5. Card 4: Dense Telemetry Data Table (32px-36px Rows, Zero 1px Borders)
+   * ----------------------------------------------------------------------- */
+  .bento-table-scroll {
+    overflow: auto;
+    max-block-size: 248px;
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-surface-container-lowest);
+    container-type: inline-size;
+  }
+
+  .bento-table-scroll:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .bento-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 2px;
+    table-layout: fixed;
+  }
+
+  .bento-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--md-sys-color-surface-container-high);
+  }
+
+  .bento-table th {
+    height: var(--md-bento-row-height, 34px);
+    padding-inline: var(--md-sys-spacing-3);
+    text-align: start;
+    font-size: var(--md-sys-typescale-label-medium-size);
+    line-height: var(--md-sys-typescale-label-medium-line-height);
+    font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  .bento-table tbody tr {
+    height: var(--md-bento-row-height, 34px); /* Exact 34px inside [32px, 36px] */
+    background: var(--md-sys-color-surface-container-low);
+    transition: background-color var(--md-bento-motion-fast-effects);
+  }
+
+  .bento-table tbody tr:hover {
+    background: color-mix(in oklab, var(--md-sys-color-on-surface) 8%, var(--md-sys-color-surface-container-low));
+  }
+
+  .bento-table td,
+  .bento-table tbody th {
+    height: var(--md-bento-row-height, 34px);
+    padding: 0 var(--md-sys-spacing-3);
+    font-size: var(--md-sys-typescale-body-small-size);
+    line-height: var(--md-sys-typescale-body-small-line-height);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bento-sort-trigger {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-sys-spacing-1);
+    height: 32px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    --md-sys-icon-size: 20px;
+  }
+
+  .bento-sort-trigger::before {
+    content: "";
+    position: absolute;
+    inset: -8px -4px;
+    min-height: var(--md-sys-touch-target-min);
+    min-width: var(--md-sys-touch-target-min);
+  }
+
+  .bento-sort-trigger:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding-inline: var(--md-sys-spacing-2);
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    font-size: var(--md-sys-typescale-label-small-size);
+    line-height: 22px;
+    font-weight: var(--md-sys-typescale-label-small-emphasized-weight);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .status-pill--tertiary {
+    background: var(--md-sys-color-tertiary-container);
+    color: var(--md-sys-color-on-tertiary-container);
+  }
+
+  /* -------------------------------------------------------------------------
+   * 6. Card 5: Dense Event Stream (34px rows) + View Transition Card Detail
+   * ----------------------------------------------------------------------- */
+  .bento-log-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  .bento-log-item {
+    height: var(--md-bento-row-height, 34px);
+    padding-inline: var(--md-sys-spacing-3);
+    border-radius: var(--md-sys-shape-corner-medium);
+    background: var(--md-sys-color-surface-container-high);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--md-sys-spacing-2);
+    font-size: var(--md-sys-typescale-body-small-size);
+    line-height: var(--md-sys-typescale-body-small-line-height);
+  }
+
+  .bento-log-item__msg {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bento-log-item__ts {
+    font-variant-numeric: tabular-nums;
+    color: var(--md-sys-color-on-surface-variant);
+    flex-shrink: 0;
+  }
+
+  /* View Transitions Expanded Detail Overlay */
+  .bento-vt-source.is-vt-active,
+  .bento-vt-modal[data-open="true"] {
+    view-transition-name: bento-vt-panel;
+  }
+
+  .bento-vt-source.is-vt-active .bento-vt-heading,
+  .bento-vt-modal[data-open="true"] .bento-vt-heading {
+    view-transition-name: bento-vt-heading;
+    width: fit-content;
+  }
+
+  .bento-vt-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    display: grid;
+    place-items: center;
+    padding: var(--md-sys-spacing-6);
+  }
+
+  .bento-vt-backdrop[hidden] {
+    display: none;
+  }
+
+  .bento-vt-modal {
+    width: min(100%, 640px);
+    padding: var(--md-sys-spacing-6);
+    border-radius: var(--md-sys-shape-corner-extra-large);
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface);
+    display: grid;
+    gap: var(--md-sys-spacing-4);
+  }
+
+  ::view-transition-group(bento-vt-panel),
+  ::view-transition-group(bento-vt-heading) {
+    animation-duration: var(--md-bento-motion-default-spatial-duration, 240ms);
+    animation-timing-function: var(--md-bento-motion-default-spatial-easing, ease-out);
+  }
+
+  /* -------------------------------------------------------------------------
+   * 7. Cards 6-8: 5-Tier Luminance Ladder, Seed Swatches & Bidirectional Toolbar
+   * ----------------------------------------------------------------------- */
+  .tier-stack {
+    padding: var(--md-sys-spacing-3);
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-surface-container);
+    display: grid;
+    gap: var(--md-sys-spacing-2);
+  }
+
+  .tier-chip {
+    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-3);
+    border-radius: var(--md-sys-shape-corner-medium);
+    font-size: var(--md-sys-typescale-label-medium-size);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .tier-chip--lowest { background: var(--md-sys-color-surface-container-lowest); }
+  .tier-chip--high { background: var(--md-sys-color-surface-container-high); }
+  .tier-chip--highest { background: var(--md-sys-color-surface-container-highest); }
+
+  .seed-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--md-sys-spacing-2);
+  }
+
+  .bento-adaptive-toolbar {
+    view-transition-name: bento-adaptive-toolbar;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--md-sys-spacing-2);
+    height: 56px;
+    padding-inline: var(--md-sys-spacing-3);
+    border-radius: var(--md-sys-shape-corner-extra-large);
+    transition: border-radius var(--md-bento-motion-default-spatial),
+                background-color var(--md-bento-motion-fast-effects);
+  }
+
+  .bento-adaptive-toolbar[data-toolbar-mode="floating"] {
+    inline-size: fit-content;
+    margin-inline: auto;
+  }
+
+  .bento-adaptive-toolbar[data-toolbar-mode="docked"] {
+    inline-size: 100%;
+    justify-content: space-between;
+    border-radius: var(--md-sys-shape-corner-large);
+  }
+
+  .bento-toolbar-icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: var(--md-sys-touch-target-min);
+    height: var(--md-sys-touch-target-min);
+    border: none;
+    border-radius: var(--md-sys-shape-corner-full);
+    background: transparent;
+    color: var(--md-sys-color-on-surface);
+    cursor: pointer;
+    transition: background-color var(--md-bento-motion-fast-effects);
+  }
+
+  .bento-toolbar-icon:hover {
+    background: color-mix(in oklab, var(--md-sys-color-on-surface) 8%, transparent);
+  }
+
+  .bento-toolbar-icon[aria-pressed="true"] {
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    --md-sys-icon-fill: 1;
+  }
+
+  .bento-toolbar-icon:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
+  .bento-toast {
+    position: fixed;
+    inset-block-end: var(--md-sys-spacing-4);
+    inset-inline-start: 50%;
+    transform: translate(-50%, 16px);
+    opacity: 0;
+    pointer-events: none;
+    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-4);
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--md-sys-color-inverse-surface);
+    color: var(--md-sys-color-inverse-on-surface);
+    font-size: var(--md-sys-typescale-label-large-size);
+    z-index: 400;
+    transition: opacity var(--md-bento-motion-fast-effects),
+                transform var(--md-bento-motion-fast-spatial);
+  }
+
+  .bento-toast.is-visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  /* Accessibility: Forced Colors + Reduced Motion */
+  @media (forced-colors: active) {
+    .bento-card,
+    .bento-well,
+    .bento-vt-modal,
+    .bento-adaptive-toolbar {
+      border: 1px solid CanvasText;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0ms;
+      animation-duration: 0ms;
+    }
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link md3e-visually-hidden" href="#bento-main">Skip to dashboard</a>
+
+<!-- Frameless Integrated Titlebar -->
+<header class="bento-titlebar">
+  <div class="titlebar__brand">
+    <div class="md3e-shape md3e-shape-cookie-9-sided titlebar__badge">
+      <span class="material-symbols-outlined" aria-hidden="true">deployed_code</span>
+    </div>
+    <span class="titlebar__title">MD3E Telemetry Bento</span>
+  </div>
+
+  <div class="titlebar__search" role="search">
+    <span class="material-symbols-outlined" aria-hidden="true">search</span>
+    <input type="search" id="table-filter-input" placeholder="Filter cluster nodes..." aria-label="Filter cluster nodes">
+  </div>
+
+  <div class="titlebar__actions">
+    <button type="button" class="titlebar-chip" id="btn-bento-theme" aria-label="Toggle light or dark theme" aria-pressed="true">
+      <span class="material-symbols-outlined" id="bento-theme-icon" aria-hidden="true">dark_mode</span>
+      <span id="bento-theme-label">Dark</span>
+    </button>
+    <button type="button" class="titlebar-chip" id="btn-bento-transparency" aria-label="Simulate reduced transparency fallback" aria-pressed="false">
+      <span class="material-symbols-outlined" aria-hidden="true">blur_on</span>
+      <span>Blur</span>
+    </button>
+    <a class="titlebar-chip" href="./index.html" aria-label="Open Universal MD3E Showcase">
+      <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+      <span>Universal Spec</span>
+    </a>
+    <div class="win-controls" aria-label="Desktop window controls">
+      <button type="button" class="win-btn" aria-label="Minimize window" data-toast-msg="Window minimized (preview)"><span class="material-symbols-outlined" aria-hidden="true">remove</span></button>
+      <button type="button" class="win-btn" aria-label="Maximize window" data-toast-msg="Window restored (preview)"><span class="material-symbols-outlined" aria-hidden="true">crop_square</span></button>
+      <button type="button" class="win-btn win-btn--close" aria-label="Close workspace preview" data-toast-msg="Frameless desktop chrome active"><span class="material-symbols-outlined" aria-hidden="true">close</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="bento-shell">
+  <!-- Ultra-Narrow 64px Left Navigation Rail -->
+  <nav class="bento-rail" id="bento-rail" aria-label="Workspace sections">
+    <a class="bento-rail__item" href="#hero-mesh-card" aria-label="Cluster overview" aria-current="page">
+      <span class="material-symbols-outlined" aria-hidden="true">monitoring</span>
+    </a>
+    <a class="bento-rail__item" href="#hero-rollout-card" aria-label="Canary rollout">
+      <span class="material-symbols-outlined" aria-hidden="true">rocket_launch</span>
+    </a>
+    <a class="bento-rail__item" href="#telemetry-table-card" aria-label="Node telemetry table">
+      <span class="material-symbols-outlined" aria-hidden="true">table_rows</span>
+    </a>
+    <a class="bento-rail__item" href="#event-stream-card" aria-label="Runtime event stream">
+      <span class="material-symbols-outlined" aria-hidden="true">terminal</span>
+    </a>
+    <div class="bento-rail__spacer"></div>
+    <button type="button" class="bento-rail__item" id="rail-expand-vt" aria-label="Inspect diagnostics overlay">
+      <span class="material-symbols-outlined" aria-hidden="true">open_in_full</span>
+    </button>
+  </nav>
+
+  <main class="bento-workspace" id="bento-main" tabindex="-1">
+    <div class="bento-grid">
+
+      <!-- HERO CARD 1 (Span 5): Fluid Wave Motif + Morphing MaterialShapes CTA + Edge-Bleed Sparkline -->
+      <article class="bento-card bento-card--hero-mesh span-5" id="hero-mesh-card">
+        <svg class="bento-wave-backdrop" viewBox="0 0 420 140" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0,78 C72,32 148,118 225,64 C298,14 356,92 420,46 L420,140 L0,140 Z" />
+        </svg>
+
+        <div class="bento-card__header">
+          <div>
+            <span class="bento-card__eyebrow">Neural Edge Mesh</span>
+            <p class="hero-kpi-value" id="hero-uptime-kpi">99.98%</p>
+          </div>
+          <span class="bento-morph-shadow">
+            <button
+              type="button"
+              class="bento-morph-cta"
+              id="bento-hero-morph-btn"
+              aria-label="Rebalance edge mesh (morph shape on press)"
+              aria-pressed="false"
+            >
+              <svg class="bento-morph-cta__svg" viewBox="0 0 100 100" aria-hidden="true">
+                <path id="bento-hero-morph-path" d="" />
+              </svg>
+              <span class="material-symbols-outlined bento-morph-cta__icon" aria-hidden="true">bolt</span>
+            </button>
+          </span>
+        </div>
+
+        <div class="bento-well">
+          <div class="bento-card__header">
+            <span class="bento-card__eyebrow" id="hero-morph-caption">28px outer / 16px concentric inner well · desktop spring k=1500</span>
+            <span class="status-pill" id="hero-morph-state">square</span>
+          </div>
+        </div>
+
+        <svg class="bento-sparkline-bleed" viewBox="0 0 360 52" preserveAspectRatio="none" aria-hidden="true">
+          <path class="spark-area" d="M0,40 L45,35 L90,38 L135,24 L180,27 L225,15 L270,19 L315,10 L360,14 L360,52 L0,52 Z" />
+          <path class="spark-stroke" id="hero-sparkline-path" d="M0,40 L45,35 L90,38 L135,24 L180,27 L225,15 L270,19 L315,10 L360,14" />
+        </svg>
+      </article>
+
+      <!-- HERO CARD 2 (Span 4): SVG + HiDPI Canvas Wavy Progress Auto-Straightening at 100% -->
+      <article class="bento-card bento-card--hero-rollout span-4" id="hero-rollout-card">
+        <svg class="bento-wave-backdrop bento-wave-backdrop--tertiary" viewBox="0 0 420 140" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0,90 C84,45 162,112 246,70 C320,32 375,86 420,58 L420,140 L0,140 Z" />
+        </svg>
+
+        <div class="bento-card__header">
+          <div>
+            <span class="hero-label-sm">Canary rollout</span>
+            <p class="hero-kpi-secondary" id="bento-rollout-kpi">72%</p>
+          </div>
+          <span class="status-pill status-pill--tertiary" id="bento-wavy-badge">Wavy active</span>
+        </div>
+
+        <div class="bento-wavy-stack">
+          <div class="md3e-wavy-progress" id="bento-svg-wavy-host" role="progressbar" aria-label="SVG rollout progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="72">
+            <svg viewBox="0 0 300 16" aria-hidden="true">
+              <path class="md3e-wavy__track" id="bento-svg-wavy-track" d="" />
+              <path class="md3e-wavy__active" id="bento-svg-wavy-active" d="" />
+              <circle class="md3e-wavy__stop" cx="296" cy="8" r="2" />
+            </svg>
+          </div>
+          <div class="md3e-wavy-progress" id="bento-canvas-wavy-host" role="progressbar" aria-label="Canvas rollout progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="72">
+            <canvas id="bento-canvas-wavy-el" aria-hidden="true"></canvas>
+          </div>
+          <div class="bento-controls-row">
+            <button type="button" class="bento-action-btn bento-action-btn--sm-pill" id="btn-bento-complete">Ship 100%</button>
+            <button type="button" class="bento-action-btn bento-action-btn--sm-pill" id="btn-bento-reset-wave">Canary 72%</button>
+          </div>
+        </div>
+
+        <svg class="bento-sparkline-bleed" viewBox="0 0 360 52" preserveAspectRatio="none" aria-hidden="true">
+          <path class="spark-area" d="M0,44 L60,36 L120,39 L180,26 L240,21 L300,14 L360,11 L360,52 L0,52 Z" />
+          <path class="spark-stroke" d="M0,44 L60,36 L120,39 L180,26 L240,21 L300,14 L360,11" />
+        </svg>
+      </article>
+
+      <!-- CARD 3 (Span 3): Chunky Controls (48px-56px switches, neighbor-squeezing pill bar) -->
+      <article class="bento-card span-3" id="chunky-controls-card">
+        <div class="bento-card__header">
+          <h2 class="bento-card__title">Control Matrix</h2>
+          <span class="bento-card__eyebrow">48px–60px</span>
+        </div>
+
+        <button type="button" class="bento-switch" id="switch-auto-failover" aria-pressed="true">
+          <span>Auto Failover</span>
+          <span class="bento-switch__track" aria-hidden="true"><span class="bento-switch__thumb"></span></span>
+        </button>
+
+        <button type="button" class="bento-switch" id="switch-edge-cache" aria-pressed="false">
+          <span>Quic Zero-RTT</span>
+          <span class="bento-switch__track" aria-hidden="true"><span class="bento-switch__thumb"></span></span>
+        </button>
+
+        <div class="bento-pill-group" role="group" aria-label="Deployment profile">
+          <button type="button" class="bento-pill" aria-pressed="true" data-profile-pill="Canary">Canary</button>
+          <button type="button" class="bento-pill" aria-pressed="false" data-profile-pill="Burst">Burst</button>
+          <button type="button" class="bento-pill" aria-pressed="false" data-profile-pill="Guard">Guard</button>
+        </div>
+
+        <button type="button" class="bento-action-btn" id="btn-deploy-snapshot">
+          <span class="material-symbols-outlined" aria-hidden="true">publish</span>
+          <span>Deploy Snapshot</span>
+        </button>
+      </article>
+
+      <!-- CARD 4 (Span 7): Dense Telemetry Data Table (34px row height) -->
+      <article class="bento-card span-7" id="telemetry-table-card">
+        <div class="bento-card__header">
+          <h2 class="bento-card__title">Cluster Telemetry</h2>
+          <span class="bento-card__eyebrow">34px dense rows · borderless tonal separation</span>
+        </div>
+
+        <div class="bento-table-scroll" role="region" aria-label="Cluster node telemetry table" tabindex="0">
+          <table class="bento-table" id="telemetry-table">
+            <thead>
+              <tr>
+                <th>Node</th>
+                <th><button type="button" class="bento-sort-trigger" data-sort-col="region">Region <span class="material-symbols-outlined" aria-hidden="true">unfold_more</span></button></th>
+                <th><button type="button" class="bento-sort-trigger" data-sort-col="latency">p95 Latency <span class="material-symbols-outlined" aria-hidden="true">unfold_more</span></button></th>
+                <th>State</th>
+              </tr>
+            </thead>
+            <tbody id="telemetry-tbody">
+              <tr data-node="edge-iad-01" data-region="us-east" data-latency="11.4">
+                <th>edge-iad-01</th><td>us-east-1</td><td>11.4 ms</td><td><span class="status-pill">Healthy</span></td>
+              </tr>
+              <tr data-node="edge-fra-04" data-region="eu-central" data-latency="14.8">
+                <th>edge-fra-04</th><td>eu-central-1</td><td>14.8 ms</td><td><span class="status-pill">Healthy</span></td>
+              </tr>
+              <tr data-node="edge-hnd-02" data-region="ap-northeast" data-latency="18.2">
+                <th>edge-hnd-02</th><td>ap-northeast-1</td><td>18.2 ms</td><td><span class="status-pill status-pill--tertiary">Canary</span></td>
+              </tr>
+              <tr data-node="edge-sin-07" data-region="ap-southeast" data-latency="16.1">
+                <th>edge-sin-07</th><td>ap-southeast-1</td><td>16.1 ms</td><td><span class="status-pill">Healthy</span></td>
+              </tr>
+              <tr data-node="edge-sfo-09" data-region="us-west" data-latency="9.7">
+                <th>edge-sfo-09</th><td>us-west-2</td><td>9.7 ms</td><td><span class="status-pill">Healthy</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+      <!-- CARD 5 (Span 5): Runtime Stream + 7-Polygon Loader + View Transitions Expand -->
+      <article class="bento-card bento-vt-source span-5" id="event-stream-card">
+        <div class="bento-card__header">
+          <h2 class="bento-card__title bento-vt-heading">Runtime Event Stream</h2>
+          <div class="bento-controls-row">
+            <div class="md3e-loading-indicator" role="status" aria-label="Telemetry stream syncing">
+              <svg class="md3e-loading-indicator__svg" viewBox="0 0 100 100" aria-hidden="true">
+                <path class="md3e-loading-indicator__path" d="M49.96 9.61C52.69 9.6 54.19 12.58 55.63 14.9C57.07 17.22 58.7 20.12 61.42 19.94C64.14 19.75 66.51 18.03 69.05 17.04C71.6 16.04 74.92 17.33 75.4 20.01C75.87 22.7 75.05 25.45 74.95 28.18C74.84 30.9 77.36 32.73 80.02 33.37C82.67 34.02 85.84 33.98 87.6 36.07C89.36 38.15 87.94 41.17 86.18 43.25C84.42 45.34 81.82 47.24 81.81 49.97C81.8 52.7 84.41 54.61 86.18 56.69C87.95 58.77 89.38 61.77 87.63 63.87C85.88 65.96 82.7 65.94 80.05 66.59C77.4 67.24 74.85 69.05 74.96 71.78C75.07 74.5 75.91 77.25 75.45 79.94C74.98 82.63 71.66 83.92 69.11 82.94C66.57 81.96 64.19 80.26 61.47 80.06C58.75 79.86 57.11 82.76 55.68 85.08C54.25 87.4 52.76 90.39 50.04 90.39C47.31 90.4 45.81 87.42 44.37 85.1C42.93 82.78 41.3 79.88 38.58 80.06C35.86 80.25 33.49 81.97 30.95 82.96C28.4 83.96 25.08 82.67 24.6 79.99C24.13 77.3 24.95 74.55 25.05 71.82C25.16 69.1 22.64 67.27 19.98 66.63C17.33 65.98 14.16 66.02 12.4 63.93C10.64 61.85 12.06 58.83 13.82 56.75C15.58 54.66 18.18 52.75 18.19 50.02C18.2 47.3 15.59 45.39 13.82 43.31C12.05 41.23 10.62 38.22 12.37 36.13C14.12 34.04 17.3 34.06 19.95 33.41C22.6 32.76 25.16 30.95 25.04 28.22C24.92 25.5 24.09 22.75 24.55 20.06C25.02 17.37 28.34 16.08 30.89 17.06C33.43 18.04 35.81 19.74 38.53 19.94C41.25 20.14 42.89 17.25 44.32 14.92C45.75 12.6 47.23 9.61 49.96 9.61Z" />
+              </svg>
+            </div>
+            <button type="button" class="bento-action-btn bento-action-btn--sm-pill" id="btn-vt-expand" aria-label="Expand runtime inspector">Expand</button>
+          </div>
+        </div>
+
+        <ul class="bento-log-list" aria-label="Recent cluster events">
+          <li class="bento-log-item"><span class="bento-log-item__msg">Rebalanced us-east-1 mesh weights</span><span class="bento-log-item__ts">09:12:04</span></li>
+          <li class="bento-log-item"><span class="bento-log-item__msg">Canary batch 04 verified zero packet drop</span><span class="bento-log-item__ts">09:11:51</span></li>
+          <li class="bento-log-item"><span class="bento-log-item__msg">Synced HCT token seed across 5 container tiers</span><span class="bento-log-item__ts">09:11:28</span></li>
+          <li class="bento-log-item"><span class="bento-log-item__msg">Wavy SLA checkpoint straightened cleanly</span><span class="bento-log-item__ts">09:10:49</span></li>
+        </ul>
+      </article>
+
+      <!-- CARD 6 (Span 4): 5-Tier Tonal Luminance Nesting Ladder -->
+      <article class="bento-card span-4" id="luminance-ladder-card">
+        <div class="bento-card__header">
+          <h2 class="bento-card__title">Surface Container Tiers</h2>
+          <span class="bento-card__eyebrow">5 luminance steps</span>
+        </div>
+        <div class="tier-stack">
+          <div class="tier-chip tier-chip--lowest"><span>surface-container-lowest</span><span>N4 / N100</span></div>
+          <div class="tier-chip tier-chip--high"><span>surface-container-high</span><span>N17 / N92</span></div>
+          <div class="tier-chip tier-chip--highest"><span>surface-container-highest</span><span>N22 / N90</span></div>
+        </div>
+      </article>
+
+      <!-- CARD 7 (Span 4): Runtime Dynamic Seed Switcher -->
+      <article class="bento-card span-4" id="seed-switcher-card">
+        <div class="bento-card__header">
+          <h2 class="bento-card__title">HCT Seed Palette</h2>
+          <span class="bento-card__eyebrow" id="bento-seed-label">purple</span>
+        </div>
+        <div class="bento-well bento-well--high">
+          <div class="seed-grid" role="group" aria-label="Seed color presets">
+            <button type="button" class="bento-action-btn bento-action-btn--sm-pill" data-bento-seed="purple">Purple</button>
+            <button type="button" class="bento-action-btn bento-action-btn--sm-pill" data-bento-seed="ocean">Ocean</button>
+            <button type="button" class="bento-action-btn bento-action-btn--sm-pill" data-bento-seed="emerald">Emerald</button>
+            <button type="button" class="bento-action-btn bento-action-btn--sm-pill" data-bento-seed="amber">Amber</button>
+            <button type="button" class="bento-action-btn bento-action-btn--sm-pill" data-bento-seed="teal">Teal</button>
+          </div>
+        </div>
+      </article>
+
+      <!-- CARD 8 (Span 4): Bidirectional Floating <-> Docked Frosted Toolbar (`md3e-blur.css`) -->
+      <article class="bento-card span-4" id="blur-toolbar-card">
+        <div class="bento-card__header">
+          <h2 class="bento-card__title">Adaptive Blur Toolbar</h2>
+          <span class="bento-card__eyebrow" id="bento-toolbar-mode-label">floating · md3e-blur-primary</span>
+        </div>
+        <div class="bento-well bento-well--highest">
+          <div class="bento-adaptive-toolbar md3e-blur-primary md3e-blur--lg" id="bento-adaptive-toolbar" role="toolbar" aria-label="Bento quick actions" data-toolbar-mode="floating">
+            <button type="button" class="bento-toolbar-icon" aria-label="Inspect node" aria-pressed="true" data-toast-msg="Inspect mode">
+              <span class="material-symbols-outlined" aria-hidden="true">query_stats</span>
+            </button>
+            <button type="button" class="bento-toolbar-icon" aria-label="Pause telemetry" aria-pressed="false" data-toast-msg="Stream toggled">
+              <span class="material-symbols-outlined" aria-hidden="true">pause_circle</span>
+            </button>
+            <button type="button" class="bento-toolbar-icon" id="btn-bento-dock-toggle" aria-label="Dock toolbar to container" aria-pressed="false">
+              <span class="material-symbols-outlined" id="bento-dock-icon" aria-hidden="true">dock_to_bottom</span>
+            </button>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </main>
+</div>
+
+<!-- View Transitions Expanded Diagnostics Dialog -->
+<div class="bento-vt-backdrop md3e-blur-scrim" id="bento-vt-backdrop" hidden>
+  <section class="bento-vt-modal" id="bento-vt-modal" role="dialog" aria-modal="true" aria-labelledby="bento-vt-modal-title" data-open="false">
+    <div class="bento-card__header">
+      <h2 class="bento-card__title bento-vt-heading" id="bento-vt-modal-title" tabindex="-1">Runtime Event Stream — Diagnostics</h2>
+      <button type="button" class="bento-action-btn bento-action-btn--sm-pill" id="btn-vt-close" aria-label="Close diagnostics view">Close</button>
+    </div>
+    <div class="bento-well bento-well--lowest">
+      <p>View Transitions API morphed the compact card container into this modal dialog using M3E high-stiffness spatial timing (`240ms`), preserving accessible focus and Escape dismissal.</p>
+    </div>
+  </section>
+</div>
+
+<div class="bento-toast" id="bento-toast" role="status" aria-live="polite"></div>
+
+<script type="module">
+  import { createShapeMorpher } from '../tokens/md3e-morph.js';
+  import { applyDynamicSeed, clearDynamicSeed, normalizeHex } from '../tokens/md3e-dynamic-color.js';
+
+  const STORAGE_THEME_KEY = 'md3e-shared-theme';
+  const STORAGE_SEED_KEY = 'md3e-shared-seed';
+  const PRESET_SEEDS = new Set(['purple', 'ocean', 'emerald', 'amber', 'teal', 'rose']);
+  const osDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+  function saveSharedPref(key, value) {
+    try { localStorage.setItem(key, value); } catch {}
+  }
+
+  function loadSharedPref(key) {
+    try { return localStorage.getItem(key); } catch { return null; }
+  }
+
+  const root = document.documentElement;
+  const colorSchemeMeta = document.querySelector('meta[name="color-scheme"]');
+  const toastEl = document.getElementById('bento-toast');
+  let toastTimer = null;
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('is-visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('is-visible'), 2200);
+  }
+
+  // Titlebar theme, reduced-transparency & seed controls (synced across Universal Spec <-> Desktop Bento)
+  const themeBtn = document.getElementById('btn-bento-theme');
+  const themeIcon = document.getElementById('bento-theme-icon');
+  const themeLabel = document.getElementById('bento-theme-label');
+
+  function setBentoTheme(mode, { persist = true } = {}) {
+    const resolved = mode === 'system'
+      ? (osDarkQuery.matches ? 'dark' : 'light')
+      : (mode === 'light' ? 'light' : 'dark');
+    root.dataset.theme = resolved;
+    if (colorSchemeMeta) colorSchemeMeta.content = resolved;
+    themeBtn.setAttribute('aria-pressed', String(resolved === 'dark'));
+    themeIcon.textContent = resolved === 'dark' ? 'dark_mode' : 'light_mode';
+    themeLabel.textContent = resolved === 'dark' ? 'Dark' : 'Light';
+    if (persist) saveSharedPref(STORAGE_THEME_KEY, resolved);
+  }
+
+  function setBentoSeed(seedOrHex, { persist = true } = {}) {
+    if (seedOrHex && seedOrHex.startsWith('#')) {
+      const norm = normalizeHex(seedOrHex);
+      applyDynamicSeed(norm, { specVersion: '2025' });
+      document.getElementById('bento-seed-label').textContent = norm;
+      document.querySelectorAll('[data-bento-seed]').forEach((b) => {
+        b.setAttribute('aria-pressed', 'false');
+      });
+      if (persist) saveSharedPref(STORAGE_SEED_KEY, norm);
+      return norm;
+    }
+    clearDynamicSeed();
+    const s = seedOrHex && PRESET_SEEDS.has(seedOrHex) ? seedOrHex : 'purple';
+    if (s === 'purple') delete root.dataset.seed;
+    else root.dataset.seed = s;
+    document.getElementById('bento-seed-label').textContent = s;
+    document.querySelectorAll('[data-bento-seed]').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b.dataset.bentoSeed === s));
+    });
+    if (persist) saveSharedPref(STORAGE_SEED_KEY, s);
+    return s;
+  }
+
+  setBentoTheme(loadSharedPref(STORAGE_THEME_KEY) || root.dataset.theme || 'dark', { persist: false });
+  setBentoSeed(loadSharedPref(STORAGE_SEED_KEY) || 'purple', { persist: false });
+
+  themeBtn.addEventListener('click', () => {
+    const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    setBentoTheme(next);
+    showToast(`Theme -> ${next}`);
+  });
+
+  const rtBtn = document.getElementById('btn-bento-transparency');
+  rtBtn.addEventListener('click', () => {
+    const reduced = root.dataset.reducedTransparency === 'true';
+    if (reduced) delete root.dataset.reducedTransparency;
+    else root.dataset.reducedTransparency = 'true';
+    rtBtn.setAttribute('aria-pressed', String(!reduced));
+    showToast(!reduced ? 'Reduced transparency solid fallback active' : 'Backdrop blur active');
+  });
+
+  document.querySelectorAll('[data-bento-seed]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const active = setBentoSeed(btn.dataset.bentoSeed);
+      showToast(`Seed -> ${active}`);
+    });
+  });
+
+  // Hero 1 Real-time md3e-morph.js CTA (high-stiffness desktop spring k=1500, z=0.88)
+  const heroMorphPath = document.getElementById('bento-hero-morph-path');
+  const heroMorphBtn = document.getElementById('bento-hero-morph-btn');
+  const heroMorphState = document.getElementById('hero-morph-state');
+  const heroMorpher = createShapeMorpher(heroMorphPath, {
+    initialShape: 'square',
+    stiffness: 1500,
+    damping: 0.88,
+  });
+  heroMorpher.bindPressMorph(heroMorphBtn, {
+    restShape: 'square',
+    pressedShape: 'cookie-9-sided',
+    toggleShape: 'sunny',
+  });
+  heroMorphBtn.addEventListener('click', () => {
+    const toggled = heroMorphBtn.getAttribute('aria-pressed') === 'true';
+    heroMorphState.textContent = toggled ? 'sunny (active)' : 'square';
+    showToast(`Mesh rebalanced (${heroMorphState.textContent})`);
+  });
+
+  // Hero 2 Dual SVG + HiDPI Canvas Wavy Progress Auto-Straightening at 100%
+  const svgHost = document.getElementById('bento-svg-wavy-host');
+  const svgActive = document.getElementById('bento-svg-wavy-active');
+  const svgTrack = document.getElementById('bento-svg-wavy-track');
+  const canvasHost = document.getElementById('bento-canvas-wavy-host');
+  const canvasEl = document.getElementById('bento-canvas-wavy-el');
+  const rolloutKpi = document.getElementById('bento-rollout-kpi');
+  const wavyBadge = document.getElementById('bento-wavy-badge');
+
+  let pct = 72;
+  let phase = 0;
+  let ampScale = 1;
+  let rafId = null;
+  let skipped = false;
+  const rmQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  const targetFactor = (v) => (v <= 2 || v >= 100 ? 0 : v >= 94 ? (100 - v) / 6 : 1);
+
+  const buildWave = (x0, x1, yMid, amp, wl, ph) => {
+    const span = Math.max(0, x1 - x0);
+    if (span <= 0.5) return '';
+    if (amp <= 0.04) return `M${x0.toFixed(2)} ${yMid} L${x1.toFixed(2)} ${yMid}`;
+    let d = '';
+    for (let x = 0; x <= span; x += 2.5) {
+      const y = yMid + Math.sin((x / wl) * Math.PI * 2 - ph) * amp;
+      d += `${x === 0 ? 'M' : 'L'}${(x0 + x).toFixed(2)} ${y.toFixed(2)} `;
+    }
+    return `${d}L${x1.toFixed(2)} ${(yMid + Math.sin((span / wl) * Math.PI * 2 - ph) * amp).toFixed(2)}`;
+  };
+
+  function drawBentoWavy() {
+    const tgt = targetFactor(pct);
+    ampScale += (tgt - ampScale) * (rmQuery.matches ? 1 : 0.28);
+    if (Math.abs(tgt - ampScale) < 0.01) ampScale = tgt;
+    const amp = 3 * ampScale;
+
+    const endX = 4 + (288 * pct) / 100;
+    svgActive.setAttribute('d', buildWave(4, endX, 8, amp, 40, phase));
+    const trkX = Math.min(296, endX + 6);
+    svgTrack.setAttribute('d', trkX < 296 ? `M${trkX.toFixed(2)} 8 L296 8` : '');
+    svgHost.dataset.waveAmplitude = amp.toFixed(2);
+
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = Math.max(120, canvasEl.clientWidth || 300);
+    const cssH = 16;
+    if (canvasEl.width !== Math.round(cssW * dpr) || canvasEl.height !== Math.round(cssH * dpr)) {
+      canvasEl.width = Math.round(cssW * dpr);
+      canvasEl.height = Math.round(cssH * dpr);
+    }
+    const ctx = canvasEl.getContext('2d');
+    const cs = getComputedStyle(canvasEl);
+    const pri = cs.getPropertyValue('--md-sys-color-primary').trim();
+    const trk = cs.getPropertyValue('--md-sys-color-secondary-container').trim();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+    const pad = 4;
+    const midY = cssH / 2;
+    const cEnd = pad + ((cssW - pad * 3) * pct) / 100;
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    if (cEnd + 6 < cssW - pad) {
+      ctx.strokeStyle = trk;
+      ctx.beginPath();
+      ctx.moveTo(cEnd + 6, midY);
+      ctx.lineTo(cssW - pad, midY);
+      ctx.stroke();
+    }
+    if (cEnd > pad + 0.5) {
+      ctx.strokeStyle = pri;
+      ctx.beginPath();
+      for (let x = pad; x <= cEnd; x += 2) {
+        const y = midY + Math.sin(((x - pad) / 40) * Math.PI * 2 - phase) * amp;
+        if (x === pad) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.lineTo(cEnd, midY + Math.sin(((cEnd - pad) / 40) * Math.PI * 2 - phase) * amp);
+      ctx.stroke();
+    }
+    ctx.fillStyle = pri;
+    ctx.beginPath();
+    ctx.arc(cssW - pad, midY, 2, 0, Math.PI * 2);
+    ctx.fill();
+    canvasHost.dataset.waveAmplitude = amp.toFixed(2);
+  }
+
+  function tickWavy() {
+    drawBentoWavy();
+    const flat = ampScale <= 0.005 && targetFactor(pct) === 0;
+    if (!skipped && !rmQuery.matches && !flat) {
+      phase = (phase + 0.14) % (Math.PI * 2);
+      rafId = requestAnimationFrame(tickWavy);
+    } else {
+      rafId = null;
+    }
+  }
+
+  function setRolloutPct(next) {
+    pct = Math.max(0, Math.min(100, next));
+    rolloutKpi.textContent = `${pct}%`;
+    svgHost.setAttribute('aria-valuenow', String(pct));
+    canvasHost.setAttribute('aria-valuenow', String(pct));
+    wavyBadge.textContent = pct >= 100 ? 'Complete (flat)' : 'Wavy active';
+    if (!rafId) tickWavy();
+    else drawBentoWavy();
+  }
+
+  document.getElementById('btn-bento-complete').addEventListener('click', () => setRolloutPct(100));
+  document.getElementById('btn-bento-reset-wave').addEventListener('click', () => setRolloutPct(72));
+  [svgHost, canvasHost].forEach((h) => {
+    h.addEventListener('contentvisibilityautostatechange', (e) => {
+      skipped = e.skipped;
+      if (!skipped && !rafId) tickWavy();
+    });
+  });
+  tickWavy();
+
+  // Switches & Neighbor-Squeezing Pills
+  document.querySelectorAll('.bento-switch').forEach((sw) => {
+    sw.addEventListener('click', () => {
+      const next = sw.getAttribute('aria-pressed') !== 'true';
+      sw.setAttribute('aria-pressed', String(next));
+      showToast(`${sw.querySelector('span')?.textContent}: ${next ? 'ON' : 'OFF'}`);
+    });
+  });
+
+  document.querySelectorAll('[data-profile-pill]').forEach((pill) => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('[data-profile-pill]').forEach((p) => p.setAttribute('aria-pressed', 'false'));
+      pill.setAttribute('aria-pressed', 'true');
+      showToast(`Profile -> ${pill.dataset.profilePill}`);
+    });
+  });
+
+  // Table filter & column sort
+  const filterInput = document.getElementById('table-filter-input');
+  const tbody = document.getElementById('telemetry-tbody');
+  filterInput.addEventListener('input', () => {
+    const q = filterInput.value.trim().toLowerCase();
+    tbody.querySelectorAll('tr').forEach((row) => {
+      row.hidden = Boolean(q && !row.textContent.toLowerCase().includes(q));
+    });
+  });
+
+  let sortDir = 1;
+  document.querySelectorAll('.bento-sort-trigger').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const col = btn.dataset.sortCol;
+      sortDir *= -1;
+      const rows = [...tbody.querySelectorAll('tr')];
+      rows.sort((a, b) => {
+        if (col === 'latency') return (Number(a.dataset.latency) - Number(b.dataset.latency)) * sortDir;
+        return a.dataset.region.localeCompare(b.dataset.region) * sortDir;
+      });
+      rows.forEach((r) => tbody.appendChild(r));
+      showToast(`Sorted by ${col}`);
+    });
+  });
+
+  // View Transitions Card -> Modal Expansion
+  const vtSourceCard = document.getElementById('event-stream-card');
+  const vtBackdrop = document.getElementById('bento-vt-backdrop');
+  const vtModal = document.getElementById('bento-vt-modal');
+  const vtModalTitle = document.getElementById('bento-vt-modal-title');
+  const vtExpandBtn = document.getElementById('btn-vt-expand');
+  const vtCloseBtn = document.getElementById('btn-vt-close');
+  let lastTrigger = vtExpandBtn;
+
+  function openVtModal(triggerEl) {
+    lastTrigger = triggerEl || vtExpandBtn;
+    vtSourceCard.classList.add('is-vt-active');
+    const apply = () => {
+      vtSourceCard.classList.remove('is-vt-active');
+      vtBackdrop.hidden = false;
+      vtModal.dataset.open = 'true';
+    };
+    if (typeof document.startViewTransition === 'function' && !rmQuery.matches) {
+      const t = document.startViewTransition(apply);
+      t.ready.catch(() => {});
+      t.finished.finally(() => vtModalTitle.focus());
+    } else {
+      apply();
+      vtModalTitle.focus();
+    }
+  }
+
+  function closeVtModal() {
+    if (vtBackdrop.hidden) return;
+    const apply = () => {
+      vtModal.dataset.open = 'false';
+      vtBackdrop.hidden = true;
+      vtSourceCard.classList.add('is-vt-active');
+    };
+    if (typeof document.startViewTransition === 'function' && !rmQuery.matches) {
+      const t = document.startViewTransition(apply);
+      t.ready.catch(() => {});
+      t.finished.finally(() => {
+        vtSourceCard.classList.remove('is-vt-active');
+        lastTrigger?.focus();
+      });
+    } else {
+      apply();
+      vtSourceCard.classList.remove('is-vt-active');
+      lastTrigger?.focus();
+    }
+  }
+
+  vtExpandBtn.addEventListener('click', () => openVtModal(vtExpandBtn));
+  document.getElementById('rail-expand-vt').addEventListener('click', (e) => openVtModal(e.currentTarget));
+  vtCloseBtn.addEventListener('click', closeVtModal);
+  vtBackdrop.addEventListener('click', (e) => {
+    if (e.target === vtBackdrop) closeVtModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !vtBackdrop.hidden) {
+      e.preventDefault();
+      closeVtModal();
+    }
+  });
+
+  // Bidirectional Adaptive Blur Toolbar
+  const bentoToolbar = document.getElementById('bento-adaptive-toolbar');
+  const dockToggle = document.getElementById('btn-bento-dock-toggle');
+  const dockIcon = document.getElementById('bento-dock-icon');
+  const modeLabel = document.getElementById('bento-toolbar-mode-label');
+  dockToggle.addEventListener('click', () => {
+    const next = bentoToolbar.dataset.toolbarMode === 'docked' ? 'floating' : 'docked';
+    const apply = () => {
+      bentoToolbar.dataset.toolbarMode = next;
+      dockToggle.setAttribute('aria-pressed', String(next === 'docked'));
+      dockIcon.textContent = next === 'docked' ? 'picture_in_picture' : 'dock_to_bottom';
+      modeLabel.textContent = `${next} · md3e-blur-primary`;
+      showToast(`Bento toolbar -> ${next}`);
+    };
+    if (typeof document.startViewTransition === 'function' && !rmQuery.matches) {
+      document.startViewTransition(apply).ready.catch(() => {});
+    } else {
+      apply();
+    }
+  });
+
+  document.querySelectorAll('[data-toast-msg]').forEach((el) => {
+    el.addEventListener('click', () => showToast(el.dataset.toastMsg));
+  });
+  document.getElementById('btn-deploy-snapshot').addEventListener('click', () => showToast('Snapshot queued'));
+</script>
+
+</body>
+</html>
