@@ -590,19 +590,19 @@ class AuditorTests(unittest.TestCase):
         self.assertEqual(bento_reports, [], f"Unexpected desktop-bento HTML findings: {bento_reports}")
 
         md_reports, md_scanned = audit_md3e.audit(
-            [str(SKILL_MD), str(OFFICIAL_AUDIT_MD), str(REFERENCES_DIR)],
+            [str(SKILL_MD), str(ROOT_DIR / "README.md"), str(OFFICIAL_AUDIT_MD), str(REFERENCES_DIR)],
             [],
             include_markdown=True,
             mode="strict",
         )
-        self.assertEqual(md_scanned, 21)
+        self.assertEqual(md_scanned, 22)
         warn_or_error = [
             (r.path, f)
             for r in md_reports
             for f in r.findings
-            if f.severity in ("error", "warn")
+            if f.severity in ("error", "warning")
         ]
-        self.assertEqual(warn_or_error, [], f"Unexpected markdown error/warn findings: {warn_or_error}")
+        self.assertEqual(warn_or_error, [], f"Unexpected markdown error/warning findings: {warn_or_error}")
 
         bento_md_reports, bento_md_scanned = audit_md3e.audit(
             [str(REFERENCES_DIR / "desktop-bento.md")],
@@ -615,7 +615,7 @@ class AuditorTests(unittest.TestCase):
             (r.path, f)
             for r in bento_md_reports
             for f in r.findings
-            if f.severity in ("error", "warn")
+            if f.severity in ("error", "warning")
         ]
         self.assertEqual(bento_md_we, [], f"Unexpected desktop-bento markdown findings: {bento_md_we}")
 
@@ -648,11 +648,11 @@ class AuditorTests(unittest.TestCase):
         self.assertIn("MD3E017", self._codes(bad_case_html))
 
     def test_hardened_auditor_edge_cases(self) -> None:
-        # MD3E018: in oklch on neutral/surface variables warns, while in oklab passes
+        # MD3E018: in oklch on neutral/surface variables is an ERROR, while in oklab passes
         oklch_neutral = ".card { background: color-mix(in oklch, var(--md-sys-color-surface-container) 82%, transparent); }"
         oklch_findings = [f for f in self._findings(oklch_neutral, "oklch.css") if f.code == "MD3E018"]
         self.assertEqual(len(oklch_findings), 1)
-        self.assertEqual(oklch_findings[0].severity, "warn")
+        self.assertEqual(oklch_findings[0].severity, "error")
 
         oklab_good = ".btn:hover { background: color-mix(in oklab, var(--md-sys-color-surface-container) 82%, transparent); color: color-mix(in srgb, currentColor calc(100% * var(--md-sys-state-hover-state-layer-opacity)), transparent); }"
         self.assertNotIn("MD3E018", self._codes(oklab_good, "oklab.css"))
@@ -677,9 +677,11 @@ class AuditorTests(unittest.TestCase):
         self.assertEqual(len(m021), 1)
         self.assertEqual(m021[0].line, 2)
 
-        # MD3E022: comment mentioning prefers-reduced-transparency must not suppress warning
+        # MD3E022: comment mentioning prefers-reduced-transparency must not suppress error
         comment_bypass = "/* prefers-reduced-transparency: reduce */\n.bar { backdrop-filter: blur(16px); }"
-        self.assertIn("MD3E022", self._codes(comment_bypass, "comment.css"))
+        m022 = [f for f in self._findings(comment_bypass, "comment.css") if f.code == "MD3E022"]
+        self.assertEqual(len(m022), 1)
+        self.assertEqual(m022[0].severity, "error")
 
     def test_inline_html_style_and_color_checks(self) -> None:
         html = '<div style="background: #ff0000; color: rgba(0, 0, 0, 0.5); border-radius: 10px; font-size: 13px;">Hi</div>'
@@ -697,24 +699,34 @@ class AuditorTests(unittest.TestCase):
         self.assertNotIn("MD3E006", self._codes(good_css, "good.css"))
 
         inflated_css = ".btn-xs { height: 32px; min-height: 48px; }"
-        self.assertIn("MD3E006", self._codes(inflated_css, "bad.css"))
+        inflated_f = [f for f in self._findings(inflated_css, "bad.css") if f.code == "MD3E006"]
+        self.assertEqual(len(inflated_f), 1)
+        self.assertEqual(inflated_f[0].severity, "warning")
 
         bare_small_css = ".btn-xs { height: 32px; }"
-        self.assertIn("MD3E006", self._codes(bare_small_css, "small.css"))
+        bare_f = [f for f in self._findings(bare_small_css, "small.css") if f.code == "MD3E006"]
+        self.assertEqual(len(bare_f), 1)
+        self.assertEqual(bare_f[0].severity, "warning")
+
+        sub_wcag_css = ".btn-tiny { height: 18px; }"
+        sub_wcag_f = [f for f in self._findings(sub_wcag_css, "tiny.css") if f.code == "MD3E006"]
+        self.assertEqual(len(sub_wcag_f), 1)
+        self.assertEqual(sub_wcag_f[0].severity, "error")
 
     def test_motion_reduced_motion_and_official_web_curve(self) -> None:
         no_rm_css = ".card { transition: transform var(--md-sys-motion-default-spatial); }"
         self.assertIn("MD3E008", self._codes(no_rm_css, "anim.css"))
 
+        # Official Google Web curve is a first-class valid Web implementation (zero MD3E004)
         official_curve_css = ".card { transition: transform 350ms cubic-bezier(0.42, 1.67, 0.21, 0.90); }"
         findings = self._findings(official_curve_css, "web.css")
         m004 = [f for f in findings if f.code == "MD3E004"]
-        self.assertEqual(len(m004), 1)
-        self.assertEqual(m004[0].severity, "info")
+        self.assertEqual(m004, [])
 
         ad_hoc_css = ".card { transition: transform 300ms ease-in-out; }"
         m004_bad = [f for f in self._findings(ad_hoc_css, "bad.css") if f.code == "MD3E004"]
-        self.assertEqual(m004_bad[0].severity, "error")
+        self.assertEqual(len(m004_bad), 1)
+        self.assertEqual(m004_bad[0].severity, "warning")
 
     def test_new_checks_md3e017_to_md3e021(self) -> None:
         # MD3E017: bad icon names + missing Material Symbols <link>
@@ -994,9 +1006,9 @@ console.log(JSON.stringify({ shapeNames: SHAPE_NAMES, polys, checks, dInit, dSna
         strict_f = [f for f in audit_md3e.Checker(pathlib.Path("s.css"), mode="strict").run(shape_shadow_css) if f.code == "MD3E023"]
         bento_f = [f for f in audit_md3e.Checker(pathlib.Path("s.css"), mode="desktop-bento").run(shape_shadow_css) if f.code == "MD3E023"]
         self.assertEqual(len(strict_f), 1)
-        self.assertEqual(strict_f[0].severity, "warn")
+        self.assertEqual(strict_f[0].severity, "warning")
         self.assertEqual(len(bento_f), 1)
-        self.assertEqual(bento_f[0].severity, "error")
+        self.assertEqual(bento_f[0].severity, "warning")
 
         good_drop_css = ".md3e-shape-shadow-wrap { filter: drop-shadow(0 4px 10px color-mix(in oklab, var(--md-sys-color-shadow) 24%, transparent)); }"
         self.assertEqual(audit_md3e.Checker(pathlib.Path("good.css"), mode="desktop-bento").run(good_drop_css), [])
@@ -1004,25 +1016,33 @@ console.log(JSON.stringify({ shapeNames: SHAPE_NAMES, polys, checks, dInit, dSna
         oklch_css = ".card { background: color-mix(in oklch, var(--md-sys-color-surface-container) 80%, transparent); }"
         oklch_strict = [f for f in audit_md3e.Checker(pathlib.Path("o.css"), mode="strict").run(oklch_css) if f.code == "MD3E018"]
         oklch_bento = [f for f in audit_md3e.Checker(pathlib.Path("o.css"), mode="desktop-bento").run(oklch_css) if f.code == "MD3E018"]
-        self.assertEqual(oklch_strict[0].severity, "warn")
+        self.assertEqual(oklch_strict[0].severity, "error")
         self.assertEqual(oklch_bento[0].severity, "error")
 
         bento_violations = """
         .bento-card { border: 1px solid var(--md-sys-color-outline-variant); box-shadow: var(--md-sys-elevation-level1); }
         @media (forced-colors: active) { .bento-card { border: 1px solid CanvasText; } }
         """
-        m101 = [f for f in audit_md3e.Checker(pathlib.Path("b.css"), mode="desktop-bento").run(bento_violations) if f.code == "MD3E101"]
-        self.assertEqual(len(m101), 2)
+        m101_bento = [f for f in audit_md3e.Checker(pathlib.Path("b.css"), mode="desktop-bento").run(bento_violations) if f.code == "MD3E101"]
+        m101_strict = [f for f in audit_md3e.Checker(pathlib.Path("b.css"), mode="strict").run(bento_violations) if f.code == "MD3E101"]
+        self.assertEqual(len(m101_bento), 2)
+        self.assertTrue(all(f.severity == "custom" for f in m101_bento))
+        self.assertEqual(m101_strict, [])
 
         incomplete_bento_html = (
             "<!doctype html><html><head><style>"
             ".bento-card { background: var(--md-sys-color-surface-container); border-radius: var(--md-sys-shape-corner-medium); }"
             "</style></head><body><main>Hi</main></body></html>"
         )
-        bento_codes = {f.code for f in audit_md3e.Checker(pathlib.Path("bento.html"), mode="desktop-bento").run(incomplete_bento_html)}
-        self.assertIn("MD3E102", bento_codes)
-        self.assertIn("MD3E103", bento_codes)
-        self.assertIn("MD3E104", bento_codes)
+        bento_findings = audit_md3e.Checker(pathlib.Path("bento.html"), mode="desktop-bento").run(incomplete_bento_html)
+        bento_codes = {f.code: f.severity for f in bento_findings}
+        self.assertEqual(bento_codes.get("MD3E102"), "custom")
+        self.assertEqual(bento_codes.get("MD3E103"), "custom")
+        self.assertEqual(bento_codes.get("MD3E104"), "custom")
+
+        # Strict mode must NOT run MD3E101-MD3E104 custom product rules
+        strict_codes = {f.code for f in audit_md3e.Checker(pathlib.Path("bento.html"), mode="strict").run(incomplete_bento_html)}
+        self.assertFalse({"MD3E101", "MD3E102", "MD3E103", "MD3E104"} & strict_codes)
 
         # Verify CLI --mode=desktop-bento exit code on shipped desktop-bento.html
         rc = audit_md3e.main([str(ROOT_DIR / "assets" / "starter" / "desktop-bento.html"), "--mode=desktop-bento", "--fail-on=info", "--json"])
@@ -1050,9 +1070,9 @@ console.log(JSON.stringify({ shapeNames: SHAPE_NAMES, polys, checks, dInit, dSna
             if f.code == "MD3E019"
         ]
         self.assertEqual(len(strict_findings), 1)
-        self.assertEqual(strict_findings[0].severity, "warn")
+        self.assertEqual(strict_findings[0].severity, "warning")
         self.assertEqual(len(bento_findings), 1)
-        self.assertEqual(bento_findings[0].severity, "error")
+        self.assertEqual(bento_findings[0].severity, "warning")
 
         good_pill_css = """
         .bento-action-btn {
@@ -1073,6 +1093,123 @@ console.log(JSON.stringify({ shapeNames: SHAPE_NAMES, polys, checks, dInit, dSna
         """
         self.assertEqual(audit_md3e.Checker(pathlib.Path("good.css"), mode="strict").run(good_pill_css), [])
         self.assertEqual(audit_md3e.Checker(pathlib.Path("good.css"), mode="desktop-bento").run(good_pill_css), [])
+
+
+class OfficialSpecPurificationTests(unittest.TestCase):
+    def test_four_tier_isolation_and_score_calculation(self) -> None:
+        import contextlib
+        import io
+
+        bento_only_html = (
+            "<!doctype html><html lang='en'><head><style>"
+            ".bento-card { background: var(--md-sys-color-surface-container); border: 1px solid var(--md-sys-color-outline-variant); "
+            "border-radius: var(--md-sys-shape-corner-medium); color: var(--md-sys-color-on-surface); }"
+            "</style></head><body><main data-layout-profile='desktop-bento'><div class='bento-card'>Status</div></main></body></html>"
+        )
+        with tempfile.TemporaryDirectory() as td:
+            sample = pathlib.Path(td) / "bento_sample.html"
+            sample.write_text(bento_only_html, encoding="utf-8")
+
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                rc = audit_md3e.main([str(sample), "--mode=desktop-bento", "--fail-on=warn", "--json"])
+            self.assertEqual(rc, 0)
+            payload = json.loads(buf.getvalue())
+            self.assertEqual(payload["official_compliance"]["verdict"], "PASS")
+            self.assertEqual(payload["official_compliance"]["score"], 100)
+            self.assertEqual(payload["official_compliance"]["error"], 0)
+            self.assertEqual(payload["official_compliance"]["warning"], 0)
+            self.assertTrue(payload["custom_extensions"]["active"])
+            self.assertGreaterEqual(payload["custom_extensions"]["custom"], 1)
+
+            buf_strict = io.StringIO()
+            with contextlib.redirect_stdout(buf_strict):
+                rc_strict = audit_md3e.main([str(sample), "--mode=strict", "--fail-on=warning", "--json"])
+            self.assertEqual(rc_strict, 0)
+            strict_payload = json.loads(buf_strict.getvalue())
+            self.assertFalse(strict_payload["custom_extensions"]["active"])
+            self.assertEqual(strict_payload["custom_extensions"]["custom"], 0)
+
+    def test_md3e024_wcag_contrast_and_semantic_role_pairing(self) -> None:
+        bad_contrast = ".low-contrast { background: #777777; color: #888888; font-size: 14px; }"
+        m024_hex = [f for f in audit_md3e.Checker(pathlib.Path("c.css")).run(bad_contrast) if f.code == "MD3E024"]
+        self.assertEqual(len(m024_hex), 1)
+        self.assertEqual(m024_hex[0].severity, "error")
+
+        bad_role = ".wrong-role { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-surface); }"
+        m024_role = [f for f in audit_md3e.Checker(pathlib.Path("r.css")).run(bad_role) if f.code == "MD3E024"]
+        self.assertEqual(len(m024_role), 1)
+        self.assertEqual(m024_role[0].severity, "error")
+
+        good_role = ".right-role { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }"
+        self.assertEqual([f for f in audit_md3e.Checker(pathlib.Path("g.css")).run(good_role) if f.code == "MD3E024"], [])
+
+    def test_md3e025_multiple_primary_filled_buttons_and_word_boundary(self) -> None:
+        multi_primary_html = (
+            "<!doctype html><html><body><section id='checkout'>"
+            "<md-filled-button>Buy Now</md-filled-button>"
+            "<md-filled-button>Subscribe</md-filled-button>"
+            "</section></body></html>"
+        )
+        m025 = [f for f in audit_md3e.Checker(pathlib.Path("btn.html")).run(multi_primary_html) if f.code == "MD3E025"]
+        self.assertEqual(len(m025), 1)
+        self.assertEqual(m025[0].severity, "info")
+
+        icon_filled_html = (
+            "<!doctype html><html><body><section id='toolbar'>"
+            "<button type='button' class='md3e-icon-btn--filled' aria-label='Bold'><span class='material-symbols-outlined' aria-hidden='true'>check</span></button>"
+            "<button type='button' class='md3e-icon-btn--filled' aria-label='Italic'><span class='material-symbols-outlined' aria-hidden='true'>edit</span></button>"
+            "</section></body></html>"
+        )
+        m025_icons = [f for f in audit_md3e.Checker(pathlib.Path("icons.html")).run(icon_filled_html) if f.code == "MD3E025"]
+        self.assertEqual(m025_icons, [])
+
+    def test_data_view_and_analytical_exemptions_in_desktop_bento(self) -> None:
+        analytical_html = """<!doctype html>
+<html lang="en" data-layout-profile="desktop-bento">
+<head>
+<style>
+  .bento-card { background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-extra-large); }
+  .bento-well { background: var(--md-sys-color-surface-container-highest); border-radius: var(--md-sys-shape-corner-large); }
+  .shell-bg { background: var(--md-sys-color-surface-container-lowest); }
+  .chrome-hi { background: var(--md-sys-color-surface-container-high); }
+  .telemetry-table td { border-bottom: 1px solid var(--md-sys-color-outline-variant); }
+  .trajectory-viewport { border: 1px solid var(--md-sys-color-outline-variant); }
+  canvas { border: 1px solid var(--md-sys-color-outline-variant); }
+</style>
+</head>
+<body>
+  <main>
+    <article class="bento-card" data-md3e-exempt="data-view">
+      <div class="bento-well trajectory-viewport">
+        <canvas id="replay-canvas" width="320" height="180"></canvas>
+      </div>
+      <svg viewBox="0 0 300 120" aria-label="Latency histogram">
+        <line x1="20" y1="10" x2="20" y2="100" stroke="currentColor" stroke-width="1" />
+        <text x="4" y="100">0ms</text>
+      </svg>
+      <table class="telemetry-table">
+        <thead><tr><th>Metric</th><th>p99</th></tr></thead>
+        <tbody><tr><td>Render</td><td>4.2ms</td></tr></tbody>
+      </table>
+    </article>
+  </main>
+</body>
+</html>"""
+        findings = audit_md3e.Checker(pathlib.Path("analytics.html"), mode="desktop-bento").run(analytical_html)
+        custom_or_bad = [f for f in findings if f.severity in ("error", "warning", "custom")]
+        self.assertEqual(custom_or_bad, [], f"Analytical data-view falsely flagged: {custom_or_bad}")
+
+    def test_purified_three_layer_docs_framing(self) -> None:
+        phrase = "M3 Expressive-inspired Web Design System with verified M3E specifications"
+        self.assertIn(phrase, SKILL_MD.read_text(encoding="utf-8"))
+        self.assertIn(phrase, (ROOT_DIR / "README.md").read_text(encoding="utf-8"))
+        self.assertIn(phrase, OFFICIAL_AUDIT_MD.read_text(encoding="utf-8"))
+        self.assertIn("Context Budget", SKILL_MD.read_text(encoding="utf-8"))
+        self.assertIn("Layer 3", (REFERENCES_DIR / "desktop-bento.md").read_text(encoding="utf-8"))
+        self.assertIn("Layer 3", (REFERENCES_DIR / "expressive-tactics.md").read_text(encoding="utf-8"))
+        self.assertIn("OFFICIAL_WEB_CURVES", (REFERENCES_DIR / "motion.md").read_text(encoding="utf-8"))
+        self.assertIn("24×24", (REFERENCES_DIR / "accessibility.md").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

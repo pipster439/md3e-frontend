@@ -74,22 +74,26 @@ dramatic bounce. Do not exaggerate it.
 Settle times and overshoot are derived analytically from the damping and
 stiffness by `scripts/spring_to_css.py`; they are not hand-tuned.
 
-## Using it on the web
+## Using it on the web (Layer 2 — Web Implementation)
 
-CSS has no spring primitive. `scripts/spring_to_css.py` solves the damped
-harmonic oscillator and emits a sampled `linear()` easing per token, preserving
-overshoot (values above 1 are legal in `linear()`). Output lives in
-`assets/tokens/md3e-motion.css`.
+Web UI has two equally valid first-class ways to run Material 3 Expressive motion:
+
+1. **Physical Spring Tokens & JS Spring Solver**: `scripts/spring_to_css.py` solves the damped harmonic oscillator and emits sampled `linear()` easing tokens in `assets/tokens/md3e-motion.css` (overshoot above `1` is valid in `linear()`). For real-time interruptible pointer/shape gestures, use `assets/tokens/md3e-spring.js`.
+2. **Official Google Web-Compatible Easing Curves (`OFFICIAL_WEB_CURVES`)**: When authoring pure CSS transitions without `linear()` or targeting legacy browsers, Google's calibrated cubic-bezier curves (`cubic-bezier(0.2, 0, 0, 1)`, `cubic-bezier(0.3, 0, 0.8, 0.15)`, `cubic-bezier(0.05, 0.7, 0.1, 1)`, `cubic-bezier(0.4, 0, 0.2, 1)`, `cubic-bezier(0, 0, 0, 1)`) paired with documented durations (typically `150ms–500ms`) are **first-class valid implementations** and pass audit cleanly.
 
 ```css
-/* correct */
+/* Valid Option 1: Sampled linear() spring token */
 .card { transition: transform var(--md-sys-motion-default-spatial); }
 .card:hover { transform: translateY(-2px); }
 
+/* Valid Option 2: Official Web-compatible curve + calibrated duration */
+.dialog-scrim { transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1); }
+
+/* Valid: Effects spring on non-spatial property */
 .switch { transition: background-color var(--md-sys-motion-fast-effects); }
 ```
 
-> **Forbidden (pre-Expressive model):** never write `.card { transition: transform 300ms cubic-bezier(0.2, 0, 0, 1); }` in component code.
+> **Guidance (non-fatal `WARNING`):** Reserve ad-hoc uncalibrated `cubic-bezier(...)` curves outside `OFFICIAL_WEB_CURVES` or mismatched spatial/effects pairings — avoid banning Web curves on components where spring `linear()` is unnecessary.
 
 Pick the token by asking two questions:
 
@@ -137,13 +141,11 @@ For gesture-driven motion, use **`assets/tokens/md3e-spring.js`** (`createSpring
 | **JS Spring Integrator** | `assets/tokens/md3e-spring.js` (`createSpringAnimator`) | Exact closed-form `(stiffness, damping)` physics per `requestAnimationFrame`; zero velocity loss on retarget/drag release | Drag-and-drop gestures, interruptible cards/drawers, interactive physics |
 | **Morph Loading Indicator** | `--md-comp-loading-indicator-morph-easing` | Official `spring(damping = 0.6, stiffness = 200)` sampled across `650ms` interval × 7 shapes (`4550ms` cycle) + `4666ms` linear rotation | Expressive `LoadingIndicator` (`md3e-shapes.css`) |
 
-## Legacy layer
+## Official Web-Compatible Curves (First-Class Web Easing + Duration)
 
-The duration/easing tokens are still in the token file, for two reasons: engines
-without `linear()` support, and properties that cannot overshoot legibly. Do
-**not** mix the two models on the same property.
+In Web implementations (Layer 2), Google's calibrated Web easing tokens paired with their documented duration tokens (`short1` 50ms -> `short4` 200ms, `medium1` 250ms -> `medium4` 400ms, `long1` 450ms -> `long4` 600ms, `extralong1` 700ms -> `extralong4` 1000ms) are **first-class valid implementations** alongside sampled `linear()` springs (`md3e-motion.css`) and JS physics (`md3e-spring.js`). This is both compliant for all production Web components and safer for non-overshooting opacity/color transitions or browsers without `linear()`. Do **not** mix two incompatible curves on the same property transition.
 
-| Token | Value |
+| Token | Value (`OFFICIAL_WEB_CURVES`) |
 |---|---|
 | `--md-sys-motion-easing-emphasized` | `cubic-bezier(0.2, 0, 0, 1)` |
 | `--md-sys-motion-easing-emphasized-decelerate` | `cubic-bezier(0.05, 0.7, 0.1, 1)` |
@@ -151,9 +153,6 @@ without `linear()` support, and properties that cannot overshoot legibly. Do
 | `--md-sys-motion-easing-standard` | `cubic-bezier(0.2, 0, 0, 1)` |
 | `--md-sys-motion-easing-standard-decelerate` | `cubic-bezier(0, 0, 0, 1)` |
 | `--md-sys-motion-easing-standard-accelerate` | `cubic-bezier(0.3, 0, 1, 1)` |
-
-Durations run `short1` 50ms → `short4` 200ms, `medium1` 250ms → `medium4` 400ms,
-`long1` 450ms → `long4` 600ms, `extralong1` 700ms → `extralong4` 1000ms.
 
 ## Reduced motion
 
@@ -165,10 +164,10 @@ file already does this under `@media (prefers-reduced-motion: reduce)`.
 
 | Do | Don't |
 |---|---|
-| Use spring tokens for all component motion | Hand-write duration + easing |
-| One scheme for most of the product | Mix expressive and standard arbitrarily |
-| Spatial springs for position, size, shape | Spatial springs on colour, or effects springs on position |
-| Let `default` carry most motion | Use `fast` for large surfaces or `slow` for switches |
-| Rely on interruption and retargeting | Rebuild animations from zero on gesture handoff |
+| Use sampled `linear()` spring tokens, `md3e-spring.js`, or `OFFICIAL_WEB_CURVES` + calibrated durations | Invent arbitrary uncalibrated `cubic-bezier()` curves (`MD3E004` warning) |
+| Keep one consistent motion scheme per product | Mix expressive and standard schemes arbitrarily |
+| Use spatial motion for position, size, and shape | Put spatial overshoot on colour/opacity, or effects curves on container morphs |
+| Let `default` carry most transitions | Use `fast` for large surfaces or `slow` for tiny switches |
+| Rely on interruption and retargeting (`md3e-spring.js`) | Rebuild animations from zero on gesture handoff |
 | Honour `prefers-reduced-motion` | Assume everyone wants bounce |
 | Keep motion meaningful — state, progress, attention | Animate for decoration with no trigger |

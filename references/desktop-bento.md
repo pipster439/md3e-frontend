@@ -1,19 +1,19 @@
-# Desktop Bento Dashboard Override Layer (Opt-In)
+# Desktop Bento Dashboard Extension Layer (Layer 3 — Opt-In Product Style)
 
 > [!IMPORTANT]
-> **Decoupled Override Architecture (`--mode=desktop-bento`)**:
-> This document defines an **opt-in desktop workstation & telemetry dashboard layer** (`data-layout-profile="desktop-bento"`). Keep it cleanly isolated from default mobile/universal M3E apps (`references/layout.md`, `--mode=strict`). Audit Bento views explicitly with:
-> `python scripts/audit_md3e.py <path> --mode=desktop-bento --fail-on warn`
+> **Layer 3 Opt-In Product Extension (`CUSTOM` Tier under `--mode=desktop-bento`)**:
+> This document defines an **opt-in product-style desktop telemetry extension** (`data-layout-profile="desktop-bento"`). It is **NOT part of Layer 1 Official M3E specifications**: in the compliance auditor, rules `MD3E101`–`MD3E104` emit `[CUSTOM]` findings **only** when `--mode=desktop-bento` is explicitly passed, and **are excluded from the Official M3E Compliance Score**. Keep this layer isolated from default M3E apps (`references/layout.md`, `--mode=strict`):
+> `python scripts/audit_md3e.py <path> --mode=desktop-bento --fail-on warning`
 
-Desktop Bento dashboards trade generous mobile margins for ultra-clear tonal nesting, dual-tier ergonomics (compact data inspection + chunky primary controls), borderless geometry, and sharp high-stiffness desktop springs.
+Desktop Bento dashboards optionally choose borderless tonal surface nesting, dual-tier control vs telemetry row ergonomics, and sharp high-stiffness desktop springs for command-center layouts.
 
 ---
 
-## 1. Window Chrome, Navigation Rail & Bento Grid
+## 1. Window Chrome, Navigation Rail & Bento Grid (Opt-In Presets)
 
-- **Frameless Integrated Titlebar (`44px`)**: Blend seamlessly with `--md-sys-color-surface` (no `1px` bottom separator line). Reserve optional overlay insets via `env(titlebar-area-height, 44px)`. Place breadcrumb/context pills, compact workspace search (`:focus-within` ring, `outline: 2px solid transparent`), theme/seed switcher, and window action controls with `::before` `48px` hit targets.
-- **Ultra-Narrow Navigation Rail (`64px`)**: Persistent icon-only rail (`64px` inline-size, `48×48px` clickable destinations, active `secondary-container` pill, roving arrow-key navigation + `aria-label` on every destination).
-- **12-Column Asymmetric Bento Grid**: Use CSS Grid (`grid-template-columns: repeat(12, minmax(0, 1fr))`, `gap: var(--md-sys-spacing-4)`) collapsing cleanly at `< 1200px` (`8` cols) and `< 840px` (`4` cols), plus `container-type: inline-size` on wide telemetry cards.
+- **Frameless Integrated Titlebar (`44px` preset)**: Product chrome preset blending with `--md-sys-color-surface` without a `1px` header hairline (`env(titlebar-area-height, 44px)`). Reserve `::before` `48px` hit targets on compact window controls and keep `:focus-within` / `outline: 2px solid transparent` on borderless search inputs.
+- **Ultra-Narrow Navigation Rail (`64px` product preset)**: Persistent icon-only rail (`64px` inline-size, `48×48px` clickable destinations, active `secondary-container` pill, roving arrow-key navigation + `aria-label` on every destination). Standard Layer 2 M3E rails use `80–96dp` collapsed / `220–360dp` expanded.
+- **12-Column Asymmetric Bento Grid**: CSS Grid (`grid-template-columns: repeat(12, minmax(0, 1fr))`, `gap: var(--md-sys-spacing-4)`) collapsing cleanly at `< 1200px` (`8` cols) and `< 840px` (`4` cols), plus `container-type: inline-size` on wide telemetry cards.
 
 ---
 
@@ -44,21 +44,24 @@ Combine compact operational scanning with unmistakably tactile primary controls:
 
 ---
 
-## 3. Visual Choreography: Borderless Tonal Nesting & 80/20 Hero Budget
+## 3. Opt-In Product Visual Style (`CUSTOM` Tier, Excluded from Official M3E Score)
 
-1. **Zero `1px` Card Borders & Zero Rectangular `box-shadow`s**:
-   - **NEVER** draw `1px solid` outlines or `box-shadow` elevation on Bento cards, tiles, or inner wells (checked as `MD3E101` in `--mode=desktop-bento`).
-   - Only keyboard `:focus-visible` rings (`3px solid var(--md-sys-color-secondary)`) and `@media (forced-colors: active)` system-color fallbacks (`1px solid CanvasText`) may draw strokes.
-2. **4+ Surface Container Luminance Nesting Tiers**:
-   - Separate hierarchy purely via `surface` -> `surface-container-lowest` -> `surface-container-low` -> `surface-container` -> `surface-container-high` -> `surface-container-highest` (`MD3E102` requires `>= 4` distinct container tiers).
-3. **Concentric Corner Radius Step-Down (`28px` / `16px`)**:
-   - Outer `.bento-card` uses `--md-sys-shape-corner-extra-large` (`28px`) with `12px` (`--md-sys-spacing-3`) or `16px` padding so nested `.bento-well` containers step down cleanly to `--md-sys-shape-corner-large` (`16px`) (`MD3E103`).
-4. **80 / 20 Bento Expressive Budget**:
-   - **~80% Orthogonal Grid**: Clean, aligned telemetry tables, log streams, tonal progress bars, and tactile controls with zero decorative clutter.
-   - **1–2 Hero Status Cards**: Must combine three signature expressive anchors (`MD3E104`):
-     1. Decorative **fluid sine-wave background motif** (`<svg aria-hidden="true">`, subtle tonal opacity via `in oklab`),
-     2. Interactive **real-time morphing `MaterialShapes` CTA button** powered by `md3e-morph.js` + `md3e-spring.js` and shadowed strictly via wrapper **`filter: drop-shadow(...)`** (`MD3E023`),
-     3. **Edge-bleed axis-less micro Sparkline** (`<svg>` flush against the bottom & inline edges of the Hero card, zero gridlines or tick numbers).
+All visual layout opinions below (`MD3E101`–`MD3E104`) are **Layer 3 Opt-In Product Extensions**. None of them are mandatory Google M3E rules, and none of them affect the `official_compliance` score:
+
+1. **Borderless Tonal Panels (`[CUSTOM]` `MD3E101`)**:
+   - In Bento product layouts, omit decorative `1px solid` card borders and rectangular `box-shadow`s in favor of tonal surface steps.
+   - Keyboard `:focus-visible` rings (`3px solid var(--md-sys-color-secondary)`) and `@media (forced-colors: active)` (`1px solid CanvasText`) are always required (`[ERROR]` if removed), and analytical data views (tables, chart SVG axes/ticks, canvas viewports) are automatically exempt from `MD3E101`.
+2. **4+ Surface Container Luminance Tiers (`[CUSTOM]` `MD3E102`)**:
+   - Product Bento chrome differentiates panels via `surface` -> `surface-container-lowest` -> `surface-container-low` -> `surface-container` -> `surface-container-high` -> `surface-container-highest`. Standard M3 apps can use fewer tiers with zero penalty.
+3. **Concentric Corner Radius Step-Down (`28px` / `16px`, `[CUSTOM]` `MD3E103`)**:
+   - Outer `.bento-card` uses `--md-sys-shape-corner-extra-large` (`28px`) paired with `12px–16px` padding so nested `.bento-well` wells step down to `--md-sys-shape-corner-large` (`16px`).
+4. **80 / 20 Product Hero Budget & Analytical Data View Exemption (`[CUSTOM]` `MD3E104`)**:
+   - **~80% Orthogonal Operational Grid**: Clean, aligned telemetry tables, log streams, tonal progress bars, and tactile controls without forced decorative flair.
+   - **Product Marketing / Status Hero Cards**: Product-style status heroes may combine three opt-in Bento motifs (`MD3E104`):
+     1. Subtle **fluid sine-wave SVG backdrop** (`<svg aria-hidden="true">` tinted via `in oklab`),
+     2. Interactive **morphing `MaterialShapes` CTA button** powered by `md3e-morph.js` + `md3e-spring.js` with wrapper **`filter: drop-shadow(...)`** (`MD3E023`),
+     3. **Edge-bleed axis-less micro Sparkline**.
+   - **Mandatory Analytical & Scientific Data-View Exemption**: **NEVER** strip functional coordinate axes, tick marks, or table rules—and **NEVER** inject decorative Hero waves or Sparklines—just to satisfy `--mode=desktop-bento`. Mark scientific/analytical cards or pages with `data-md3e-exempt="data-view"`, or rely on the auditor's automatic exemption for `<canvas>` workspaces, `<svg>` charts with axes/ticks (`line`/`polyline`/`rect` + text labels), 2D trajectory/replay viewports, and dense `<table>` views (`MD3E101` and `MD3E104` automatically stand down).
 
 ```html
 <article class="bento-card bento-card--hero">
@@ -235,11 +238,11 @@ Combine compact operational scanning with unmistakably tactile primary controls:
 
 ---
 
-## 4. Desktop Micro-Interactions & Safety Bans
+## 4. Desktop Micro-Interactions & Web Engineering Protections
 
-1. **Mouse `:hover` + Keyboard `:focus-visible`**: Every interactive tile, table row hover state, switch, segmented item, and shape CTA must implement subtle tonal hover overlays (`8%` via `color-mix(in oklab, ...)`) AND unmistakable `3px` `--md-sys-color-secondary` `:focus-visible` focus rings (`--md-sys-focus-ring-offset: 2px`).
-2. **Tight High-Stiffness Desktop Springs (`150ms–250ms`)**: Avoid sloppy mobile sluggishness (`460ms+`) on desktop clicks and toggles. Configure JS morphers with `{ stiffness: 1500, damping: 0.88 }` (`~180ms` settling) and use `--md-bento-motion-*` tokens for CSS interactions.
-3. **Never Pair `9999px` (`corner-full`) With `border-radius` Spring Morphs (`MD3E019` error)**: Any pill button transitioning `border-radius` on `:active` under an underdamped `linear()` spring (`1.07` overshoot, such as `--md-bento-motion-fast-spatial`) will evaluate `9999px + 1.07 * (16px - 9999px) = -682.8px -> 0px`, flashing a razor-sharp rectangle mid-click! Always bind resting radii to `calc(height / 2)` (`24px` on `48px` CTAs -> `12px`, `18px` on `36px` pills -> `8px`) so overshoot stays strictly positive across all frames.
-4. **Shape Drop Shadows**: Never put `box-shadow` directly on `.md3e-shape*`, `mask-image`, or morphing `<svg>` shapes (`MD3E023` error in `desktop-bento`). Always wrap the button/shape container in `filter: drop-shadow(...)`.
-5. **Ban `in oklch` on Neutral Color Mixing**: Never use `color-mix(in oklch, ...)` on `surface*`, `on-surface*`, `outline*`, `shadow`, `scrim`, or `currentColor` (`MD3E018` **error** in `desktop-bento` mode) to avoid Chromium's powerless-hue pink/red shift; always use **`in oklab`**.
+1. **Mouse `:hover` + Keyboard `:focus-visible`**: Every interactive tile, table row hover state, switch, segmented item, and shape CTA implements subtle tonal hover overlays (`8%` via `color-mix(in oklab, ...)`) AND unmistakable `3px` `--md-sys-color-secondary` `:focus-visible` focus rings (`--md-sys-focus-ring-offset: 2px`; missing `:focus-visible` is `[ERROR]` `MD3E005`).
+2. **Tight High-Stiffness Desktop Springs (`150ms–250ms`)**: Product preference for crisp desktop clicks and toggles: configure JS morphers with `{ stiffness: 1500, damping: 0.88 }` (`~180ms` settling) and use `--md-bento-motion-*` tokens for CSS interactions.
+3. **Never Pair `9999px` (`corner-full`) With `border-radius` Spring Morphs (`MD3E019` `[WARNING]`)**: Any pill button transitioning `border-radius` on `:active` under an underdamped `linear()` spring (`1.07` overshoot, such as `--md-bento-motion-fast-spatial`) evaluates `9999px + 1.07 * (16px - 9999px) = -682.8px -> 0px`, flashing a razor-sharp rectangle mid-click! Bind resting radii to `calc(height / 2)` (`24px` on `48px` CTAs -> `12px`, `18px` on `36px` pills -> `8px`) so overshoot stays strictly positive across all frames.
+4. **Shape Drop Shadows (`MD3E023` `[WARNING]`)**: Avoid placing `box-shadow` directly on `.md3e-shape*`, `mask-image`, or morphing `<svg>` shapes (clipping or rectangular glow). Wrap the button/shape container in `filter: drop-shadow(...)`.
+5. **Ban `in oklch` on Neutral Color Mixing (`MD3E018` `[ERROR]`)**: Never use `color-mix(in oklch, ...)` on `surface*`, `on-surface*`, `outline*`, `shadow`, `scrim`, or `currentColor` — triggers Chromium's powerless-hue pink/red shift; always use **`in oklab`**.
 6. **Reference Implementation**: See targeted ranges of [`assets/starter/desktop-bento.html`](../assets/starter/desktop-bento.html) (never read in full into context; inspect specific component blocks only).

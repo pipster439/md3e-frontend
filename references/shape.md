@@ -62,12 +62,7 @@ are pre-generated into `assets/tokens/md3e-shapes.css` (and reproducible via
 - **Pixel (2)** — `pixel-circle`, `pixel-triangle`
 
 Use `.md3e-shape` paired with `.md3e-shape-<name>` (which sets both
-`-webkit-mask-image` and `mask-image`, plus an `@supports` rounded-corner
-fallback). When a masked polygon needs a drop shadow, wrap it in
-`.md3e-shape-shadow-wrap` (`filter: drop-shadow(...)` rather than `box-shadow`,
-which casts a rectangle). Do not use `MD3E` CSS mask presets behind dense body
-copy; keep them on avatars, media crops, and the `LoadingIndicator` (`SoftBurst ->
-Cookie9Sided -> Pentagon -> Pill -> Sunny -> Cookie4Sided -> Oval`).
+> **Layer 2 — Web Shape Rendering & Morphing Adaptation:** Browsers render the 35 Layer 1 `MaterialShapes` polygons via CSS `mask-image` (`-webkit-mask-image` + `@supports` rounded-corner fallback) and animate smooth path-to-path transitions via `assets/tokens/md3e-morph.js`. Because CSS `box-shadow` gets clipped cleanly out or casts a rectangular box around a masked element, always put non-rectangular drop shadows on a parent `.md3e-shape-shadow-wrap` using `filter: drop-shadow(...)` (`MD3E023` warning if `box-shadow` is placed on a shaped target). Keep `MD3E` CSS mask presets on avatars, media crops, hero CTAs, and the `LoadingIndicator` (`SoftBurst -> Cookie9Sided -> Pentagon -> Pill -> Sunny -> Cookie4Sided -> Oval`), never behind dense body copy.
 
 Rules from the spec:
 
@@ -131,7 +126,7 @@ outer radius − padding = inner radius
 
 | Do | Don't |
 |---|---|
-| Pick steps from the ten-step scale | Invent `border-radius: 10px` |
+| Pick steps from the ten-step scale (`INFO` `MD3E003` for custom product radii) | Invent `border-radius: 10px` without intent |
 | Use `corner-full` for pills and circles | `border-radius: 50%` |
 | Use the "increased" steps for emphasis | Jump straight to a pill when you want a little emphasis |
 | Add tension deliberately, on one element | Mix round and square randomly |

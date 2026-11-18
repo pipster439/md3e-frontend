@@ -11,45 +11,56 @@ mismatched Material Web tags.
 Usage
 -----
     python audit_md3e.py <path>...            # files or directories
-    python audit_md3e.py src --mode=desktop-bento --fail-on warn
-    python audit_md3e.py src --json           # machine-readable
-    python audit_md3e.py src --fail-on warn   # stricter CI gate
+    python audit_md3e.py src --mode=desktop-bento
+    python audit_md3e.py src --json           # machine-readable (includes official_compliance.score)
+    python audit_md3e.py src --fail-on warning
     python audit_md3e.py docs --markdown      # audit HTML/CSS fences in .md
     python audit_md3e.py src --exclude vendor,node_modules
 
-Exit status is 1 when findings at or above the --fail-on severity exist,
-otherwise 0. Token/theme files are auto-detected and exempted from the
-hardcoded-colour checks, because that is exactly where raw values belong.
+Authority Levels
+----------------
+    ERROR    Violates Official Core M3E spec or WCAG 2.2 AA floor (blocks CI by default)
+    WARNING  Deviates from Official M3E recommended guidance
+    INFO     Project-level engineering preference / default convention
+    CUSTOM   Opt-in product extension (--mode=desktop-bento only; excluded from Official Score)
+
+Data & Analytical View Exemptions
+---------------------------------
+    Add `data-md3e-exempt="data-view"` on analytical containers, or use native `<canvas>`,
+    `<table>`, `role="grid"`, 2D trajectory/replay viewports, or chart `<svg>` elements:
+    preserves functional axis strokes, 1px table gridlines, series hex palettes, and compact cells.
 
 Finding codes
 -------------
-    MD3E001  hardcoded hex colour                           (error)
-    MD3E002  hardcoded rgb()/hsl() colour                   (error)
-    MD3E003  corner radius off the shape scale              (error)
-    MD3E004  duration/easing instead of a spring            (error/info)
-    MD3E005  focus indicator removed / missing              (error/warn)
-    MD3E006  interactive target <48px or box inflated       (warn)
-    MD3E007  font-size off the type scale                   (warn)
-    MD3E008  no prefers-reduced-motion path                 (warn)
-    MD3E009  colour roles without a dark scheme             (warn)
+    MD3E001  hardcoded hex colour                           (info)
+    MD3E002  hardcoded rgb()/hsl()/oklch() colour           (info)
+    MD3E003  corner radius off default 10-step scale        (info)
+    MD3E004  ad-hoc motion vs spring / OFFICIAL_WEB_CURVES  (warning)
+    MD3E005  focus indicator removed / missing              (error)
+    MD3E006  target <24px (error) vs <48px/inflated (warning)
+    MD3E007  font-size off default 11-step scale            (info)
+    MD3E008  no prefers-reduced-motion path                 (warning)
+    MD3E009  colour roles without a dark scheme             (warning)
     MD3E010  box-shadow used for elevation                  (info)
-    MD3E011  border-radius: 50% instead of full             (warn)
+    MD3E011  border-radius: 50% instead of full             (warning)
     MD3E012  uppercase label text                           (info)
-    MD3E013  `transition: all`                              (warn)
-    MD3E014  icon-only control, no accessible name          (warn)
+    MD3E013  `transition: all`                              (warning)
+    MD3E014  icon-only control, no accessible name          (error)
     MD3E015  deprecated bottom app bar                      (info)
-    MD3E016  deprecated small FAB (40dp)                    (warn)
+    MD3E016  deprecated small FAB (40dp)                    (warning)
     MD3E017  invalid Material Symbols icon, URL axes, or missing font (error)
-    MD3E018  invalid color-mix() opacity or oklch on neutrals (error/warn)
-    MD3E019  composite animation delay or 9999px morph snap (warn)
+    MD3E018  invalid color-mix() opacity or oklch on neutrals (error)
+    MD3E019  composite animation delay or 9999px morph snap (warning)
     MD3E020  mismatched <md-*> custom element closing tag   (error)
-    MD3E021  decorative icon missing aria-hidden="true"     (warn)
-    MD3E022  backdrop-filter blur lacks reduced-transparency (warn)
-    MD3E023  box-shadow on masked/morphing shape vs drop-shadow (warn/error)
-    MD3E101  [desktop-bento] 1px border or rectangular box-shadow (error)
-    MD3E102  [desktop-bento] <4 surface-container nesting tiers   (error)
-    MD3E103  [desktop-bento] missing concentric 28px/16px radii   (warn)
-    MD3E104  [desktop-bento] missing Hero wave/sparkline/morph anchors (warn)
+    MD3E021  decorative icon missing aria-hidden="true"     (warning)
+    MD3E022  backdrop-filter blur lacks reduced-transparency (error)
+    MD3E023  box-shadow on masked/morphing shape vs drop-shadow (warning)
+    MD3E024  WCAG <4.5:1 contrast or container/on-* mismatch (error)
+    MD3E025  multiple enabled filled primary buttons in view (info)
+    MD3E101  [desktop-bento] 1px border or rectangular box-shadow (custom)
+    MD3E102  [desktop-bento] <4 surface-container nesting tiers   (custom)
+    MD3E103  [desktop-bento] missing concentric 28px/16px radii   (custom)
+    MD3E104  [desktop-bento] missing Hero wave/sparkline/morph anchors (custom)
 """
 
 from __future__ import annotations
@@ -61,9 +72,20 @@ import re
 import sys
 from dataclasses import dataclass, field
 
-SEVERITIES = ("error", "warn", "info")
+SEVERITIES = ("error", "warning", "info", "custom")
 SEVERITY_RANK = {s: i for i, s in enumerate(SEVERITIES)}
 AUDIT_MODES = ("strict", "desktop-bento")
+
+
+def normalize_severity(val: str) -> str:
+    low = val.strip().lower()
+    if low == "warn":
+        return "warning"
+    if low in SEVERITIES:
+        return low
+    raise argparse.ArgumentTypeError(
+        f"invalid severity {val!r}; choose from {', '.join(SEVERITIES)} (alias: warn)"
+    )
 
 CODE_EXTENSIONS = {
     ".html", ".htm", ".css", ".scss", ".sass", ".less", ".styl",
@@ -89,6 +111,14 @@ DENSE_ROW_SELECTOR_RE = re.compile(
     r"(?:^|[\s,>+~.:#\[])(?:tr|td|th|bento-table|bento-log|dense-row|data-row|table-row)\b",
     re.IGNORECASE,
 )
+DATA_VIEW_SELECTOR_RE = re.compile(
+    r"(?:\[\s*data-md3e-exempt\b|\[role\s*=\s*[\"'](?:grid|treegrid)[\"']\s*\]|"
+    r"(?:^|[\s,>+~.:#\[])(?:canvas|table|thead|tbody|tfoot|tr|td|th|chart|plot|graph|"
+    r"axis|axes|tick|gridline|series|legend|trajectory|replay|viewport-2d|canvas-view|"
+    r"telemetry-table|data-table|stats-table|bento-table|bento-log|echarts|recharts|vega)\b|"
+    r"\.d3-[\w-]+)",
+    re.IGNORECASE,
+)
 
 # --- Design system facts the checks are built on ---------------------------
 
@@ -98,9 +128,13 @@ FULL_PX = {999.0, 9999.0, 1000.0}
 TYPE_SCALE_PX = {11.0, 12.0, 14.0, 16.0, 22.0, 24.0, 28.0, 32.0, 36.0, 45.0, 57.0}
 TYPE_SCALE_REM = {round(v / 16.0, 5) for v in TYPE_SCALE_PX}
 
-MIN_TOUCH_TARGET = 48.0
+WCAG_MIN_TARGET = 24.0
+M3_RECOMMENDED_TARGET = 48.0
+MIN_TOUCH_TARGET = M3_RECOMMENDED_TARGET
 
-# Official M3E Web cubic-bezier curves (allowed as official Web equivalents).
+LINEAR_SPRING_RE = re.compile(r"\blinear\s*\([^)]*,[^)]*\)")
+
+# Official M3 / M3E Web cubic-bezier curves (allowed as first-class Web implementations).
 OFFICIAL_WEB_CURVES = {
     "cubic-bezier(0.42,1.67,0.21,0.90)",
     "cubic-bezier(0.42,1.67,0.21,0.9)",
@@ -114,6 +148,17 @@ OFFICIAL_WEB_CURVES = {
     "cubic-bezier(0.34,0.80,0.34,1.00)",
     "cubic-bezier(0.34,0.8,0.34,1)",
     "cubic-bezier(0.34,0.88,0.34,1.00)",
+    # Google official standard & emphasized Web easing tokens (--md-sys-motion-easing-*)
+    "cubic-bezier(0.2,0,0,1)",
+    "cubic-bezier(0.2,0.0,0.0,1.0)",
+    "cubic-bezier(0.05,0.7,0.1,1)",
+    "cubic-bezier(0.05,0.7,0.1,1.0)",
+    "cubic-bezier(0.3,0,0.8,0.15)",
+    "cubic-bezier(0,0,0,1)",
+    "cubic-bezier(0,0.0,0.0,1.0)",
+    "cubic-bezier(0.3,0,1,1)",
+    "cubic-bezier(0.3,0,1.0,1.0)",
+    "cubic-bezier(0.4,0,0.2,1)",
 }
 
 # Curated aliases hallucinated from Lucide / FontAwesome / Heroicons.
@@ -260,6 +305,115 @@ class RuleBlock:
     in_reduced_motion: bool
     declarations: list[tuple[str, str, int, str]] = field(default_factory=list)
     in_forced_colors: bool = False
+    custom_color_vars: dict[str, tuple[str, int, str]] = field(default_factory=dict)
+
+
+# ===========================================================================
+# Contrast & HTML Exemption Helpers
+# ===========================================================================
+
+OPAQUE_HEX_RE = re.compile(r"^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})$")
+SYS_COLOR_VAR_RE = re.compile(r"^var\(\s*(--md-sys-color-[a-z0-9-]+)(?:\s*,[^)]*)?\s*\)$", re.IGNORECASE)
+CANONICAL_COLOR_PAIRS = (
+    ("primary", "on-primary"),
+    ("primary-container", "on-primary-container"),
+    ("secondary", "on-secondary"),
+    ("secondary-container", "on-secondary-container"),
+    ("tertiary", "on-tertiary"),
+    ("tertiary-container", "on-tertiary-container"),
+    ("error", "on-error"),
+    ("error-container", "on-error-container"),
+    ("surface", "on-surface"),
+    ("surface-container-low", "on-surface"),
+    ("surface-container", "on-surface"),
+    ("surface-container-high", "on-surface-variant"),
+    ("inverse-surface", "inverse-on-surface"),
+    ("primary-fixed", "on-primary-fixed"),
+    ("secondary-fixed", "on-secondary-fixed"),
+    ("tertiary-fixed", "on-tertiary-fixed"),
+)
+
+
+def _srgb_luminance(hex_color: str) -> float:
+    h = hex_color.strip().lstrip("#")
+    if len(h) == 3:
+        h = "".join(c * 2 for c in h)
+    r, g, b = (int(h[i:i + 2], 16) / 255.0 for i in (0, 2, 4))
+
+    def _chan(v: float) -> float:
+        return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+
+    return 0.2126 * _chan(r) + 0.7152 * _chan(g) + 0.0722 * _chan(b)
+
+
+def srgb_contrast_ratio(hex_a: str, hex_b: str) -> float:
+    la = _srgb_luminance(hex_a)
+    lb = _srgb_luminance(hex_b)
+    return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+
+
+VOID_HTML_TAGS = {
+    "area", "base", "br", "col", "embed", "hr", "img", "input",
+    "link", "meta", "param", "source", "track", "wbr",
+}
+EXEMPT_ATTR_OR_CLASS_RE = re.compile(
+    r"\bdata-md3e-exempt\b|\brole\s*=\s*[\"'](?:grid|treegrid)[\"']|"
+    r"\b(?:class|id)\s*=\s*[\"'][^\"']*\b(?:chart|plot|graph|axis|axes|"
+    r"trajectory|replay[-_]?viewport|canvas[-_]?viewport|map[-_]?viewport|"
+    r"data-table|stats-table|telemetry-table|analytics-grid|oscilloscope)\b",
+    re.IGNORECASE,
+)
+
+
+def find_exempt_line_set(markup_clean: str) -> set[int]:
+    """Return 1-based line numbers inside explicit data-view / analytical subtrees."""
+    exempt_lines: set[int] = set()
+    # Mark explicit analytical <svg> blocks directly from opening tag to closing </svg>
+    for svg_m in re.finditer(r"<svg\b([^>]*)>([\s\S]*?)</svg>", markup_clean, re.IGNORECASE):
+        attrs, inner = svg_m.group(1), svg_m.group(2)
+        is_chart_svg = bool(
+            re.search(r"chart|plot|graph|axis|axes|trajectory|replay", attrs, re.I)
+            or (
+                re.search(r"<(?:line|polyline)\b|\bclass\s*=\s*[\"'][^\"']*\b(?:axis|gridline)\b", inner, re.I)
+                and not re.search(r"wave|sparkline|md3e-loading|morph-btn", attrs + inner, re.I)
+            )
+        )
+        if is_chart_svg:
+            start_ln = markup_clean[:svg_m.start()].count("\n") + 1
+            end_ln = markup_clean[:svg_m.end()].count("\n") + 1
+            exempt_lines.update(range(start_ln, end_ln + 1))
+
+    tag_re = re.compile(rf"<(/?)([a-zA-Z][a-zA-Z0-9:-]*)\b({TAG_ATTRS_PAT})(/?)>")
+    stack: list[tuple[str, int, bool]] = []
+    for m in tag_re.finditer(markup_clean):
+        is_close = m.group(1) == "/"
+        tag = m.group(2).lower()
+        attrs = m.group(3)
+        self_closing = bool(m.group(4)) or tag in VOID_HTML_TAGS
+        ln = markup_clean[:m.start()].count("\n") + 1
+        end_ln = markup_clean[:m.end()].count("\n") + 1
+        if not is_close:
+            is_exempt = bool(
+                tag in ("canvas", "table")
+                or EXEMPT_ATTR_OR_CLASS_RE.search(attrs)
+            )
+            if self_closing:
+                if is_exempt or any(item[2] for item in stack):
+                    exempt_lines.update(range(ln, end_ln + 1))
+            else:
+                stack.append((tag, ln, is_exempt))
+        else:
+            for idx in range(len(stack) - 1, -1, -1):
+                open_tag, open_ln, is_exempt = stack[idx]
+                if open_tag == tag:
+                    del stack[idx:]
+                    if is_exempt:
+                        exempt_lines.update(range(open_ln, end_ln + 1))
+                    break
+    for _, open_ln, is_exempt in stack:
+        if is_exempt:
+            exempt_lines.update(range(open_ln, markup_clean.count("\n") + 2))
+    return exempt_lines
 
 
 # ===========================================================================
@@ -316,14 +470,16 @@ def parse_css_rules(css_text: str, base_line: int = 1) -> list[RuleBlock]:
     rules: list[RuleBlock] = []
     stack: list[tuple[str, bool, bool, int]] = []
     current_decls: dict[int, list[tuple[str, str, int, str]]] = {}
+    current_custom_colors: dict[int, dict[str, tuple[str, int, str]]] = {}
     buf: list[str] = []
     buf_start_line = base_line
     lineno = base_line
     in_string: str | None = None
     escape = False
 
-    def flush_declarations(text_chunk: str, chunk_start_line: int) -> list[tuple[str, str, int, str]]:
+    def flush_declarations(text_chunk: str, chunk_start_line: int) -> tuple[list[tuple[str, str, int, str]], dict[str, tuple[str, int, str]]]:
         out: list[tuple[str, str, int, str]] = []
+        custom_colors: dict[str, tuple[str, int, str]] = {}
         cur_line = chunk_start_line
         for piece in text_chunk.split(";"):
             nl_before = len(piece) - len(piece.lstrip("\r\n"))
@@ -336,10 +492,16 @@ def parse_css_rules(css_text: str, base_line: int = 1) -> list[RuleBlock]:
             if not m:
                 continue
             prop = m.group("prop").lower()
+            val = m.group("value")
+            clean_snip = re.sub(r"\s+", " ", stripped)
             if prop.startswith("--"):
+                if prop.startswith("--md-sys-color-"):
+                    clean_v = strip_important(val).strip()
+                    if OPAQUE_HEX_RE.fullmatch(clean_v):
+                        custom_colors[prop] = (clean_v, piece_line, clean_snip)
                 continue
-            out.append((prop, m.group("value"), piece_line, re.sub(r"\s+", " ", stripped)))
-        return out
+            out.append((prop, val, piece_line, clean_snip))
+        return out, custom_colors
 
     i = 0
     n = len(cleaned)
@@ -375,9 +537,9 @@ def parse_css_rules(css_text: str, base_line: int = 1) -> list[RuleBlock]:
             if ";" in header and stack:
                 # Pending declarations before a nested rule block
                 prefix, nested_sel = header.rsplit(";", 1)
-                current_decls.setdefault(len(stack) - 1, []).extend(
-                    flush_declarations(prefix, buf_start_line)
-                )
+                p_decls, p_colors = flush_declarations(prefix, buf_start_line)
+                current_decls.setdefault(len(stack) - 1, []).extend(p_decls)
+                current_custom_colors.setdefault(len(stack) - 1, {}).update(p_colors)
                 header = nested_sel.strip()
             is_rm = bool(re.search(r"prefers-reduced-motion\s*:\s*reduce", header, re.I))
             is_fc = bool(re.search(r"forced-colors\s*:\s*active", header, re.I))
@@ -385,6 +547,7 @@ def parse_css_rules(css_text: str, base_line: int = 1) -> list[RuleBlock]:
             parent_fc = stack[-1][2] if stack else False
             stack.append((header, parent_rm or is_rm, parent_fc or is_fc, lineno))
             current_decls[len(stack) - 1] = []
+            current_custom_colors[len(stack) - 1] = {}
             buf = []
             buf_start_line = lineno
         elif ch == "}":
@@ -392,9 +555,11 @@ def parse_css_rules(css_text: str, base_line: int = 1) -> list[RuleBlock]:
             if stack:
                 idx = len(stack) - 1
                 sel, in_rm, in_fc, sel_line = stack.pop()
-                decls = current_decls.pop(idx, []) + flush_declarations(body, buf_start_line)
-                if sel and not sel.startswith("@") and decls:
-                    rules.append(RuleBlock(sel, sel_line, in_rm, decls, in_fc))
+                b_decls, b_colors = flush_declarations(body, buf_start_line)
+                decls = current_decls.pop(idx, []) + b_decls
+                c_colors = {**current_custom_colors.pop(idx, {}), **b_colors}
+                if sel and not sel.startswith("@") and (decls or c_colors):
+                    rules.append(RuleBlock(sel, sel_line, in_rm, decls, in_fc, c_colors))
             buf = []
             buf_start_line = lineno
         else:
@@ -485,11 +650,10 @@ def check_hex(cx, value, lineno, line) -> None:
     cleaned = re.sub(r"url\(\s*#[\w-]+\s*\)", "", value, flags=re.IGNORECASE)
     hit = HEX_RE.search(cleaned)
     if hit:
-        cx.add("MD3E001", "error",
-               f"Hardcoded colour {hit.group(0)}.",
-               "Use a colour role, e.g. var(--md-sys-color-primary) or "
-               "var(--md-sys-color-surface-container-high). Roles carry "
-               "light/dark and contrast behaviour; hex does not.",
+        cx.add("MD3E001", "info",
+               f"Hardcoded colour {hit.group(0)} (project token convention).",
+               "Prefer a colour role token, e.g. var(--md-sys-color-primary) or "
+               "var(--md-sys-color-surface-container-high), so light/dark and contrast themes propagate automatically.",
                cx.path, lineno, line)
 
 
@@ -498,18 +662,15 @@ def check_func_color(cx, value, lineno, line) -> None:
         return
     m = FUNC_COLOR_RE.search(value)
     if m:
-        cx.add("MD3E002", "error",
-               f"Hardcoded colour via {m.group(0).strip()[:-1]}(...).",
-               "Use a colour role token. A state layer is an overlay in "
-               "the content's on-colour at 0.08 hover / 0.10 focus / "
-               "0.10 pressed / 0.16 dragged, not a bespoke rgba().",
+        cx.add("MD3E002", "info",
+               f"Hardcoded colour via {m.group(0).strip()[:-1]}(...) (project token convention).",
+               "Prefer a colour role token or a state-layer overlay in currentColor via opacity / color-mix(in oklab, ...).",
                cx.path, lineno, line)
 
 
 def check_color_mix(cx, value, lineno, line) -> None:
     if "color-mix(" not in value.lower() and not re.search(r"color-mix\s*\(", value, re.I):
         return
-    # Extract argument lists of color-mix(...)
     idx = 0
     for cm in re.finditer(r"color-mix\s*\(", value, re.I):
         if cm.start() < idx:
@@ -546,18 +707,103 @@ def check_color_mix(cx, value, lineno, line) -> None:
                    cx.path, lineno, line)
 
         if top_args and re.match(r"^\s*in\s+oklch\b", top_args[0], re.I) and NEUTRAL_OKLCH_RE.search(inner):
-            sev = "error" if getattr(cx, "mode", "strict") == "desktop-bento" else "warn"
-            cx.add("MD3E018", sev,
+            cx.add("MD3E018", "error",
                    "color-mix(in oklch, ...) on neutral or surface colours can trigger Chromium's powerless-hue reddish shift.",
-                   "Use `color-mix(in oklab, ...)` when tinting or mixing neutral, surface, outline, shadow, or `currentColor` values.",
+                   "Always use `color-mix(in oklab, ...)` when tinting or mixing neutral, surface, outline, shadow, or `currentColor` values.",
                    cx.path, lineno, line)
+
+
+def _extract_color_role(val: str) -> str | None:
+    m = SYS_COLOR_VAR_RE.fullmatch(strip_important(val).strip())
+    if not m:
+        return None
+    name = m.group(1).lower()
+    return name[len("--md-sys-color-"):] if name.startswith("--md-sys-color-") else None
+
+
+def check_role_pairing_and_contrast(
+    cx,
+    decls: list[tuple[str, str, int, str]],
+    *,
+    is_data_view: bool = False,
+) -> None:
+    bg_decl = None
+    fg_decl = None
+    font_size_px = 14.0
+    is_bold = False
+    for prop, value, lineno, raw in decls:
+        if prop in ("background-color", "background"):
+            bg_decl = (value, lineno, raw)
+        elif prop == "color":
+            fg_decl = (value, lineno, raw)
+        elif prop == "font-size":
+            px = parse_px(strip_important(value))
+            if px is not None:
+                font_size_px = px
+        elif prop == "font-weight":
+            fw = strip_important(value).lower()
+            if fw == "bold" or (fw.isdigit() and int(fw) >= 700):
+                is_bold = True
+
+    if not bg_decl or not fg_decl:
+        return
+
+    bg_val, bg_ln, bg_raw = bg_decl
+    fg_val, fg_ln, fg_raw = fg_decl
+    lineno = max(bg_ln, fg_ln)
+    snippet = f"{bg_raw}; {fg_raw}"
+
+    bg_role = _extract_color_role(bg_val)
+    fg_role = _extract_color_role(fg_val)
+    if bg_role and fg_role:
+        mismatch = False
+        if bg_role in ("primary", "secondary", "tertiary", "error"):
+            if (fg_role.startswith("on-") or fg_role.startswith("inverse-on-")) and fg_role != f"on-{bg_role}":
+                mismatch = True
+        elif bg_role.endswith("-container") and not bg_role.startswith("surface-"):
+            if (fg_role.startswith("on-") or fg_role.startswith("inverse-on-")) and fg_role != f"on-{bg_role}":
+                mismatch = True
+        elif bg_role.startswith("surface"):
+            if re.match(r"^(?:on-(?:primary|secondary|tertiary|error)|inverse-on-surface)", fg_role):
+                mismatch = True
+        elif bg_role == "inverse-surface":
+            if (fg_role.startswith("on-") or fg_role.startswith("inverse-on-")) and fg_role != "inverse-on-surface":
+                mismatch = True
+        elif re.match(r"^(primary|secondary|tertiary)-fixed(?:-dim)?$", bg_role):
+            base = bg_role.split("-")[0]
+            if fg_role.startswith(("on-", "inverse-on-")) and fg_role not in (f"on-{base}-fixed", f"on-{base}-fixed-variant"):
+                mismatch = True
+
+        if mismatch:
+            cx.add(
+                "MD3E024", "error",
+                f"Semantic role mismatch: foreground `--md-sys-color-{fg_role}` paired with container `--md-sys-color-{bg_role}`.",
+                "Always pair each M3 container role with its own `on-` counterpart (e.g. `primary-container` -> `on-primary-container`) so WCAG contrast holds across light/dark themes.",
+                cx.path, lineno, snippet,
+            )
+
+    if cx.token_file or is_data_view:
+        return
+
+    bg_hex = strip_important(bg_val).strip()
+    fg_hex = strip_important(fg_val).strip()
+    if OPAQUE_HEX_RE.fullmatch(bg_hex) and OPAQUE_HEX_RE.fullmatch(fg_hex):
+        ratio = srgb_contrast_ratio(fg_hex, bg_hex)
+        min_ratio = 3.0 if (font_size_px >= 24.0 or (is_bold and font_size_px >= 18.67)) else 4.5
+        if ratio < min_ratio:
+            cx.add(
+                "MD3E024", "error",
+                f"WCAG contrast failure: {fg_hex} on {bg_hex} is {ratio:.2f}:1 (< {min_ratio:.1f}:1 minimum).",
+                "Use an official semantic container/`on-` role pair or adjust tone separation to meet WCAG AA contrast.",
+                cx.path, lineno, snippet,
+            )
 
 
 def check_radius(cx, prop, value, lineno, line) -> None:
     if prop not in RADIUS_PROPS or is_var(value) or "inherit" in value:
         return
     if "50%" in value:
-        cx.add("MD3E011", "warn",
+        cx.add("MD3E011", "warning",
                "`border-radius: 50%` is the pre-M3 roundedness hack. The shape "
                "scale names this value.",
                "Use var(--md-sys-shape-corner-full) or a bounded height/2 token.",
@@ -570,11 +816,9 @@ def check_radius(cx, prop, value, lineno, line) -> None:
                 continue
             if 0 < px <= 2:
                 continue
-            cx.add("MD3E003", "error",
-                   f"Corner radius {px:g}px is not on the MD3E shape scale.",
-                   "Use one of the ten steps: none 0 / extra-small 4 / small 8 / "
-                   "medium 12 / large 16 / large-increased 20 / extra-large 28 / "
-                   "extra-large-increased 32 / extra-extra-large 48 / full.",
+            cx.add("MD3E003", "info",
+                   f"Corner radius {px:g}px is outside the default 10-step MD3E scale (project convention).",
+                   "Consider one of the ten steps (0/4/8/12/16/20/28/32/48/full) unless intentionally customized for brand shape.",
                    cx.path, lineno, line)
 
 
@@ -587,17 +831,16 @@ def check_font_size(cx, prop, value, lineno, line) -> None:
     px = parse_px(clean_val)
     if px is not None:
         if px not in TYPE_SCALE_PX:
-            cx.add("MD3E007", "warn",
-                   f"font-size {px:g}px is not on the M3 type scale.",
-                   "Use var(--md-sys-typescale-<role>-size). The scale is "
-                   "11 / 12 / 14 / 16 / 22 / 24 / 28 / 32 / 36 / 45 / 57.",
+            cx.add("MD3E007", "info",
+                   f"font-size {px:g}px is outside the default M3 11-size type scale (project convention).",
+                   "Consider var(--md-sys-typescale-<role>-size) (11 / 12 / 14 / 16 / 22 / 24 / 28 / 32 / 36 / 45 / 57).",
                    cx.path, lineno, line)
         return
     m = re.fullmatch(r"(-?\d*\.?\d+)\s*rem", clean_val)
     if m and round(float(m.group(1)), 5) not in TYPE_SCALE_REM:
-        cx.add("MD3E007", "warn",
-               f"font-size {m.group(1)}rem is not on the M3 type scale.",
-               "Use var(--md-sys-typescale-<role>-size).", cx.path, lineno, line)
+        cx.add("MD3E007", "info",
+               f"font-size {m.group(1)}rem is outside the default M3 type scale (project convention).",
+               "Consider var(--md-sys-typescale-<role>-size).", cx.path, lineno, line)
 
 
 def check_motion(cx, prop, value, lineno, line, in_reduced_motion: bool = False) -> None:
@@ -606,7 +849,7 @@ def check_motion(cx, prop, value, lineno, line, in_reduced_motion: bool = False)
 
     # MD3E019: Composite spring token inside `animation:` shorthand alongside an explicit duration
     if prop == "animation" and COMPOSITE_SPRING_VAR_RE.search(value) and TIME_RE.search(value):
-        cx.add("MD3E019", "warn",
+        cx.add("MD3E019", "warning",
                "Composite motion token used inside `animation:` shorthand with an explicit duration.",
                "Composite --md-sys-motion-<speed>-<type> tokens include a duration, so CSS "
                "parses the second time as animation-delay. Use the easing-only token "
@@ -615,7 +858,7 @@ def check_motion(cx, prop, value, lineno, line, in_reduced_motion: bool = False)
 
     segments = split_top_level_commas(strip_important(value))
     for seg in segments:
-        if is_var(seg):
+        if is_var(seg) or LINEAR_SPRING_RE.search(seg):
             continue
 
         stripped = seg.strip()
@@ -624,25 +867,18 @@ def check_motion(cx, prop, value, lineno, line, in_reduced_motion: bool = False)
         if stripped in ("none", "inherit", "unset"):
             continue
 
-        # Check if every cubic-bezier in the segment matches official M3E Web curves
+        # Official M3E Web cubic-bezier curves are first-class valid implementations
         beziers = [re.sub(r"\s+", "", b.group(0)) for b in CUBIC_BEZIER_CALL_RE.finditer(seg)]
         if beziers and all(b in OFFICIAL_WEB_CURVES for b in beziers) and not EASING_KEYWORD_RE.search(seg):
-            cx.add("MD3E004", "info",
-                   "Motion uses an official M3E Web cubic-bezier curve directly.",
-                   "Prefer var(--md-sys-motion-<speed>-<type>) so motion scheme "
-                   "switching and prefers-reduced-motion stay centralised.",
-                   cx.path, lineno, line)
             return
 
         has_time = bool(TIME_RE.search(seg))
         has_easing = bool(EASING_KEYWORD_RE.search(seg) or CURVE_FUNC_RE.search(seg))
         if not (has_time or has_easing):
             continue
-        cx.add("MD3E004", "error",
-               "Motion uses hand-written duration/easing instead of a spring token.",
-               "M3E replaces ad-hoc duration + easing with motion springs. Use "
-               "var(--md-sys-motion-default-spatial) for movement/shape, or "
-               "var(--md-sys-motion-fast-effects) for colour/opacity.",
+        cx.add("MD3E004", "warning",
+               "Motion uses uncalibrated duration/easing instead of an M3E spring or official Web curve.",
+               "Use a spring token (`var(--md-sys-motion-default-spatial)`), JS `md3e-spring.js`, or an official M3E Web cubic-bezier curve (`--md-sys-motion-*-bezier`).",
                cx.path, lineno, line)
         return
 
@@ -666,16 +902,16 @@ def check_bento_decl(cx, prop, value, lineno, line, *, in_forced_colors: bool = 
     if prop in BORDER_PROPS:
         if re.search(r"\b1px\b", clean_v) and "transparent" not in clean_v and clean_v not in ("none", "0", "0px"):
             cx.add(
-                "MD3E101", "error",
-                f"1px border (`{prop}`) violates borderless Desktop Bento tonal nesting.",
-                "Remove card/container borders and express depth with 4+ `--md-sys-color-surface-container-*` luminance tiers (keep borders only inside `@media (forced-colors: active)`).",
+                "MD3E101", "custom",
+                f"1px border (`{prop}`) deviates from opt-in Desktop Bento borderless nesting.",
+                "For Bento cards/panels, express depth with 4+ `--md-sys-color-surface-container-*` luminance tiers (keep functional borders on analytical data tables/charts or inside `@media (forced-colors: active)`).",
                 cx.path, lineno, line,
             )
     elif prop == "box-shadow" and clean_v not in ("none", "inherit", "unset", ""):
         cx.add(
-            "MD3E101", "error",
-            "Rectangular `box-shadow` used on Desktop Bento container.",
-            "Replace rectangular `box-shadow` with `surface-container-*` tonal steps, or use wrapper `filter: drop-shadow(...)` for non-rectangular shapes.",
+            "MD3E101", "custom",
+            "Rectangular `box-shadow` used on opt-in Desktop Bento container.",
+            "For Bento panels, prefer `surface-container-*` tonal steps or wrapper `filter: drop-shadow(...)` for non-rectangular shapes.",
             cx.path, lineno, line,
         )
 
@@ -691,17 +927,16 @@ def check_misc(cx, prop, value, lineno, line) -> None:
         cx.add("MD3E005", "error",
                "Focus outline removed.",
                "Keyboard users lose positional feedback. Provide a :focus-visible ring "
-               "(2px solid var(--md-sys-color-secondary) with 2px offset) or "
+               "(3px solid var(--md-sys-color-secondary) with 2px offset) or "
                "`outline: 2px solid transparent` inside a :focus-within container.",
                cx.path, lineno, line)
     if (prop == "transition-property" and re.search(r"\ball\b", value)) or (
         prop == "transition" and re.search(r"(?:^|,)\s*all\b", value)
     ):
-        cx.add("MD3E013", "warn",
+        cx.add("MD3E013", "warning",
                "`transition: all` animates properties you did not intend, "
                "including layout-affecting ones.",
-               "Name the property and pair it with a spring token, e.g. "
-               "`transform var(--md-sys-motion-default-spatial)`.",
+               "Name the property and pair it with an M3E spring or official Web curve token.",
                cx.path, lineno, line)
 
 
@@ -766,47 +1001,69 @@ class Checker:
 
     def _audit_rule_block(self, rule: RuleBlock, hit_covered: set[str], morphing_bases: set[str]) -> bool:
         has_motion = False
+        is_data_view_rule = any(DATA_VIEW_SELECTOR_RE.search(s) for s in rule.selector.split(","))
         is_shape_rule = bool(SHAPE_SELECTOR_RE.search(rule.selector)) or any(
             (p in ("mask-image", "-webkit-mask-image") and strip_important(v).lower() != "none")
             or (p == "clip-path" and bool(re.search(r"\b(?:polygon|path|url)\s*\(", v, re.I)))
             for p, v, _, _ in rule.declarations
         )
+        # Check custom --md-sys-color-* pairs defined in this selector block (MD3E024)
+        for bg_role, fg_role in CANONICAL_COLOR_PAIRS:
+            bg_entry = rule.custom_color_vars.get(f"--md-sys-color-{bg_role}")
+            fg_entry = rule.custom_color_vars.get(f"--md-sys-color-{fg_role}")
+            if bg_entry and fg_entry:
+                ratio = srgb_contrast_ratio(fg_entry[0], bg_entry[0])
+                if ratio < 4.5:
+                    self.add(
+                        "MD3E024", "error",
+                        f"Contrast failure in `{rule.selector}`: `--md-sys-color-{fg_role}` ({fg_entry[0]}) on `--md-sys-color-{bg_role}` ({bg_entry[0]}) is {ratio:.2f}:1 (< 4.5:1 WCAG AA).",
+                        "Adjust token tones so every container/`on-` pair reaches >= 4.5:1 (>= 7.0:1 for high contrast).",
+                        self.path, fg_entry[1], fg_entry[2],
+                    )
+
+        check_role_pairing_and_contrast(self, rule.declarations, is_data_view=is_data_view_rule)
+
         for prop, value, lineno, raw in rule.declarations:
-            check_hex(self, value, lineno, raw)
-            check_func_color(self, value, lineno, raw)
+            if not is_data_view_rule:
+                check_hex(self, value, lineno, raw)
+                check_func_color(self, value, lineno, raw)
+                check_radius(self, prop, value, lineno, raw)
+                check_font_size(self, prop, value, lineno, raw)
             check_color_mix(self, value, lineno, raw)
-            check_radius(self, prop, value, lineno, raw)
-            check_font_size(self, prop, value, lineno, raw)
             check_motion(self, prop, value, lineno, raw, in_reduced_motion=rule.in_reduced_motion)
             if is_shape_rule and prop == "box-shadow" and strip_important(value).lower() not in ("none", "inherit", "unset", ""):
                 self.add(
                     "MD3E023",
-                    "error" if self.mode == "desktop-bento" else "warn",
+                    "warning",
                     "Rectangular `box-shadow` applied directly on a non-rectangular masked/morphing shape.",
                     "Remove `box-shadow` and apply `filter: drop-shadow(...)` on a parent wrapper (e.g. `.md3e-shape-shadow-wrap`).",
                     self.path, lineno, raw,
                 )
-            else:
+            elif not is_data_view_rule:
                 check_shadow(self, prop, value, lineno, raw)
                 check_bento_decl(self, prop, value, lineno, raw, in_forced_colors=rule.in_forced_colors)
             check_misc(self, prop, value, lineno, raw)
 
-            if prop in MOTION_PROPS and (
-                TIME_RE.search(value)
-                or "var(--md-sys-motion-" in value
-                or "var(--md-bento-motion-" in value
-            ):
-                has_motion = True
+            if prop in MOTION_PROPS and not rule.in_reduced_motion and strip_important(value).lower() not in ("none", "0s", "0ms", "inherit", "unset"):
+                if (
+                    TIME_RE.search(value)
+                    or "var(--md-sys-motion-" in value
+                    or "var(--md-bento-motion-" in value
+                    or "var(--md-comp-loading-indicator-" in value
+                    or LINEAR_SPRING_RE.search(value)
+                    or CUBIC_BEZIER_CALL_RE.search(value)
+                ):
+                    has_motion = True
 
         # Check 9999px radius on a rule whose base selector transitions border-radius
-        if not self.token_file:
+        if not self.token_file and not is_data_view_rule:
             rule_bases = {re.split(r"[:\[]", s.strip())[0].strip() for s in rule.selector.split(",")}
             if any(rb == mb or rb.startswith(mb + ".") for rb in rule_bases for mb in morphing_bases):
                 for prop, value, lineno, raw in rule.declarations:
                     if prop in RADIUS_PROPS and FULL_RADIUS_VALUE_RE.search(value):
                         self.add(
                             "MD3E019",
-                            "error" if self.mode == "desktop-bento" else "warn",
+                            "warning",
                             "`border-radius: var(--md-sys-shape-corner-full)` (9999px) snaps or flashes a `0px` "
                             "sharp rectangle under spring overshoot (`> 1.0`) when animated.",
                             "Use a bounded `height / 2` radius (e.g. `20px` `--md-sys-shape-corner-large-increased` on "
@@ -816,7 +1073,7 @@ class Checker:
                         )
 
         # Touch target & visual height inflation checks (MD3E006)
-        if not self.token_file:
+        if not self.token_file and not is_data_view_rule:
             self._check_rule_touch_target(rule, hit_covered)
 
         return has_motion
@@ -831,7 +1088,7 @@ class Checker:
         ]
         if not interactive:
             return
-        if self.mode == "desktop-bento" and all(DENSE_ROW_SELECTOR_RE.search(s) for s in interactive):
+        if all(DENSE_ROW_SELECTOR_RE.search(s) or DATA_VIEW_SELECTOR_RE.search(s) for s in interactive):
             return
 
         decl_map: dict[str, tuple[str, int, str]] = {}
@@ -844,10 +1101,10 @@ class Checker:
         if h_val and min_h_val:
             h_px = parse_px(h_val[0])
             mh_px = parse_px(min_h_val[0])
-            mh_is_48 = (mh_px is not None and mh_px >= MIN_TOUCH_TARGET) or "var(--md-sys-touch-target-min)" in min_h_val[0]
-            if h_px is not None and h_px < MIN_TOUCH_TARGET and mh_is_48:
+            mh_is_48 = (mh_px is not None and mh_px >= M3_RECOMMENDED_TARGET) or "var(--md-sys-touch-target-min)" in min_h_val[0]
+            if h_px is not None and h_px < M3_RECOMMENDED_TARGET and mh_is_48:
                 self.add(
-                    "MD3E006", "warn",
+                    "MD3E006", "warning",
                     f"`min-height: 48px` on a {h_px:g}px button inflates its visual container height.",
                     "Keep `height: 32px` / `40px` on the visual button and expand only the "
                     "invisible hit area to 48px using a `::before` pseudo-element.",
@@ -872,19 +1129,26 @@ class Checker:
                     continue
                 px = parse_px(val)
                 if px is not None:
-                    if px >= MIN_TOUCH_TARGET:
+                    if px >= M3_RECOMMENDED_TARGET:
                         has_48_guard = True
                     elif small_hit is None:
                         small_hit = (px, ln, raw)
             if small_hit and not has_48_guard:
                 px, ln, raw = small_hit
-                self.add(
-                    "MD3E006", "warn",
-                    f"Interactive element is {px:g}px on one axis; the minimum touch target is {MIN_TOUCH_TARGET:g}px.",
-                    "Keep the visual element small if intended (32px/40px) and preserve a 48px "
-                    "hit area via `::before`, or use `min-height: var(--md-sys-touch-target-min)`.",
-                    self.path, ln, raw,
-                )
+                if px < WCAG_MIN_TARGET:
+                    self.add(
+                        "MD3E006", "error",
+                        f"Interactive target is {px:g}px on one axis, below the WCAG 2.2 AA {WCAG_MIN_TARGET:g}x{WCAG_MIN_TARGET:g}px floor.",
+                        "Expand the clickable hit area to >= 24px minimum (recommended 48x48px via `::before`).",
+                        self.path, ln, raw,
+                    )
+                else:
+                    self.add(
+                        "MD3E006", "warning",
+                        f"Interactive target is {px:g}px on one axis (satisfies WCAG {WCAG_MIN_TARGET:g}px AA floor, below M3 recommended {M3_RECOMMENDED_TARGET:g}px touch target).",
+                        "Keep visual height 32px/40px and expand the pointer hit area to 48px via an invisible `::before` pseudo-element.",
+                        self.path, ln, raw,
+                    )
 
     def _check_ms_font_axes(self, text: str, base_line: int = 1) -> None:
         lines = text.splitlines()
@@ -939,9 +1203,9 @@ class Checker:
 
         if blur_hit and not has_reduced_transparency:
             self.add(
-                "MD3E022", "warn",
+                "MD3E022", "error",
                 "`backdrop-filter: blur(...)` used without a `@media (prefers-reduced-transparency: reduce)` fallback.",
-                "Prefer opaque tonal `surface-container-*` elevation first, or use `.md3e-blur-surface` / pair blur with `color-mix(in oklab, ...)` and `@media (prefers-reduced-transparency: reduce)`.",
+                "Prefer opaque tonal `surface-container-*` elevation first, or use `md3e-blur.css` / pair blur with `color-mix(in oklab, ...)` and `@media (prefers-reduced-transparency: reduce)`.",
                 self.path, blur_hit[0], blur_hit[1],
             )
 
@@ -955,15 +1219,15 @@ class Checker:
 
         if has_hover and not has_focus_visible:
             self.add(
-                "MD3E005", "warn",
+                "MD3E005", "error",
                 "Stylesheet styles :hover states but defines no :focus-visible.",
-                "Add `:focus-visible { outline: 2px solid var(--md-sys-color-secondary); outline-offset: 2px; }`.",
+                "Add `:focus-visible { outline: 3px solid var(--md-sys-color-secondary); outline-offset: 2px; }`.",
                 self.path, 0, "",
             )
 
         if (has_keyframes or (has_motion and not linked_motion_css)) and not has_reduced and not self.token_file:
             self.add(
-                "MD3E008", "warn",
+                "MD3E008", "warning",
                 "Motion defined without a prefers-reduced-motion path.",
                 "Include `@media (prefers-reduced-motion: reduce)` (or link `md3e-motion.css` "
                 "for token-only transitions and guard custom `@keyframes`).",
@@ -973,7 +1237,7 @@ class Checker:
         role_defs = len(re.findall(r"--md-sys-color-[a-z-]+\s*:", cleaned_css))
         if role_defs >= 5 and not has_dark and not self.token_file:
             self.add(
-                "MD3E009", "warn",
+                "MD3E009", "warning",
                 f"{role_defs} colour roles defined without a dark scheme.",
                 'Redefine the roles under `[data-theme="dark"]` and `@media (prefers-color-scheme: dark)`.',
                 self.path, 0, "",
@@ -986,6 +1250,16 @@ class Checker:
         if not is_full_doc:
             return
 
+        markup_clean = strip_html_comments(markup_only)
+        has_doc_exempt = bool(re.search(r"<(?:html|body|main)\b[^>]*\bdata-md3e-exempt\b", markup_clean, re.I))
+        has_hero_card = bool(re.search(r"bento-card--hero|data-bento-hero\b", text, re.I))
+        has_analytical_view = bool(
+            re.search(r"<(?:canvas|table)\b|\brole\s*=\s*[\"'](?:grid|treegrid)[\"']|\bdata-md3e-exempt\b", markup_clean, re.I)
+            or re.search(r"<svg\b[^>]*(?:chart|plot|graph|axis|trajectory|replay|telemetry)", markup_clean, re.I)
+        )
+        if has_doc_exempt or (has_analytical_view and not has_hero_card):
+            return
+
         surface_tiers = set(
             re.findall(
                 r"--md-sys-color-surface-container(?:-(?:lowest|low|high|highest))?\b",
@@ -994,9 +1268,9 @@ class Checker:
         )
         if len(surface_tiers) < 4:
             self.add(
-                "MD3E102", "error",
-                f"Desktop Bento document uses only {len(surface_tiers)} `surface-container-*` tier(s) (minimum 4 required for borderless depth).",
-                "Layer at least 4 distinct luminance tokens (`surface-container-lowest`, `-low`, `surface-container`, `-high`, `-highest`).",
+                "MD3E102", "custom",
+                f"Opt-in Desktop Bento preset uses only {len(surface_tiers)} `surface-container-*` tier(s) (4+ recommended for Bento dashboards).",
+                "Layer 4+ luminance tokens (`surface-container-lowest`, `-low`, `surface-container`, `-high`, `-highest`), or exempt analytical views with `data-md3e-exempt=\"data-view\"`.",
                 self.path, 1, "",
             )
 
@@ -1004,8 +1278,8 @@ class Checker:
         has_inner = bool(re.search(r"--md-sys-shape-corner-large\b|\b16px\b", combined_css))
         if not (has_outer and has_inner):
             self.add(
-                "MD3E103", "warn",
-                "Desktop Bento document is missing concentric outer (`corner-extra-large` 28px) / inner (`corner-large` 16px) corner radii.",
+                "MD3E103", "custom",
+                "Opt-in Desktop Bento dashboard is missing concentric outer (`corner-extra-large` 28px) / inner (`corner-large` 16px) corner radii.",
                 "Use `--md-sys-shape-corner-extra-large` (28px) on Bento cards and step inner wells down to `--md-sys-shape-corner-large` (16px).",
                 self.path, 1, "",
             )
@@ -1021,9 +1295,9 @@ class Checker:
         has_kpi_scale = bool(re.search(r"--md-sys-typescale-display-(?:large|medium)-size", combined_css))
         if not (has_morph_and_drop and has_wave_and_spark and has_kpi_scale):
             self.add(
-                "MD3E104", "warn",
-                "Desktop Bento Hero card is missing required expressive anchors (morphing shape CTA with `drop-shadow()`, wave + sparkline SVG, or `>=3x` Display KPI).",
-                "Include a Hero Bento card with decorative wave backdrop, edge-bleed sparkline SVG, `md3e-morph.js` CTA (`filter: drop-shadow()`), and `display-large`/`display-medium` KPI.",
+                "MD3E104", "custom",
+                "Opt-in Desktop Bento Hero preset is missing signature Hero anchors (morphing shape CTA with `drop-shadow()`, wave + sparkline SVG, or `>=3x` Display KPI).",
+                "Include a Hero Bento card with decorative wave backdrop, sparkline SVG, `md3e-morph.js` CTA, and Display KPI — or mark analytical data views with `data-md3e-exempt=\"data-view\"`.",
                 self.path, 1, "",
             )
 
@@ -1047,53 +1321,113 @@ class Checker:
             has_focus_visible = ":focus-visible" in combined_css
             has_reduced = "prefers-reduced-motion" in combined_css
             has_keyframes = "@keyframes" in combined_css
-            has_motion_decl = bool(re.search(r"(?:transition|animation)[^;]*(?:var\(--md-sys-motion-|\d+m?s)", combined_css))
+            has_motion_decl = bool(re.search(r"(?:transition|animation)[^;]*(?:var\(--md-sys-motion-|var\(--md-bento-motion-|\d+m?s)", combined_css))
             if has_hover and not has_focus_visible:
                 self.add(
-                    "MD3E005", "warn",
+                    "MD3E005", "error",
                     "Document styles :hover states without :focus-visible.",
                     "Add `:focus-visible` indicator styling for keyboard users.",
                     self.path, 0, "",
                 )
             if (has_keyframes or (has_motion_decl and not linked_motion_css)) and not has_reduced:
                 self.add(
-                    "MD3E008", "warn",
+                    "MD3E008", "warning",
                     "Custom motion/keyframes defined without a prefers-reduced-motion path.",
                     "Add `@media (prefers-reduced-motion: reduce)` handling.",
                     self.path, 0, "",
                 )
 
-        # 2. Inline style="..." checks outside <script>/<style>
+        # 2. Inline style="..." checks outside <script>/<style> (honouring data-view exemptions)
         markup_only = strip_tag_blocks(strip_tag_blocks(text, "script"), "style")
-        lines = markup_only.splitlines()
+        markup_clean = strip_html_comments(markup_only)
+        exempt_lines = find_exempt_line_set(markup_clean)
+        lines = markup_clean.splitlines()
         for i, line in enumerate(lines, start=1):
+            is_exempt_line = i in exempt_lines
             for sm in STYLE_ATTR_RE.finditer(line):
                 style_val = sm.group(1) if sm.group(1) is not None else sm.group(2)
-                for prop, val in iter_inline_declarations(style_val):
-                    check_hex(self, val, i, line)
-                    check_func_color(self, val, i, line)
+                inline_decls = iter_inline_declarations(style_val)
+                check_role_pairing_and_contrast(
+                    self,
+                    [(p, v, i, line) for p, v in inline_decls],
+                    is_data_view=is_exempt_line,
+                )
+                for prop, val in inline_decls:
+                    if not is_exempt_line:
+                        check_hex(self, val, i, line)
+                        check_func_color(self, val, i, line)
+                        check_radius(self, prop, val, i, line)
+                        check_font_size(self, prop, val, i, line)
+                        check_shadow(self, prop, val, i, line)
+                        check_bento_decl(self, prop, val, i, line)
                     check_color_mix(self, val, i, line)
-                    check_radius(self, prop, val, i, line)
-                    check_font_size(self, prop, val, i, line)
                     check_motion(self, prop, val, i, line)
-                    check_shadow(self, prop, val, i, line)
-                    check_bento_decl(self, prop, val, i, line)
                     check_misc(self, prop, val, i, line)
                     if not self.token_file and prop in ("backdrop-filter", "-webkit-backdrop-filter") and "blur(" in val:
                         self.add(
-                            "MD3E022", "warn",
+                            "MD3E022", "error",
                             "Inline `backdrop-filter: blur(...)` cannot honour `prefers-reduced-transparency: reduce`.",
-                            "Move frosted glass styles to `.md3e-blur-surface` or CSS with `@media (prefers-reduced-transparency: reduce)`.",
+                            "Move frosted glass styles to `md3e-blur.css` or CSS with `@media (prefers-reduced-transparency: reduce)`.",
                             self.path, i, line,
                         )
 
         # 3. HTML component, icon, tag, accessibility & desktop-bento structural checks
         self._audit_desktop_bento_document(text, combined_css, markup_only)
-        self._audit_html_semantics(markup_only, full_text=text)
+        self._audit_html_semantics(markup_only, full_text=text, exempt_lines=exempt_lines)
 
-    def _audit_html_semantics(self, markup_only: str, *, full_text: str) -> None:
+    def _check_multiple_primary_filled_buttons(self, markup_clean: str, lines: list[str], exempt_lines: set[int]) -> None:
+        if self.token_file:
+            return
+        token_re = re.compile(rf"<(/?)([a-zA-Z][a-zA-Z0-9:-]*)\b({TAG_ATTRS_PAT})(/?)>")
+        # Each scope frame: [tag_name, open_line, filled_count, reported_2nd]
+        scopes: list[list] = [["document", 1, 0, False]]
+        for m in token_re.finditer(markup_clean):
+            is_close = m.group(1) == "/"
+            tag = m.group(2).lower()
+            attrs = m.group(3)
+            self_closing = bool(m.group(4)) or tag in VOID_HTML_TAGS
+            ln = markup_clean[:m.start()].count("\n") + 1
+            if not is_close:
+                starts_scope = bool(
+                    tag in ("section", "dialog", "form")
+                    or re.search(r"\bpopover\b", attrs, re.I)
+                )
+                is_enabled_filled = bool(
+                    ln not in exempt_lines
+                    and not re.search(r"\bdisabled\b", attrs, re.I)
+                    and (
+                        tag == "md-filled-button"
+                        or (
+                            tag == "button"
+                            and re.search(r"(?<![\w-])(?:md3e-btn--filled|btn-filled|btn--filled)(?![\w-])", attrs, re.I)
+                        )
+                    )
+                )
+                if is_enabled_filled:
+                    scopes[-1][2] += 1
+                    if scopes[-1][2] == 2 and not scopes[-1][3]:
+                        scopes[-1][3] = True
+                        self.add(
+                            "MD3E025", "info",
+                            f"Multiple enabled primary `filled` buttons in `{scopes[-1][0]}` view (project convention).",
+                            "Use at most one primary `filled` CTA per view/surface; demote secondary actions to tonal, outlined, or text.",
+                            self.path, ln, lines[ln - 1] if ln - 1 < len(lines) else "",
+                        )
+                if starts_scope and not self_closing:
+                    scopes.append([tag, ln, 0, False])
+            else:
+                for idx in range(len(scopes) - 1, 0, -1):
+                    if scopes[idx][0] == tag:
+                        del scopes[idx:]
+                        break
+
+    def _audit_html_semantics(self, markup_only: str, *, full_text: str, exempt_lines: set[int] | None = None) -> None:
         markup_clean = strip_html_comments(markup_only)
         lines = markup_clean.splitlines()
+        if exempt_lines is None:
+            exempt_lines = find_exempt_line_set(markup_clean)
+
+        self._check_multiple_primary_filled_buttons(markup_clean, lines, exempt_lines)
 
         # Check full document Material Symbols font link (MD3E017)
         is_full_doc = (
@@ -1151,12 +1485,13 @@ class Checker:
                     self.path, i, line,
                 )
             if re.search(r"<md-fab[^>]*\bsize\s*=\s*[\"']small[\"']", line, re.I) or re.search(r"\b(fab[-_]small|small[-_]fab)\b", line, re.I):
-                self.add(
-                    "MD3E016", "warn",
-                    "Small FAB (40dp) is deprecated in MD3E.",
-                    "Use Standard FAB (56dp) or Medium FAB (80dp, corner 20dp).",
-                    self.path, i, line,
-                )
+                if i not in exempt_lines:
+                    self.add(
+                        "MD3E016", "warning",
+                        "Small FAB (40dp) is deprecated in MD3E.",
+                        "Use Standard FAB (56dp) or Medium FAB (80dp, corner 20dp).",
+                        self.path, i, line,
+                    )
 
         # Check mismatched or unclosed <md-*> tags across the markup (MD3E020)
         tag_stack: list[tuple[str, int]] = []
@@ -1238,7 +1573,7 @@ class Checker:
             ):
                 reported_a11y_lines.add(ctrl_line)
                 self.add(
-                    "MD3E014", "warn",
+                    "MD3E014", "error",
                     "Icon-only control without an accessible name.",
                     "Add `aria-label` (or a visually hidden span) to the interactive control.",
                     self.path, ctrl_line, lines[ctrl_line - 1] if ctrl_line - 1 < len(lines) else "",
@@ -1250,7 +1585,7 @@ class Checker:
                 if not re.search(r"""\baria-hidden\s*=\s*(?:["']true["']|\{true\})""", icon_attrs, re.I):
                     ln = markup_clean[:m.start(3) + icon_m.start()].count("\n") + 1
                     self.add(
-                        "MD3E021", "warn",
+                        "MD3E021", "warning",
                         "Decorative Material Symbols icon inside a labelled control is missing `aria-hidden=\"true\"`.",
                         "Add `aria-hidden=\"true\"` to the icon element so screen readers do not read the raw ligature name.",
                         self.path, ln, lines[ln - 1] if ln - 1 < len(lines) else "",
@@ -1258,28 +1593,39 @@ class Checker:
 
     def audit_generic_code(self, text: str) -> None:
         # Handle JSX/TSX/JS/TS lines + HTML-like snippets cleanly
+        markup_clean = strip_html_comments(text)
+        exempt_lines = find_exempt_line_set(markup_clean)
         lines = text.splitlines()
         selector = ""
         depth = 0
         for i, raw in enumerate(lines, start=1):
+            is_exempt_line = i in exempt_lines
+            is_data_sel = bool(selector and any(DATA_VIEW_SELECTOR_RE.search(s) for s in selector.split(",")))
             # Also check inline style="..." in JSX/PHP templates
             for sm in STYLE_ATTR_RE.finditer(raw):
                 style_val = sm.group(1) if sm.group(1) is not None else sm.group(2)
-                for prop, val in iter_inline_declarations(style_val):
-                    check_hex(self, val, i, raw)
-                    check_func_color(self, val, i, raw)
+                inline_decls = iter_inline_declarations(style_val)
+                check_role_pairing_and_contrast(
+                    self,
+                    [(p, v, i, line) for p, v in inline_decls],
+                    is_data_view=is_exempt_line,
+                )
+                for prop, val in inline_decls:
+                    if not is_exempt_line:
+                        check_hex(self, val, i, raw)
+                        check_func_color(self, val, i, raw)
+                        check_radius(self, prop, val, i, raw)
+                        check_font_size(self, prop, val, i, raw)
+                        check_shadow(self, prop, val, i, raw)
+                        check_bento_decl(self, prop, val, i, raw)
                     check_color_mix(self, val, i, raw)
-                    check_radius(self, prop, val, i, raw)
-                    check_font_size(self, prop, val, i, raw)
                     check_motion(self, prop, val, i, raw)
-                    check_shadow(self, prop, val, i, raw)
-                    check_bento_decl(self, prop, val, i, raw)
                     check_misc(self, prop, val, i, raw)
                     if not self.token_file and prop in ("backdrop-filter", "-webkit-backdrop-filter") and "blur(" in val:
                         self.add(
-                            "MD3E022", "warn",
+                            "MD3E022", "error",
                             "Inline `backdrop-filter: blur(...)` cannot honour `prefers-reduced-transparency: reduce`.",
-                            "Move frosted glass styles to `.md3e-frosted-surface` or CSS with `@media (prefers-reduced-transparency: reduce)`.",
+                            "Move frosted glass styles to `md3e-blur.css` or CSS with `@media (prefers-reduced-transparency: reduce)`.",
                             self.path, i, raw,
                         )
 
@@ -1295,20 +1641,21 @@ class Checker:
                     if m and not m.group("prop").startswith("--"):
                         prop = m.group("prop").lower()
                         val = m.group("value")
-                        check_hex(self, val, i, raw)
-                        check_func_color(self, val, i, raw)
+                        if not (is_exempt_line or is_data_sel):
+                            check_hex(self, val, i, raw)
+                            check_func_color(self, val, i, raw)
+                            check_radius(self, prop, val, i, raw)
+                            check_font_size(self, prop, val, i, raw)
+                            check_shadow(self, prop, val, i, raw)
+                            check_bento_decl(self, prop, val, i, raw)
                         check_color_mix(self, val, i, raw)
-                        check_radius(self, prop, val, i, raw)
-                        check_font_size(self, prop, val, i, raw)
                         check_motion(self, prop, val, i, raw)
-                        check_shadow(self, prop, val, i, raw)
-                        check_bento_decl(self, prop, val, i, raw)
                         check_misc(self, prop, val, i, raw)
             if "}" in raw:
                 depth = max(0, depth - raw.count("}"))
                 if depth == 0:
                     selector = ""
-        self._audit_html_semantics(text, full_text=text)
+        self._audit_html_semantics(text, full_text=text, exempt_lines=exempt_lines)
 
 
 # ===========================================================================
@@ -1393,9 +1740,12 @@ def audit(paths: list[str], exclude: list[str], *, include_markdown: bool = Fals
     return reports, len(files)
 
 
-def render_text(reports: list[FileReport], min_severity: str, scanned: int) -> None:
-    counts = {s: 0 for s in SEVERITIES}
+def render_text(reports: list[FileReport], min_severity: str, scanned: int, *, mode: str = "strict") -> None:
+    shown_counts = {s: 0 for s in SEVERITIES}
+    total_counts = {s: 0 for s in SEVERITIES}
     for report in reports:
+        for f in report.findings:
+            total_counts[f.severity] += 1
         shown = [f for f in report.findings
                  if SEVERITY_RANK[f.severity] <= SEVERITY_RANK[min_severity]]
         if not shown:
@@ -1403,28 +1753,35 @@ def render_text(reports: list[FileReport], min_severity: str, scanned: int) -> N
         shown.sort(key=lambda f: (SEVERITY_RANK[f.severity], f.line))
         print(f"\n\033[1m{report.path}\033[0m")
         for f in shown:
-            counts[f.severity] += 1
-            print(f"  [{f.severity.upper():<5}] {f.code}"
+            shown_counts[f.severity] += 1
+            print(f"  [{f.severity.upper():<7}] {f.code}"
                   + (f"  line {f.line}" if f.line else ""))
-            print(f"          {f.message}")
-            print(f"          fix: {f.fix}")
+            print(f"            {f.message}")
+            print(f"            fix: {f.fix}")
             if f.snippet:
-                print(f"          > {f.snippet}")
+                print(f"            > {f.snippet}")
 
-    verdict = "FAIL" if counts["error"] else ("WARN" if counts["warn"] else "PASS")
-    print("\n" + "=" * 66)
-    print(f"MD3E audit: {verdict}   {counts['error']} error, {counts['warn']} warn, "
-          f"{counts['info']} info   ({scanned} file(s) scanned)")
-    if not any(counts.values()):
+    err_n = total_counts["error"]
+    warn_n = total_counts["warning"]
+    info_n = total_counts["info"]
+    cust_n = total_counts["custom"]
+    official_score = max(0, 100 - 15 * err_n - 5 * warn_n)
+    official_verdict = "FAIL" if err_n else ("WARNING" if warn_n else "PASS")
+
+    print("\n" + "=" * 72)
+    print(
+        f"MD3E audit ({mode}): {official_verdict} (official score {official_score}/100)   "
+        f"{err_n} ERROR, {warn_n} WARNING, {info_n} INFO, {cust_n} CUSTOM   ({scanned} file(s) scanned)"
+    )
+    if not any(total_counts.values()):
         print("All checks passed. Nothing to fix.")
         return
-    print("Fix in this order: MD3E001/002/017/018/020 errors, MD3E004 motion, "
-          "MD3E005 focus, MD3E003 shape scale.")
+    print("Fix priority: ERROR (official/WCAG) -> WARNING (recommended) -> INFO (project defaults); CUSTOM does not affect Official Score.")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Audit front-end code against Material 3 Expressive rules.")
+        description="Audit front-end code against layered M3E, Web adaptation & product extension rules.")
     parser.add_argument("paths", nargs="+", help="files or directories to scan")
     parser.add_argument("--json", action="store_true", help="emit JSON")
     parser.add_argument("--markdown", action="store_true",
@@ -1433,22 +1790,38 @@ def main(argv: list[str] | None = None) -> int:
                         help="audit policy profile: strict (default) or desktop-bento")
     parser.add_argument("--exclude", default="",
                         help="comma-separated substrings to skip")
-    parser.add_argument("--fail-on", choices=SEVERITIES, default="error",
-                        help="severity that makes the run fail (default: error)")
-    parser.add_argument("--min-severity", choices=SEVERITIES, default="info",
-                        help="lowest severity to report (default: info)")
+    parser.add_argument("--fail-on", type=normalize_severity, default="error",
+                        help="severity threshold that fails the run (error, warning/warn, info, custom; default: error)")
+    parser.add_argument("--min-severity", type=normalize_severity, default=None,
+                        help="lowest severity to report (default: custom in desktop-bento, info in strict)")
     args = parser.parse_args(argv)
+    min_sev = args.min_severity or ("custom" if args.mode == "desktop-bento" else "info")
 
     exclude = [x.strip() for x in args.exclude.split(",") if x.strip()]
     reports, scanned = audit(args.paths, exclude, include_markdown=args.markdown, mode=args.mode)
 
+    counts = {
+        s: sum(1 for r in reports for f in r.findings if f.severity == s)
+        for s in SEVERITIES
+    }
+    official_score = max(0, 100 - 15 * counts["error"] - 5 * counts["warning"])
+    official_verdict = "FAIL" if counts["error"] else ("WARNING" if counts["warning"] else "PASS")
+
     if args.json:
         print(json.dumps({
             "mode": args.mode,
-            "summary": {
-                s: sum(1 for r in reports for f in r.findings if f.severity == s)
-                for s in SEVERITIES
+            "official_compliance": {
+                "verdict": official_verdict,
+                "score": official_score,
+                "error": counts["error"],
+                "warning": counts["warning"],
+                "info": counts["info"],
             },
+            "custom_extensions": {
+                "active": args.mode == "desktop-bento",
+                "custom": counts["custom"],
+            },
+            "summary": counts,
             "files_scanned": scanned,
             "files": [
                 {"path": r.path, "findings": [f.to_dict() for f in r.findings]}
@@ -1456,7 +1829,7 @@ def main(argv: list[str] | None = None) -> int:
             ],
         }, indent=2))
     else:
-        render_text(reports, args.min_severity, scanned)
+        render_text(reports, min_sev, scanned, mode=args.mode)
 
     worst = min((SEVERITY_RANK[f.severity] for r in reports for f in r.findings),
                 default=len(SEVERITIES))

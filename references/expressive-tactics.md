@@ -1,5 +1,9 @@
 # Expressive tactics
 
+> [!NOTE]
+> **Layer 3 — Opt-In Product Extensions (Informational / Non-Mandatory):**
+> The 7 tactics below summarize Material blog UX research (`m3.material.io/blog/building-with-m3-expressive`) as product-level composition guidance. They are **not** hard compliance errors (`ERROR`), and individual views—especially analytical data workspaces, tables, and charts—may adjust container density, borders, or hierarchy without failing official M3E compliance.
+
 Source: <https://m3.material.io/blog/building-with-m3-expressive>
 
 M3E is not just new tokens. Google distilled a set of design tactics for

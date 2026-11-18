@@ -10,7 +10,8 @@
 >   - **5 个脚本（`scripts/`）**：`color_to_css.py`（支持 `--seed` 与 `--image` 传图取色）、`shapes_to_css.py`、`spring_to_css.py`、`audit_md3e.py`（支持 `--mode=strict` 与 `--mode=desktop-bento`，规则涵盖 `MD3E001`–`MD3E023` 与 `MD3E101`–`MD3E104`）、`test_md3e.py`。
 >   - **9 个令牌与运行时文件（`assets/tokens/`）**：`md3e-tokens.css`、`md3e-palettes.css`、`md3e-blur.css`（带 `@media (prefers-reduced-transparency: reduce)` 自动纯色回退）、`md3e-shapes.css`、`md3e-motion.css`、`md3e-material-web.css`、`md3e-spring.js`、`md3e-morph.js`（AndroidX `RoundedPolygon` + `Morph` 三阶贝塞尔实时形变插值器）、`md3e-dynamic-color.js`（浏览器端上传图片取色 `QuantizerCelebi` + `Score` + `SPEC_2025` 实时换肤）。
 >   - **Tailwind 与 Starter 资产**：`assets/tailwind/md3e-theme.css`、`assets/tailwind/tailwind.config.js`、`assets/starter/index.html`、`assets/starter/desktop-bento.html`（独立桌面端高密度 Bento 仪表盘演示页）。
-> - **第三轮（Web 原生完备度 + 桌面端高密度 Bento 系统升级）**：在 `SKILL.md` 建立上下文预算防溢出机制与 `references/desktop-bento.md` 可选覆写层解耦；新增 `md3e-blur.css`、`md3e-morph.js`，并在 `expressive-recipes.md` / `typography.md` / `starter` 示例中补齐实时贝塞尔形变、100% 自动拉直双实现波浪进度条（SVG + Canvas）、悬浮/停靠双向工具栏、按钮组邻居宽度挤压、可变字体 `GRAD`/`ROND`/`wght` 弹簧过渡及 View Transitions 容器展开配方。
+> - **第三轮（Web 原生完备度 + 桌面端高密度 Bento 系统升级）**：在 `SKILL.md` 建立上下文预算防溢出机制与 `references/desktop-bento.md` 可选覆写层解耦；新增 `md3e-blur.css`、`md3e-morph.js`，并在 `expressive-recipes.md` / `typography.md` / `starter` 示例中补齐实时贝塞尔形变、100% 自动拉直双实现波浪进度条（SVG + Canvas）、悬浮/停靠双向工具栏、按钮组邻居宽度挤压、可变字体 `GRAD`/`ROND`/`wght` 弹簧过渡及 View Transitions 容器展开配方；随后在交互回归中修复了 `desktop-bento.html` CTA 按钮点击瞬时锐角矩形（`9999px` 过冲负值钳位，规则 `MD3E019`）与取色 Popover 锚定问题。
+> - **第四轮（Official Spec Purification 官方规范纯化与三层架构重构）**：将仓库统一定位为 *"M3 Expressive-inspired Web Design System with verified M3E specifications"*；在 `SKILL.md`、`README.md` 与 `references/` 明确切分 **Layer 1 Official M3E**（6 组语义色彩与 5 种 HCT 动态变体、基线/强调各 15 级排版、10 档圆角与 35 种 `MaterialShapes`、Expressive/Standard 弹簧物理参数）、**Layer 2 Web Implementation**（`md3e-spring.js` / `linear()` 与 Google `OFFICIAL_WEB_CURVES` 同为一等公民、WCAG 2.2 AA `24×24px` 热区底线 `[ERROR]` vs M3 推荐 `48×48px` `[WARNING]`、CSS Mask / wrapper `filter: drop-shadow()`、`in oklab` 中性色混合、`md3e-blur.css` `prefers-reduced-transparency` 回退）、**Layer 3 Opt-In Product Extensions**（将 `desktop-bento.md` 与 `expressive-tactics.md` 从官方强制范畴剥离）；将 `scripts/audit_md3e.py` 重构为 `ERROR` / `WARNING` / `INFO` / `CUSTOM` 四级权威判定（新增 `MD3E024` 对比度/角色配对与 `MD3E025` 单视图多主按钮规则），使 `CUSTOM` 仅在 `--mode=desktop-bento` 激活且不计入 `official_compliance.score`，并加入 `data-md3e-exempt="data-view"` 与 `<canvas>` / 图表 `<svg>` / 2D 轨迹视口 / 统计明细表的自动豁免。
 
 ## 结论（初版审查快照）
 
@@ -159,3 +160,20 @@ P1 表示应优先修复、可能直接影响可读性或错误放行；P2 表�
 4. 修订规范措辞，并用已确认的正反例校准检查器。
 
 完成修复后，应至少回归浅色/暗色、系统跟随、高对比度、reduced-motion、键盘与触控、五档按钮尺寸；对 starter 再进行窄屏及 200% 文本缩放检查。
+
+---
+
+## 当前三层架构边界与未逐一认证范围（Honest Scope Ledger）
+
+本项目统一定位为 ***"M3 Expressive-inspired Web Design System with verified M3E specifications"***，而非经 Google 官方逐组件签发认证的唯一实现：
+
+### 已核验的三层边界
+1. **Layer 1 — Official M3E（官方规范权威层）**：语义色彩角色（47 角色）与 HCT 5 种动态变体（`tonal-spot`、`expressive`、`vibrant`、`neutral`、`monochrome`）、基线/强调各 15 级排版阶梯、10 档圆角阶梯、AOSP `MaterialShapes` 35 种几何路径与 Morph 序列、官方 Expressive 与 Standard（Spatial / Effects）弹簧物理参数。
+2. **Layer 2 — Web Implementation（Web 实现适配层）**：`md3e-spring.js` / CSS `linear()` 采样与 Google 官方 `OFFICIAL_WEB_CURVES` + duration 同为一等公民实现；WCAG 2.2 AA `24×24 CSS px` 交互热区底线（`[ERROR]`）vs M3 推荐 `48×48px` `::before` 扩展实践（`[WARNING]`）；CSS `mask-image` 裁剪、容器 `filter: drop-shadow()`、`in oklab` 中性色混合（严禁中性色 `in oklch`，`[ERROR]`）、`md3e-blur.css` 配合 `@media (prefers-reduced-transparency: reduce)` 纯色回退（缺失为 `[ERROR]`）。
+3. **Layer 3 — Opt-In Product Extensions（产品风格扩展层）**：[`references/desktop-bento.md`](references/desktop-bento.md) 与 [`references/expressive-tactics.md`](references/expressive-tactics.md) 仅在显式启用意图与 `--mode=desktop-bento` 时以 `[CUSTOM]` 级检查激活，结果与 [`audit_md3e.py`](scripts/audit_md3e.py) 的 `official_compliance.score` 完全隔离；任何 `<canvas>`、专业图表 `<svg>`、2D 轨迹视口、高密度统计表或显式标注 `data-md3e-exempt="data-view"` 的区块均自动豁免桌面装饰规则。
+
+### 尚未逐一认证的范围（Known Boundaries）
+- **全组件跨断点状态矩阵**：尚未针对全部 36+ 组件图示的每一种交互状态、密级组合及全尺寸（`XS–XL`）在所有 `m3.material.io` 规格图上逐像素认证。
+- **Tailwind CSS v3 / v4 实机编译流水线**：`assets/tailwind/md3e-theme.css` 与 `tailwind.config.js` 的键值与 Token 映射已通过结构对齐，尚未在独立 Vite/PostCSS v3 & v4 构建管线中逐类渲染实测。
+- **外部前端框架全量构建矩阵**：React、Vue、Svelte、Next.js、Nuxt 等外部框架集成代码片段仅作接入参考，未逐框架启动端到端构建与 SSR 水合测试；`@material/web` 版本升级兼容性随上游 `esm.run` 发布节奏变化。
+- **非 Chromium 引擎差异**：`linear()` 与 `@supports` 降级路径在文档和回退 CSS 中已覆盖，实机浏览器回归仅在 Chromium 无头/桌面环境下完成，未覆盖 Safari/WebKit 与 Firefox 跨引擎实机矩阵。

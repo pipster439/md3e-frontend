@@ -28,16 +28,14 @@ tonal shifts of the same roles, so it costs one media query:
 Never rely on colour alone to carry meaning. Error needs an icon or a message;
 selection needs an indicator, a check, or a shape change.
 
-## Touch targets
+## Touch targets (Visual Size vs Pointer Hit Area)
 
-- Minimum interactive target: **48×48px**.
-- Recommended for a primary action: 56×56.
-- Minimum spacing between targets: 8px; 16–24px where motor precision is
-  limited.
-- The state layer is 40px; the target around it is still 48px.
+Strictly distinguish a control's **visual box height/width** from its **interactive pointer hit area**:
 
-Expressive button sizes **XS (32)** and **S (40)** are below the minimum, and
-that is intentional — they must expand their tap area instead of their box:
+- **Hard Accessibility Floor (WCAG 2.2 AA — `ERROR`):** Interactive controls must expose a hit area of at least **24×24 CSS px** (unless exempt under WCAG 2.2 SC 2.5.8 inline/spacing/user-agent rules). Anything smaller fails `MD3E006` at `[ERROR]` severity.
+- **Recommended M3 Target (Material Guidance — `WARNING`):** Expand touch/click targets to **48×48 px** where layout allows (**56×56 px** recommended for primary actions), with **8 px** minimum gap (`16–24 px` where motor precision is limited). A compact **40 px** state layer inside a **48 px** invisible hit area satisfies both visual compact density and ergonomic touch targets.
+
+Expressive button sizes **XS (32 px)** and **S (40 px)** intentionally have visual heights below 48 px — expand their pointer hit area via a pseudo-element rather than inflating their visual box:
 
 ```css
 .btn-xs { height: 32px; position: relative; }
@@ -111,14 +109,9 @@ parallax, large zooms, spins.
 
 ### Transparency & blur (`prefers-reduced-transparency`)
 
-Default to opaque tonal `surface-container-*` elevation rather than blur.
-Whenever floating chrome uses `backdrop-filter: blur(...)` (such as
-`.md3e-frosted-surface` in `assets/tokens/md3e-tokens.css`), pair it with
-`color-mix(in oklab, ...)` and an explicit solid fallback under
-`@media (prefers-reduced-transparency: reduce)`, `@media (prefers-contrast: more)`,
-and `[data-contrast="high"]` (`background: var(--md-sys-color-surface-container);
-backdrop-filter: none;`). Never ship unguarded `backdrop-filter: blur(...)`
-(`MD3E022`).
+> **Layer 2 — Web Implementation:** Material 3 component specs rely on opaque tonal `surface-container-*` elevation; frosted translucency is a Web adaptation provided via `assets/tokens/md3e-blur.css`.
+
+Whenever floating chrome uses `backdrop-filter: blur(...)` (`.md3e-frosted-surface`), pair it with **`color-mix(in oklab, ...)`** (never `in oklch` on neutral surfaces, which triggers powerless-hue tinting and fails `MD3E018` as `[ERROR]`) and an explicit solid fallback under `@media (prefers-reduced-transparency: reduce)`, `@media (prefers-contrast: more)`, and `[data-contrast="high"]` (`background: var(--md-sys-color-surface-container); backdrop-filter: none;`). Missing the reduced-transparency fallback fails `MD3E022` at `[ERROR]` severity.
 
 ### Windows High Contrast (`forced-colors: active`)
 
@@ -159,7 +152,7 @@ Prefer rem for text and spacing, px for hairline borders and icon glyphs.
 - [ ] All contrast pairs use a matching `on-` role
 - [ ] A high-contrast path exists
 - [ ] Colour is never the only signal
-- [ ] Every target is ≥ 48×48 with ≥ 8px separation
+- [ ] Pointer hit area meets WCAG 2.2 AA `>= 24×24 px` floor (`[ERROR]` in `MD3E006`) and expands toward M3 recommended `>= 48×48 px` via `::before` without inflating XS/S visual geometry (`[WARNING]`), with `>= 8px` separation
 - [ ] Every interactive element has a visible `:focus-visible` indicator
 - [ ] Hover / focus / pressed / disabled / selected states all render
 - [ ] Icon-only controls have accessible names

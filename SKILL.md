@@ -1,64 +1,61 @@
 ---
 name: md3e-frontend
-description: Builds, restyles, or reviews front-end UI so it complies with Material 3 Expressive (M3E), the May 2025 evolution of Material Design 3. Use when a request involves Material Design 3, MD3, M3E, Material You, "material design" styling, m3.material.io, or any of its systems — dynamic colour roles, the emphasized type scale, the shape library and corner-radius scale, real-time cubic Bézier shape morphing (`md3e-morph.js`), accessible backdrop blur (`md3e-blur.css`), motion springs, wavy progress indicators, expressive components (toolbars, split button, button groups, FAB menu, loading indicator), adaptive breakpoints, or the opt-in Desktop Bento dashboard layer (`--mode=desktop-bento`). Supplies complete design tokens, per-system reference data, and a dual-mode deterministic compliance auditor for HTML/CSS/JS/TS/Vue/Svelte.
+description: M3 Expressive-inspired Web Design System with verified M3E specifications. Builds, restyles, or reviews front-end UI aligned with Material 3 Expressive (May 2025+) across a three-layer architecture — Layer 1 Official M3E core tokens & shapes (`m3.material.io`, AndroidX `MaterialShapes`, MCU `SPEC_2025`), Layer 2 Web implementation adaptations (`md3e-morph.js`, `md3e-blur.css`, `OFFICIAL_WEB_CURVES`, WCAG 2.2 AA targets), and Layer 3 opt-in product extensions (`desktop-bento.md`, `expressive-tactics.md`). Supplies tokens, per-system references, and a four-tier static auditor (`ERROR`/`WARNING`/`INFO`/`CUSTOM`).
 agent_created: true
 ---
 
-# MD3E frontend
+# MD3E Frontend — Layered Material 3 Expressive Web System
 
-Make front-end code comply with Material 3 Expressive. The authority is
-<https://m3.material.io>; everything here is derived from it, not invented.
-
-**This is M3 Expressive, not M3.** Same system, evolved. Do not treat it as a
-new version (it is not "M4"), and do not regress to M2 conventions — no
-uppercase button labels, no `border-radius: 50%`, no duration/easing pairs.
-
-## How to use this skill
-
-| Job | Do this |
-|---|---|
-| New UI from scratch | Follow the six phases below in order |
-| Desktop Bento workspace / dashboard | Opt into `references/desktop-bento.md` after Phase 1 and audit with `--mode=desktop-bento` |
-| Restyle existing UI | Run phase 1, then the auditor, then fix by severity |
-| Review someone's UI | Run `scripts/audit_md3e.py`, then read the code against the references |
-| Answer a spec question | Read the relevant reference file; do not answer from memory |
-| Pick colours / shapes / motion values | Read the reference; never guess a hex or a radius |
+> **Repository Positioning**: This toolkit is an **M3 Expressive-inspired Web Design System with verified M3E specifications**. Core dynamic colour algorithms, typography steps, corner/shape definitions, and spring parameters are grounded in `https://m3.material.io`, AndroidX `MaterialShapes`, and Material Color Utilities (`SPEC_2025`), adapted honestly for Web standards — **do not claim that the entire repository or downstream custom extensions carry official Google certification.**
 
 ## Context Budget & Progressive Disclosure (Mandatory)
 
-Downstream agents operate with a finite context window. Preserve token budget strictly:
+Downstream agents operate with a finite context window. Preserve token budget strictly from the first turn:
 
 1. **NEVER read oversized static palette or full showcase HTML files into context in full.**
    - Forbidden full reads: `assets/tokens/md3e-palettes.css` (~575 KB) and large showcase HTML files (`assets/starter/index.html`, `assets/starter/desktop-bento.html`).
-   - Instead of reading `md3e-palettes.css`, link it directly in `<head>` and select themes via `data-seed` / `data-color-variant` / `data-contrast`, or generate a single compact CSS file with `python scripts/color_to_css.py --seed ... --emit-css ...`.
-   - Instead of scraping full showcase HTML files, read the compact Markdown reference docs (`references/*.md`, `references/components/*.md`); when inspecting a showcase HTML pattern, read only targeted `<= 120`-line ranges located via search.
+   - Instead of reading `md3e-palettes.css`, link it directly in `<head>` and select schemes via `data-seed` / `data-color-variant` / `data-contrast`, or generate a single compact CSS file with `python scripts/color_to_css.py --seed ... --emit-css ...`.
+   - Instead of reading full showcase HTML files, consult only the compact Markdown reference files (`references/*.md`, `references/components/*.md`); when inspecting a showcase HTML pattern, read only targeted `<= 120`-line ranges located via search.
 2. **Import core token and runtime modules on demand:**
    - **Always link core base:** `assets/tokens/md3e-tokens.css` and `assets/tokens/md3e-motion.css`.
    - **Link/import conditionally per feature:**
      - Floating frosted chrome -> `assets/tokens/md3e-blur.css`
      - 35 `MaterialShapes` CSS masks & 7-polygon CSS loader -> `assets/tokens/md3e-shapes.css`
      - Real-time cubic Bézier SVG shape morphing -> `assets/tokens/md3e-morph.js` + `assets/tokens/md3e-spring.js`
-     - Client-side wallpaper/image HCT palette extraction -> `assets/tokens/md3e-dynamic-color.js`
+     - Client-side wallpaper/image HCT palette extraction & custom seed picker -> `assets/tokens/md3e-dynamic-color.js`
      - Multi-seed preset schemes -> `assets/tokens/md3e-palettes.css`
-     - `@material/web` components -> `assets/tokens/md3e-material-web.css`
-3. **Keep Mobile/Universal M3E decoupled from Desktop Bento Overrides:**
-   - Default apps follow standard official M3E (`references/layout.md`, `references/components.md`, audited via `--mode=strict`).
-   - High-density desktop dashboards (`data-layout-profile="desktop-bento"`) explicitly opt into `references/desktop-bento.md` and are audited via `--mode=desktop-bento`. Do not leak desktop Bento overrides (`32px–36px` dense table rows, high-stiffness `150ms–250ms` springs, zero-border card rules) into mobile or general marketing/app UIs.
+     - `@material/web` primitives -> `assets/tokens/md3e-material-web.css`
 
-## Non-negotiables & Authority Tiers
+## Three-Layer Specification Architecture
 
-Rules below distinguish **Official Spec**, **Recommended Guidance**, and **Project Default**:
+| Layer | Scope | Verification & Authority |
+|---|---|---|
+| **Layer 1 — Official M3E Core** | 6 tonal palettes & semantic `on-*` roles + 5 HCT dynamic variants (`tonal-spot`, `expressive`, `vibrant`, `neutral`, `monochrome`), 15 baseline + 15 emphasized type styles, 10-step corner scale & 35 AndroidX `MaterialShapes` geometries, official `Expressive` / `Standard` (`Spatial` / `Effects`) spring `(damping, stiffness)` physics. | Derived directly from `m3.material.io`, AndroidX `MaterialShapes.kt`, and MCU `SPEC_2025`. Violations emit **`ERROR`** (plus WCAG AA core safety). |
+| **Layer 2 — Web Implementation Adaptations** | **Equal first-class motion options**: JS/CSS `linear()` physical springs OR Google's official Web curves (`OFFICIAL_WEB_CURVES` + duration); **Visual size vs Hit Area**: WCAG 2.2 AA `24×24 CSS px` minimum (`ERROR`) vs M3 recommended `48×48 px` via `::before` (`WARNING`); CSS `mask-image` clipping + wrapper `filter: drop-shadow()`; `color-mix(in oklab, ...)` neutral safety (neutral `in oklch` = `ERROR`); `md3e-blur.css` with mandatory `@media (prefers-reduced-transparency: reduce)` pure-surface fallback (`ERROR` if missing). | Calibrated cross-platform Web engineering adaptations in `references/motion.md`, `accessibility.md`, `color.md`, `shape.md`. |
+| **Layer 3 — Opt-In Product Extensions** | `references/desktop-bento.md` & `references/expressive-tactics.md`. Fixed desktop rail widths (`64px` / `80px` / `220px`), `24px` pane gaps, forced 4+ `surface-container-*` nesting, full rectangular border suppression, and Hero wave / Sparkline motifs (`MD3E101`–`MD3E104`). | Strictly **optional** (`CUSTOM` tier under `--mode=desktop-bento`); **never counted in the Official M3E Compliance Score**. Analytical data regions auto-exempt or use `data-md3e-exempt="data-view"`. |
 
-1. **Never hardcode a colour.** *(Project Default)* Use `var(--md-sys-color-*)`. A role carries light/dark and contrast behaviour; a hex value carries nothing.
-2. **Never pair a container with a foreign `on-` colour.** *(Official Spec)* `primary` pairs with `on-primary`, `secondary-container` with `on-secondary-container`. This is what guarantees contrast.
-3. **Never invent an off-scale corner radius.** *(Project Default)* Use the ten-step shape scale (or `height / 2` bounded pill radii for shape-morphing controls).
-4. **Never write ad-hoc `transition: 300ms ease-in-out`.** *(Project Default)* Use a motion spring token (`var(--md-sys-motion-*)`). Spatial springs for anything that moves, resizes or morphs; effects springs for colour and opacity. (M3E's official Web curves in `md3e-motion.css` handle non-`linear()` fallbacks.)
-5. **Default to the M3 type scale.** *(Project Default; Official Spec allows product-level type customization at the token layer)* Fifteen baseline/emphasized roles across 11 sizes; pick 5–6 and override only inside token files when branding requires it.
-6. **Always give interactive elements a ≥48px target** *(Official Spec / WCAG)* — expand the hit area via `::before` if the visual container (e.g., XS 32px / S 40px) is smaller; never inflate the visual button box to 48px.
-7. **Always provide `:focus-visible`,** reduced-motion, and dark/high-contrast paths. *(Official Spec / WCAG)*
-8. **Use `filled` buttons sparingly (at most one primary `filled` CTA per view/surface by default).** *(Official Guidance + Project Default)* Emphasis is a hierarchy, not a preference.
-9. **Do not build a dark theme by inverting.** *(Official Spec)* Redefine the same roles to different tones, and let `prefers-color-scheme` work automatically when `data-theme` is unset.
-10. **Run `scripts/audit_md3e.py` before declaring the work done** — and visually verify in a real browser (icons loaded, animations running, interactive states reachable).
+**This is M3 Expressive, not baseline M3 or an ungrounded "M4".** Avoid M2 leftovers — no uppercase button labels, no `border-radius: 50%` on non-square pills, and no uncalibrated ad-hoc `300ms ease-in-out` transitions.
+
+## How to use this skill
+
+| Job | Do this |
+|---|---|
+| New UI from scratch | Follow the six phases below using Layer 1 tokens + Layer 2 Web adaptations |
+| Desktop Bento dashboard *(Opt-In Layer 3)* | Explicitly opt into `references/desktop-bento.md` (`CUSTOM` rules) and run `audit_md3e.py --mode=desktop-bento` |
+| Analytical / Chart / 2D Viewport UI | Mark containers with `data-md3e-exempt="data-view"` (or `<canvas>`, `<table>`, chart `<svg>`) so axes, dividers, and series palettes pass |
+| Restyle or review UI | Run `scripts/audit_md3e.py` (triage `ERROR` -> `WARNING` -> `INFO`; isolate `CUSTOM`) and verify in a real browser |
+| Pick colours / shapes / motion values | Read the relevant concise `references/*.md` guide on demand; never guess a hex or radius |
+
+## Authority Tiers & Core Principles
+
+1. **Always pair a container with its own `on-` role & meet WCAG contrast.** *(Layer 1 / `ERROR`)* `primary` pairs with `on-primary`, `secondary-container` with `on-secondary-container`, `>= 4.5:1` body (`>= 3.0:1` large text `>= 24px` or `>= 18.67px` bold).
+2. **Never drop below WCAG 2.2 AA `24×24px` hit target or remove `:focus-visible`.** *(Layer 1+2 / `ERROR`)* Recommend expanding interactive controls (especially XS `32px` / S `40px` buttons) to M3's **`48×48px`** target via an invisible `::before` hit area (`WARNING` if `< 48px` without expansion) — never inflate the visual button box.
+3. **Never write unguarded `backdrop-filter: blur()` or `in oklch` on neutrals.** *(Layer 2 / `ERROR`)* Always use `md3e-blur.css` / `@media (prefers-reduced-transparency: reduce)` solid `surface-container` fallbacks, and use `color-mix(in oklab, ...)` on neutrals/surfaces.
+4. **Honour `prefers-reduced-motion`, dark scheme (`prefers-color-scheme`), and `forced-colors: active`.** *(Layer 1+2)* Never build dark mode by inversion; redefine role tones per theme.
+5. **Treat Physical Springs AND Official Web Curves as equal motion citizens.** *(Layer 2 / `WARNING` on ad-hoc curves)* Use `--md-sys-motion-*` `linear()` springs, `md3e-spring.js` velocity-preserving physics, OR Google's `OFFICIAL_WEB_CURVES` (`350ms / 500ms / 650ms` cubic-bezier curves). Reserve spatial bounce for movement/shape, effects curves (`0%` overshoot) for colour/opacity.
+6. **Follow project defaults thoughtfully.** *(Project Default / `INFO`)* Prefer `var(--md-sys-color-*)`, default 10-step corners, default 11-step type sizes, and sparingly using primary `filled` CTAs (ideally one enabled `filled` primary CTA per view/surface), customizing at the token layer when product branding or analytical data requires it.
+7. **Keep Layer 3 extensions opt-in.** *(Product Extension / `CUSTOM`)* Fixed rail widths (`80/220px` or `64px`), borderless multi-tier Bento nesting, and Hero wave/sparkline motifs apply only when intentionally opted in (`desktop-bento.md`, `expressive-tactics.md`).
+8. **Run `scripts/audit_md3e.py` + rendered browser inspection** before concluding.
 
 ## Phase 1 — Install the token layer
 
@@ -160,94 +157,83 @@ Two structural rules that get missed:
 Complete every state: enabled, hover, focus, pressed, disabled, plus selected
 where it applies. See `references/accessibility.md`.
 
-## Phase 4 — Motion
+## Phase 4 — Motion *(Layer 1 Physics + Layer 2 Web Curves)*
 
 Read `references/motion.md`.
 
-Apply spring tokens to every state change and transition. Choose by two
-questions: *does it move or recolour?* (spatial vs effects) and *how big is the
-change?* (fast / default / slow). Most motion should be `default`.
+Use **either** physics spring tokens (`--md-sys-motion-*` `linear()` / JS `md3e-spring.js`) **or** Google's official Web cubic-bezier curves (`OFFICIAL_WEB_CURVES` + published `150–650ms` durations / `--md-sys-motion-*-bezier`) — both are equal first-class Web implementations. Choose by: *does it move/morph?* (spatial: may overshoot) vs *does it fade/recolour?* (effects: must not overshoot) and *how big is the change?* (`fast` / `default` / `slow`).
 
-For gesture-driven motion, use a spring that carries velocity on release — a CSS
-transition restarts from zero and feels dead.
+For gesture-driven motion, use JS velocity-preserving springs (`assets/tokens/md3e-spring.js`) so released drags retain momentum rather than restarting from zero velocity.
 
-Never mix the legacy duration/easing tokens with spring tokens on the same
-property.
+Never mix legacy M3 easing tokens with physics spring tokens on the same property.
 
-## Phase 5 — Layout and adaptivity
+## Phase 5 — Layout and adaptivity *(Layer 1 Breakpoints + Layer 2/3 Desktop Options)*
 
 Read `references/layout.md`.
 
-Implement the five breakpoints (600 / 840 / 1200 / 1600) and, at each one, answer
-the five questions: what is revealed, how is the screen divided, what is
-resized, what is repositioned, what is swapped. Use a canonical layout
-(list-detail, supporting pane, feed) rather than inventing a grid.
+Implement the five official M3 breakpoints (`600 / 840 / 1200 / 1600`) and, at each one, answer the five questions: what is revealed, how is the screen divided, what is resized, what is repositioned, what is swapped. Pick a canonical pattern (`list-detail`, `supporting-pane`, `feed`) or an appropriate analytical layout.
 
-For **Desktop & Wide-Screen (`840px+` / `1200px+` / `1600px+`)**: use a
-collapsible (`80px`) <-> Standard Expanded (`220px`, default expanded at
-`>= 1200px`) Navigation Rail with horizontal pills + docked header Extended FAB
-(never a bottom bar on desktop), a multi-pane `surface-container` shell with
-`24px` pane gaps (`--md-sys-layout-pane-gap`) and a `68ch` prose measure cap
-(`--md-sys-layout-measure-max`), Desktop Visual Density (`data-density="compact"`
-`-4px` / `dense` `-8px`, preserving `48px` hit areas), fine-pointer/keyboard
-shortcuts (`aria-keyshortcuts`, roving `tabindex`, `Escape`), Bottom Sheet ->
-Side Sheet (`400px`) swaps, and `112px` bottom scroll clearance under fixed
-Floating Toolbars.
+For wide desktop viewports (`>= 840px`): swap bottom navigation bars for a Navigation Rail within M3E's adaptive range (`80–96dp` collapsed / `220–360dp` expanded) — note that our `80px` / `220px` rail widths, `24px` pane gaps, `--md-sys-layout-measure-max: 68ch`, `data-density` steps (`-4px` / `-8px` preserving `48px` hit targets), and Side Sheet swaps are sensible **Layer 2 Web project presets**, not rigid official mandates.
 
-> **Opt-In Override Layer — High-Density Desktop Bento Dashboards:** When building desktop telemetry consoles, AI/dev workspaces, or compact Bento dashboards (`data-layout-profile="desktop-bento"`), read `references/desktop-bento.md` and see `assets/starter/desktop-bento.html` (targeted line ranges only). This override layer stays cleanly decoupled from standard mobile/universal MD3E and is audited via `--mode=desktop-bento`.
+> **Layer 3 Opt-In Extension — Desktop Bento Dashboards:** When intentionally building compact operational consoles (`data-layout-profile="desktop-bento"`), read `references/desktop-bento.md` and audit with `--mode=desktop-bento`. Keep Bento product conventions strictly decoupled (`CUSTOM` tier) and exempt professional charts/tables/2D viewports with `data-md3e-exempt="data-view"`.
 
-## Phase 6 — Apply Expressive tactics, then audit
+## Phase 6 — Opt-In Product Extensions & Four-Tier Audit *(Layer 3 + Auditor)*
 
-Read `references/expressive-tactics.md`.
+Read `references/expressive-tactics.md` *(Opt-In Product Extension guidance)*.
 
-Get the base compliant first — a screen that follows the system already reads as
-Material. Then pick **one or two hero moments** per product and spend the
-emphasis budget there. Expression is not a licence to break the token layer.
+Verify Layer 1 & Layer 2 fundamentals first, then apply optional Hero tactics or Desktop Bento choreography sparingly where product hierarchy calls for it. Analytical data tables, `<canvas>`, chart `<svg>`s, and 2D trajectory viewports should be marked `data-md3e-exempt="data-view"` (or rely on automatic exemption) so decorative waves/sparklines or border removal are never forced onto functional data UIs.
 
-Then run the auditor and regression tests, and fix by severity:
+Then run the four-tier static auditor and regression suite:
 
 ```bash
-python scripts/audit_md3e.py src --mode=strict
-python scripts/audit_md3e.py src --mode=desktop-bento --fail-on warn
-python scripts/audit_md3e.py src --json            # machine-readable
-python scripts/audit_md3e.py src --fail-on warn    # stricter CI gate
-python scripts/audit_md3e.py docs --markdown       # audit HTML/CSS fences inside .md
-python scripts/test_md3e.py -v                     # full token, generator, morph, and auditor test suite
+python scripts/audit_md3e.py src                         # Default Official M3E + Web safety gate
+python scripts/audit_md3e.py src --mode=desktop-bento    # Also evaluate Layer 3 CUSTOM extensions (excluded from Official Score)
+python scripts/audit_md3e.py src --json                  # Emits official_compliance.{verdict,score} + custom_extensions
+python scripts/audit_md3e.py src --fail-on warning       # Fail on ERROR or WARNING
+python scripts/audit_md3e.py docs --markdown             # Audit HTML/CSS fences inside .md files
+python scripts/test_md3e.py -v                           # Full token, generator, morph, and auditor test suite
 ```
 
-### Finding codes
+### Authority Levels & Finding Codes
 
-| Code | Severity | Meaning |
+- **`ERROR`**: Explicit violation of Official Core M3E spec or WCAG 2.2 AA floor (reduces Official Score `-15/ea`).
+- **`WARNING`**: Deviation from Official M3E recommended guidance (reduces Official Score `-5/ea`).
+- **`INFO`**: Project-level engineering default/preference (`0` penalty to Official Score).
+- **`CUSTOM`**: Opt-in product extension (`--mode=desktop-bento` only; **excluded from Official Score & default CI pass/fail**).
+
+| Code | Authority Tier | Meaning |
 |---|---|---|
-| MD3E001 | error | Hardcoded hex colour |
-| MD3E002 | error | Hardcoded `rgb()` / `hsl()` colour |
-| MD3E003 | error | Corner radius off the shape scale |
-| MD3E004 | error | Duration/easing instead of a motion spring |
-| MD3E005 | error | Focus indicator removed or missing |
-| MD3E006 | warn | Interactive target under 48px (dense `32px–36px` table/list rows exempted in `--mode=desktop-bento`) |
-| MD3E007 | warn | Font size off the type scale |
-| MD3E008 | warn | No `prefers-reduced-motion` path |
-| MD3E009 | warn | Colour roles without a dark scheme |
-| MD3E010 | info | `box-shadow` used to express elevation |
-| MD3E011 | warn | `border-radius: 50%` instead of `corner-full` |
-| MD3E012 | info | Uppercase label text (M2 convention) |
-| MD3E013 | warn | `transition: all` |
-| MD3E014 | warn | Icon-only control with no accessible name |
-| MD3E015 | info | Deprecated bottom app bar |
-| MD3E016 | warn | Deprecated small FAB (40dp) |
-| MD3E017 | error | Hallucinated/invalid Material Symbols icon name, missing font `<link>`, or non-alphabetical Google Fonts axes |
-| MD3E018 | error / warn | Unitless opacity inside `color-mix()` (`error`), or `in oklch` on neutrals (`warn` in `strict`, `error` in `desktop-bento`) |
-| MD3E019 | warn | Composite spring token inside `animation:` shorthand (delay bug) or `9999px` radius morph snap |
-| MD3E020 | error | Mismatched `<md-*>` custom element closing tag |
-| MD3E021 | warn | Decorative icon inside labelled button missing `aria-hidden="true"` |
-| MD3E022 | warn | `backdrop-filter` blur used without `prefers-reduced-transparency: reduce` fallback |
-| MD3E023 | warn / error | Rectangular `box-shadow` used directly on `.md3e-shape*`/masked/morphing shape instead of wrapper `filter: drop-shadow()` |
-| MD3E101 | error | *(desktop-bento)* `1px` border or rectangular `box-shadow` on Bento cards/containers (outside `:focus-visible` / `forced-colors: active`) |
-| MD3E102 | error | *(desktop-bento)* Fewer than 4 `surface-container-*` luminance nesting tiers used across a full Bento document |
-| MD3E103 | warn | *(desktop-bento)* Missing concentric `corner-extra-large` (28px) / `corner-large` (16px) corner step-down tokens |
-| MD3E104 | warn | *(desktop-bento)* Missing Desktop Bento Hero expressive anchors (morphing/masked CTA + `drop-shadow`, wave/sparkline motif, or dual-tier density) |
+| MD3E005 | `ERROR` | Focus outline removed (`outline: none/0`) or `:hover` styled without `:focus-visible` |
+| MD3E006 | `ERROR` / `WARNING` | Interactive target `< 24×24px` WCAG AA floor (`ERROR`), or `24–47px` without `::before` `48px` expansion / visually inflated box (`WARNING`) |
+| MD3E014 | `ERROR` | Icon-only interactive control missing accessible name |
+| MD3E017 | `ERROR` | Hallucinated/invalid Material Symbols ligature, missing font `<link>`, or non-alphabetical Google Fonts axes |
+| MD3E018 | `ERROR` | Unitless opacity in `color-mix()` or `color-mix(in oklch, ...)` on neutrals/surfaces |
+| MD3E020 | `ERROR` | Mismatched or unclosed `<md-*>` Web Component closing tag |
+| MD3E022 | `ERROR` | `backdrop-filter: blur(...)` missing `@media (prefers-reduced-transparency: reduce)` fallback |
+| MD3E024 | `ERROR` | WCAG contrast `< 4.5:1` (`< 3.0:1` large text) or foreign container/`on-*` semantic role mismatch |
+| MD3E004 | `WARNING` | Motion uses uncalibrated curve (`OFFICIAL_WEB_CURVES` and springs both pass with 0 findings) |
+| MD3E008 | `WARNING` | Motion / `@keyframes` missing `prefers-reduced-motion` path |
+| MD3E009 | `WARNING` | Colour role block missing dark theme path |
+| MD3E011 | `WARNING` | `border-radius: 50%` instead of `corner-full` |
+| MD3E013 | `WARNING` | `transition: all` usage |
+| MD3E016 | `WARNING` | Deprecated small FAB (`40dp`) |
+| MD3E019 | `WARNING` | Composite spring token in `animation:` shorthand (delay bug) or `9999px` radius morph snap/overshoot `0px` flash |
+| MD3E021 | `WARNING` | Decorative icon inside labelled control missing `aria-hidden="true"` |
+| MD3E023 | `WARNING` | Rectangular `box-shadow` directly on `.md3e-shape*`/masked shape instead of wrapper `filter: drop-shadow()` |
+| MD3E001 | `INFO` | Hardcoded hex colour *(Project Default)* |
+| MD3E002 | `INFO` | Hardcoded `rgb()` / `hsl()` / `oklch()` functional colour *(Project Default)* |
+| MD3E003 | `INFO` | Custom/brand corner radius outside default 10-step scale *(Project Default)* |
+| MD3E007 | `INFO` | Custom/brand font size outside default 11-step scale *(Project Default)* |
+| MD3E010 | `INFO` | `box-shadow` used to express elevation *(Project Default)* |
+| MD3E012 | `INFO` | Uppercase label text (M2 convention) |
+| MD3E015 | `INFO` | Deprecated bottom app bar |
+| MD3E025 | `INFO` | Multiple enabled primary `filled` buttons in a single view *(Project Default)* |
+| MD3E101 | `CUSTOM` | *(desktop-bento)* Non-exempt `1px` border or rectangular `box-shadow` on Bento panel |
+| MD3E102 | `CUSTOM` | *(desktop-bento)* `< 4` `surface-container-*` luminance tiers in non-exempt Bento doc |
+| MD3E103 | `CUSTOM` | *(desktop-bento)* Missing concentric `28px` / `16px` Bento corner radii |
+| MD3E104 | `CUSTOM` | *(desktop-bento)* Missing Hero wave / Sparkline / Morph CTA / Display KPI anchors (auto-exempts analytical `<canvas>`/chart/`<table>`/`data-md3e-exempt="data-view"` views) |
 
-`audit_md3e.py` is a heuristic static checker (supporting `.html`, `.css`, `.js/.ts/.jsx/.tsx/.vue/.svelte`, inline `style="..."`, `--mode=strict|desktop-bento`, and `--markdown` doc snippets). A zero-finding run is a minimum gate, not full visual/runtime proof—always follow up with rendered browser inspection. Token and theme files are auto-detected and exempted from hardcoded-colour checks.
+`audit_md3e.py` is a heuristic static checker (supporting `.html`, `.css`, `.js/.ts/.jsx/.tsx/.vue/.svelte`, inline `style="..."`, `--mode=strict|desktop-bento`, `data-md3e-exempt="data-view"`, and `--markdown` doc snippets). Follow every static gate with live browser verification. Token/theme files are auto-exempted from raw value `INFO` checks while still verified for contrast (`MD3E024`).
 
 ## Regenerating colour, shape & motion tokens
 

@@ -93,11 +93,11 @@ Desktop viewports (`>= 840px`, especially `Large 1200–1599px` and `Extra-large
 
 1. **Collapsible <-> Standard Expanded Navigation Rail (never a bottom bar on desktop):**
    - Never keep a bottom Navigation Bar on `Expanded` (`>= 840px`) or larger viewports.
-   - Use a persistent **Navigation Rail** that toggles between **Collapsed** (`--md-sys-nav-rail-width-collapsed: 80px` compact desktop rail; M3E spec allows up to `96dp` for vertical pills) and **Standard Expanded** (`--md-sys-nav-rail-width-expanded: 220px`, within the `220–360dp` official range, displaying horizontal indicator pills with inline labels + a docked Extended FAB / primary action in the rail header).
+   - Use a persistent **Navigation Rail** that toggles between **Collapsed** (this Web preset uses `--md-sys-nav-rail-width-collapsed: 80px`, within the M3E `80–96dp` collapsed range) and **Standard Expanded** (this Web preset uses `--md-sys-nav-rail-width-expanded: 220px`, within the `220–360dp` official range, displaying horizontal indicator pills with inline labels + a docked Extended FAB / primary action in the rail header). Any width inside `80–96dp` / `220–360dp` is compliant.
    - **Default expanded on `Large >= 1200px`**, collapsible via the top-left `menu` / `menu_open` trigger or keyboard shortcut, and sliding as a modal rail sheet on `< 840px`. See [`components/navigation.md`](components/navigation.md#navigation-rail).
 
-2. **Multi-pane desktop shell & prose measure cap:**
-   - Frame the desktop app shell on `--md-sys-color-surface-container` with scrollable content panes on `surface` or `surface-container-lowest`, `24px` (`var(--md-sys-shape-corner-extra-large)` / `corner-large`–`extra-large`) rounded pane corners, and `--md-sys-layout-pane-gap` (`24px`) separation between adjacent panes.
+2. **Multi-pane desktop shell & prose measure cap (Layer 2 Web preset):**
+   - Frame the desktop app shell on `--md-sys-color-surface-container` with scrollable content panes on `surface` or `surface-container-lowest`. As a Layer 2 Web default, this system pairs `24px` (`var(--md-sys-shape-corner-extra-large)`) rounded pane corners with `--md-sys-layout-pane-gap` (`24px`, official M3 two-pane window spacing minimum); products may customize pane corner/gap geometry within M3 adaptive spacing without failing official spec checks.
    - Use `1–2` panes at `Expanded`/`Large` (`840–1599px`) and `2–3` panes at `Extra-large` (`>= 1600px`), matching List-detail or Supporting-pane canonical layouts.
    - Cap body prose containers to `max-width: var(--md-sys-layout-measure-max, 68ch)` so readable line lengths never stretch across `1440px–1920px` monitors.
 
