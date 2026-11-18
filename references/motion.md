@@ -171,3 +171,59 @@ file already does this under `@media (prefers-reduced-motion: reduce)`.
 | Rely on interruption and retargeting (`md3e-spring.js`) | Rebuild animations from zero on gesture handoff |
 | Honour `prefers-reduced-motion` | Assume everyone wants bounce |
 | Keep motion meaningful — state, progress, attention | Animate for decoration with no trigger |
+
+---
+
+## Structural & Page-Level Spatial Choreography
+
+Beyond component micro-interactions, coordinate chrome and multi-view transitions with deterministic M3E physics:
+
+### 1. Dual-Spring Navigation Rail (`80px <-> 220px`)
+Decouple container geometry from label legibility so labels never wrap or squish mid-flight:
+- **Spatial Spring (`width` + active indicator pill)**: Transitions rail width between `80px` and `220px` using `var(--md-sys-motion-default-spatial)` (or `--md-bento-motion-default-spatial` in desktop Bento mode).
+- **Effects Spring (`white-space: nowrap` labels)**: Keeps label spans permanently in layout flow inside `overflow: hidden` tracks. On collapse (`data-rail-expanded="false"`), labels fade out early (`85ms`–`90ms`, `0ms` delay) using `var(--md-sys-motion-easing-emphasized-accelerate)` before the rail narrows; on expand (`data-rail-expanded="true"`), labels fade in after `~65ms` delay using `var(--md-sys-motion-fast-effects)`.
+
+```css
+.nav-rail {
+  width: 80px;
+  overflow: hidden;
+  transition: width var(--md-sys-motion-default-spatial);
+}
+.nav-rail[data-rail-expanded="true"] {
+  width: 220px;
+}
+.nav-rail__label {
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-6px);
+  pointer-events: none;
+  /* Fast early fade-out on collapse so labels vanish before rail narrows */
+  transition: opacity 90ms var(--md-sys-motion-easing-emphasized-accelerate),
+              transform 90ms var(--md-sys-motion-easing-emphasized-accelerate);
+}
+.nav-rail[data-rail-expanded="true"] .nav-rail__label {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+  transition: opacity var(--md-sys-motion-fast-effects) 65ms,
+              transform var(--md-sys-motion-fast-spatial) 65ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-rail, .nav-rail__label { transition: none; }
+}
+```
+
+### 2. View-Switch Fade Through & Staggered Bento Entrance (`25ms–35ms` Step)
+When switching navigation views or filtering Bento workspaces:
+1. **Outgoing Fade-Through Exit**: Fade the departing view out quickly (`opacity -> 0`, micro-scale `0.985`, `90ms` with `--md-sys-motion-easing-emphasized-accelerate`).
+2. **Staggered Spring Arrival**: Swap visible panels/cards and stagger visible items in reading order at `--stagger-step: 30ms` (`25ms–35ms` range via `animation-delay: calc(var(--stagger-index, 0) * 30ms)`). Always pass `--md-sys-motion-default-spatial-easing` (never composite tokens with duration inside `animation`) and disable under `prefers-reduced-motion: reduce`.
+
+### 3. View Transitions Shared Container Transform
+Promote card-to-diagnostics expansions (such as `#event-stream-card` -> `#bento-vt-modal`) into continuous shared-element morphs using `document.startViewTransition(...)`:
+- Assign `view-transition-name: bento-vt-panel` strictly to **1 active element before** and **1 active element after** the DOM mutation (marking the obscured source card invisible during modal display and setting `inert` on background landmarks).
+- Bind `::view-transition-group(bento-vt-panel)` to `overflow: clip`, matching `border-radius: var(--md-sys-shape-corner-extra-large)` (`28px`), and MD3E Spatial Spring `-duration` / `-easing` tokens; wrap `@media (prefers-reduced-motion: reduce)` with `animation: none !important;`.
+
+### 4. Physical Sliding Segmented Pill Indicator (`md3e-spring.js`)
+Replace abrupt background-color swaps across connected single-select segments with a shared sliding capsule (`<span class="seg-indicator" aria-hidden="true">`) whose `translateX` and `width` are integrated per-frame by two `createSpringAnimator` instances (`{ stiffness: 1400, damping: 0.86 }`):
+- Interruptions preserve live velocity and retarget smoothly mid-flight.
+- Automatically snaps immediately (`immediate` when `prefers-reduced-motion: reduce` matches) and resynchronizes on `ResizeObserver`.

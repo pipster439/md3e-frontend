@@ -1395,5 +1395,100 @@ class OfficialSpecPurificationTests(unittest.TestCase):
         self.assertIn("24×24", (REFERENCES_DIR / "accessibility.md").read_text(encoding="utf-8"))
 
 
+class DualSkillAndDesktopChoreographyTests(unittest.TestCase):
+    def test_skill_co_mounting_arbitration_protocol(self) -> None:
+        skill = SKILL_MD.read_text(encoding="utf-8")
+        self.assertIn("Composability: Co-mounting with `frontend-design`", skill)
+        for keyword in (
+            "Subject Grounding",
+            "Two-Pass Spatial Composition",
+            "Anti-Templated Layout Self-Critique",
+            "Plain Active-Voice Microcopy",
+            "HCT semantic roles",
+            "15 + 15",
+            "md3e-spring.js",
+            "audit_md3e.py",
+        ):
+            self.assertIn(keyword, skill)
+
+    def test_global_dynamic_hct_selection_tokens_and_cleanup(self) -> None:
+        tokens = TOKENS_CSS.read_text(encoding="utf-8")
+        self.assertNotIn("md-icon", tokens)
+        self.assertIn("::selection", tokens)
+        self.assertIn("background-color: var(--md-sys-color-primary-container)", tokens)
+        self.assertIn("color: var(--md-sys-color-on-primary-container)", tokens)
+        self.assertIn("code::selection", tokens)
+        self.assertIn(".tabular-nums::selection", tokens)
+        self.assertIn("background-color: var(--md-sys-color-tertiary-container)", tokens)
+        self.assertIn("color: var(--md-sys-color-on-tertiary-container)", tokens)
+
+        good_sel = "::selection { background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }"
+        self.assertEqual([f for f in audit_md3e.Checker(pathlib.Path("s.css")).run(good_sel) if f.code == "MD3E024"], [])
+        bad_sel = "::selection { background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-surface); }"
+        self.assertEqual(len([f for f in audit_md3e.Checker(pathlib.Path("s.css")).run(bad_sel) if f.code == "MD3E024"]), 1)
+
+    def test_scoped_desktop_context_menu_and_choreography_assets(self) -> None:
+        bento_html = (ROOT_DIR / "assets" / "starter" / "desktop-bento.html").read_text(encoding="utf-8")
+        bento_md = (REFERENCES_DIR / "desktop-bento.md").read_text(encoding="utf-8")
+        motion_md = (REFERENCES_DIR / "motion.md").read_text(encoding="utf-8")
+        index_html = STARTER_HTML.read_text(encoding="utf-8")
+
+        for snippet in (
+            "[data-context-menu]",
+            "if (e.shiftKey) return;",
+            'role="menu"',
+            'role="menuitem"',
+            "md3e-blur-surface-high",
+            "transformOrigin",
+            "80px",
+            "220px",
+            "white-space: nowrap",
+            "is-view-exiting",
+            "30ms",
+            "startViewTransition",
+            "bento-vt-panel",
+            "createSpringAnimator",
+        ):
+            self.assertIn(snippet, bento_html)
+
+        self.assertIn("if (e.shiftKey) return;", bento_md)
+        self.assertIn("[data-context-menu]", bento_md)
+        self.assertIn("Structural & Page-Level Spatial Choreography", motion_md)
+        self.assertIn("Dual-Spring Navigation Rail", motion_md)
+        self.assertIn("Fade Through", motion_md)
+        self.assertIn("Physical Sliding Segmented Pill Indicator", motion_md)
+
+        for snippet in (
+            "nav-rail__label",
+            "nav-rail__indicator",
+            "is-view-exiting",
+            "md3e-seg-indicator",
+            "attachSpringSegmentedIndicator",
+            "createSpringAnimator",
+        ):
+            self.assertIn(snippet, index_html)
+
+        # Preserve prior slider & FAB menu red-line fixes
+        self.assertIn('id="wavy-progress-slider"', index_html)
+        self.assertIn('id="volume-slider"', index_html)
+        self.assertIn("pointer-events: none", index_html)
+
+    def test_auditor_catches_context_menu_without_role(self) -> None:
+        bad_menu = "<!doctype html><html><body><div class='bento-context-menu'><button type='button'>Inspect</button></div></body></html>"
+        m020 = [f for f in audit_md3e.Checker(pathlib.Path("menu.html")).run(bad_menu) if f.code == "MD3E020"]
+        self.assertEqual(len(m020), 1)
+
+    def test_starter_stylesheets_have_balanced_braces(self) -> None:
+        for html_path in (STARTER_HTML, ROOT_DIR / "assets" / "starter" / "desktop-bento.html"):
+            text = html_path.read_text(encoding="utf-8")
+            for idx, (css_block, _) in enumerate(audit_md3e.extract_style_blocks(text)):
+                cleaned = audit_md3e.strip_css_comments(css_block)
+                self.assertEqual(
+                    cleaned.count("{"),
+                    cleaned.count("}"),
+                    f"Unbalanced CSS braces in {html_path.name} <style> block #{idx}",
+                )
+
+
 if __name__ == "__main__":
     unittest.main()

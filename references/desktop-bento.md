@@ -12,7 +12,7 @@ Desktop Bento dashboards optionally choose borderless tonal surface nesting, dua
 ## 1. Window Chrome, Navigation Rail & Bento Grid (Opt-In Presets)
 
 - **Frameless Integrated Titlebar (`44px` preset)**: Product chrome preset blending with `--md-sys-color-surface` without a `1px` header hairline (`env(titlebar-area-height, 44px)`). Reserve `::before` `48px` hit targets on compact window controls and keep `:focus-within` / `outline: 2px solid transparent` on borderless search inputs.
-- **Ultra-Narrow Navigation Rail (`64px` product preset)**: Persistent icon-only rail (`64px` inline-size, `48×48px` clickable destinations, active `secondary-container` pill, roving arrow-key navigation + `aria-label` on every destination). Standard Layer 2 M3E rails use `80–96dp` collapsed / `220–360dp` expanded.
+- **Collapsible Dual-Spring Navigation Rail (`80px <-> 220px`, with `64px` icon-only compact preset)**: Desktop Bento layouts can pair a `80px` collapsed / `220px` expanded dual-spring navigation rail (Spatial Spring on `width` + active pill, Effects Spring on `white-space: nowrap` labels so text never squishes or wraps) with `48×48px` clickable destinations, active `secondary-container` pills, roving arrow-key navigation, and view-switch Fade Through + `25ms–35ms` card stagger. Ultra-minimal icon-only consoles may stay fixed at `64px`.
 - **12-Column Asymmetric Bento Grid**: CSS Grid (`grid-template-columns: repeat(12, minmax(0, 1fr))`, `gap: var(--md-sys-spacing-4)`) collapsing cleanly at `< 1200px` (`8` cols) and `< 840px` (`4` cols), plus `container-type: inline-size` on wide telemetry cards.
 
 ---
@@ -246,3 +246,66 @@ All visual layout opinions below (`MD3E101`–`MD3E104`) are **Layer 3 Opt-In Pr
 4. **Shape Drop Shadows (`MD3E023` `[WARNING]`)**: Avoid placing `box-shadow` directly on `.md3e-shape*`, `mask-image`, or morphing `<svg>` shapes (clipping or rectangular glow). Wrap the button/shape container in `filter: drop-shadow(...)`.
 5. **Ban `in oklch` on Neutral Color Mixing (`MD3E018` `[ERROR]`)**: Never use `color-mix(in oklch, ...)` on `surface*`, `on-surface*`, `outline*`, `shadow`, `scrim`, or `currentColor` — triggers Chromium's powerless-hue pink/red shift; always use **`in oklab`**.
 6. **Reference Implementation**: See targeted ranges of [`assets/starter/desktop-bento.html`](../assets/starter/desktop-bento.html) (never read in full into context; inspect specific component blocks only).
+
+---
+
+## 5. Global HCT Selection Highlight & Scoped Desktop Context Menu
+
+### 5.1 Global Dynamic HCT `::selection` (`assets/tokens/md3e-tokens.css`)
+Replace harsh OS default blue selection highlights with theme- and seed-reactive HCT roles built into the token layer:
+- **Prose default (`::selection`)**: `background-color: var(--md-sys-color-primary-container)` paired with `color: var(--md-sys-color-on-primary-container)`.
+- **Code & Monospace Metrics (`code`, `pre`, `.tabular-nums`)**: `background-color: var(--md-sys-color-tertiary-container)` paired with `color: var(--md-sys-color-on-tertiary-container)` for crisp visual contrast across telemetry tables and logs.
+
+### 5.2 Scoped Desktop Context Menu (`[data-context-menu]`)
+Desktop consoles provide contextual right-click actions strictly scoped to explicit operational containers rather than hijacking the whole document:
+1. **Strict Scope & DevTools Escape Hatch**:
+   - Bind `contextmenu` handling **only** to elements carrying `[data-context-menu]` (e.g., `#telemetry-tbody tr[data-context-menu]` and operational `.bento-card[data-context-menu]`).
+   - Always begin the handler with `if (e.shiftKey) return;` so **Shift + Right-Click** immediately passes through to the browser DevTools Inspector.
+   - Explicitly allow ordinary `<p>` prose selections and `<input>` / `<textarea>` / `[contenteditable]` fields to open the browser's native copy/paste/spellcheck menu.
+2. **Frosted Chrome, Borderless Contrast & Edge-Flip Spring Origin**:
+   - Surface the overlay via `md3e-blur-surface-high md3e-blur--md` (preserving `@media (prefers-reduced-transparency: reduce)` solid fallback), `background` tonal contrast (`surface-container-high` -> `on-surface`), `--md-sys-shape-corner-large` (`16px` corner radius), and wrapper `filter: drop-shadow(...)` (zero `1px solid` borders or rectangular `box-shadow`).
+   - Measure live menu `offsetWidth` and `offsetHeight` against viewport bounds: auto-flip horizontally and/or vertically across all 4 viewport edges, dynamically anchor `transform-origin` to the clicked quadrant (`top left`, `top right`, `bottom left`, `bottom right`), and trigger a crisp `~150ms` `md3e-spring.js` (`createSpringAnimator({ stiffness: 1800, damping: 0.92 })`) scale+fade pop-in from the cursor tip.
+3. **ARIA Menu Contract & Dismissal Loop**:
+   - Expose `role="menu"` on the menu panel and `role="menuitem"` on `<button type="button">` commands (`<hr role="separator">` for tonal separators).
+   - Implement full keyboard navigation (`ArrowDown`, `ArrowUp`, `Home`, `End`, `Enter`, `Space`, `Escape`, `Tab`) + focus restoration to the triggering row/card when dismissed via keyboard, plus automatic close on outside `pointerdown`, `scroll` (capture phase), `resize`, and `blur`.
+
+```js
+import { createSpringAnimator } from '../tokens/md3e-spring.js';
+
+document.addEventListener('contextmenu', (e) => {
+  if (e.shiftKey) return; // Always allow Shift+Right-Click for DevTools Inspect
+  const target = e.target;
+  if (!(target instanceof Element)) return;
+  if (target.closest('input, textarea, select, [contenteditable="true"]')) return;
+  if (target.closest('p') && !target.closest('tr[data-context-menu], .bento-card__header')) return;
+  const host = target.closest('[data-context-menu]');
+  if (!host) return;
+  e.preventDefault();
+  openScopedContextMenu(host, e.clientX, e.clientY);
+});
+
+function positionWithViewportFlip(wrapEl, menuEl, clientX, clientY) {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const w = menuEl.offsetWidth;
+  const h = menuEl.offsetHeight;
+  const margin = 8;
+  const flipX = clientX + w + margin > vw && clientX - w >= margin;
+  const flipY = clientY + h + margin > vh && clientY - h >= margin;
+  const x = Math.max(margin, Math.min(vw - w - margin, flipX ? clientX - w : clientX));
+  const y = Math.max(margin, Math.min(vh - h - margin, flipY ? clientY - h : clientY));
+  wrapEl.style.left = `${x}px`;
+  wrapEl.style.top = `${y}px`;
+  menuEl.style.transformOrigin = `${flipY ? 'bottom' : 'top'} ${flipX ? 'right' : 'left'}`;
+  const spring = createSpringAnimator({
+    initialValue: 0,
+    stiffness: 1800,
+    damping: 0.92,
+    onUpdate: (v) => {
+      menuEl.style.opacity = String(Math.max(0, Math.min(1, v)));
+      menuEl.style.transform = `scale(${(0.86 + 0.14 * v).toFixed(4)})`;
+    },
+  });
+  spring.setTarget(1);
+}
+```

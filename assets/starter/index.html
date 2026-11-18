@@ -323,8 +323,9 @@
     padding-inline: var(--md-sys-spacing-2);
     background: var(--md-sys-color-surface-container);
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     gap: var(--md-sys-spacing-2);
+    overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
     transition: width var(--md-sys-motion-default-spatial),
@@ -335,12 +336,15 @@
     position: relative;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: var(--md-sys-spacing-2);
+    justify-content: flex-start;
+    gap: var(--md-sys-spacing-3);
     width: 56px;
     min-width: var(--md-sys-touch-target-min);
     height: 56px;
+    margin-inline: auto;
     margin-bottom: var(--md-sys-spacing-2);
+    padding-inline: 16px;
+    overflow: hidden;
     border: none;
     border-radius: var(--md-sys-shape-corner-large);
     background: var(--md-sys-color-primary-container);
@@ -373,9 +377,17 @@
     outline-offset: var(--md-sys-focus-ring-gap);
   }
 
-  .nav-rail__compose-label {
-    display: none;
+  .nav-rail__compose-label,
+  .nav-rail__label {
+    position: relative;
+    z-index: 1;
     white-space: nowrap;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateX(-6px);
+    pointer-events: none;
+    transition: opacity 90ms var(--md-sys-motion-easing-emphasized-accelerate),
+                transform 90ms var(--md-sys-motion-easing-emphasized-accelerate);
   }
 
   .nav-rail__items {
@@ -383,47 +395,66 @@
     flex-direction: column;
     gap: var(--md-sys-spacing-1);
     width: 100%;
-    align-items: center;
+    align-items: stretch;
   }
 
   .nav-rail__item {
     position: relative;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: var(--md-sys-spacing-1);
+    justify-content: flex-start;
+    gap: var(--md-sys-spacing-2);
     width: 100%;
     min-height: var(--md-sys-touch-target-min);
-    padding-block: var(--md-sys-spacing-1);
+    padding: 0 4px;
+    overflow: hidden;
     color: var(--md-sys-color-on-surface-variant);
     text-decoration: none;
-    border-radius: var(--md-sys-shape-corner-large-increased);
-    font-size: var(--md-sys-typescale-label-medium-size);
-    line-height: var(--md-sys-typescale-label-medium-line-height);
-    font-weight: var(--md-sys-typescale-label-medium-weight);
+    border-radius: var(--md-sys-shape-corner-extra-large);
+    font-size: var(--md-sys-typescale-label-large-size);
+    line-height: var(--md-sys-typescale-label-large-line-height);
+    font-weight: var(--md-sys-typescale-label-large-weight);
     transition: background-color var(--md-sys-motion-fast-effects),
                 color var(--md-sys-motion-fast-effects);
   }
 
+  .nav-rail__indicator {
+    position: absolute;
+    inset-block: 8px;
+    inset-inline-start: 4px;
+    width: 56px;
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 0;
+    transition: width var(--md-sys-motion-default-spatial),
+                opacity var(--md-sys-motion-fast-effects);
+  }
+
   .nav-rail__pill {
+    position: relative;
+    z-index: 1;
     display: grid;
     place-items: center;
     width: 56px;
     height: 32px;
+    flex-shrink: 0;
     border-radius: var(--md-sys-shape-corner-large);
     transition: background-color var(--md-sys-motion-fast-effects),
                 color var(--md-sys-motion-fast-effects);
   }
 
   .nav-rail__item[aria-current="page"] {
-    color: var(--md-sys-color-on-surface);
-    font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
+    color: var(--md-sys-color-on-secondary-container);
+    font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+    --md-sys-icon-fill: 1;
   }
 
-  .nav-rail__item[aria-current="page"] .nav-rail__pill {
-    background: var(--md-sys-color-secondary-container);
-    color: var(--md-sys-color-on-secondary-container);
-    --md-sys-icon-fill: 1;
+  .nav-rail__item[aria-current="page"] .nav-rail__indicator {
+    opacity: 1;
   }
 
   .nav-rail__item:hover .nav-rail__pill {
@@ -437,62 +468,70 @@
 
   .nav-rail__footer {
     margin-top: auto;
-    padding-top: var(--md-sys-spacing-3);
-    display: none;
+    padding-top: var(--md-sys-spacing-2);
+    display: flex;
     align-items: center;
+    justify-content: center;
     gap: var(--md-sys-spacing-2);
     font-size: var(--md-sys-typescale-label-small-size);
     color: var(--md-sys-color-on-surface-variant);
   }
 
+  .nav-rail__collapse-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--md-sys-spacing-2);
+    width: 100%;
+    min-height: var(--md-sys-touch-target-min);
+    padding: 0 var(--md-sys-spacing-2);
+    border: none;
+    border-radius: var(--md-sys-shape-corner-large);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    overflow: hidden;
+    transition: background-color var(--md-sys-motion-fast-effects);
+  }
+  .nav-rail__collapse-btn:hover {
+    background: color-mix(in oklab, currentColor 8%, transparent);
+  }
+  .nav-rail__collapse-btn:focus-visible {
+    outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+    outline-offset: var(--md-sys-focus-ring-gap);
+  }
+
   @media (min-width: 840px) {
     .nav-rail[data-rail-expanded="true"] {
       width: var(--md3e-rail-expanded-width);
-      align-items: stretch;
       padding-inline: var(--md-sys-spacing-3);
     }
 
     .nav-rail[data-rail-expanded="true"] .nav-rail__compose {
       width: 100%;
-      justify-content: flex-start;
-      padding-inline: var(--md-sys-spacing-4);
+      margin-inline: 0;
     }
 
-    .nav-rail[data-rail-expanded="true"] .nav-rail__compose-label {
-      display: inline;
+    .nav-rail[data-rail-expanded="true"] .nav-rail__compose-label,
+    .nav-rail[data-rail-expanded="true"] .nav-rail__label {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+      transition: opacity var(--md-sys-motion-fast-effects) 65ms,
+                  transform var(--md-sys-motion-fast-spatial) 65ms;
     }
 
-    .nav-rail[data-rail-expanded="true"] .nav-rail__items {
-      align-items: stretch;
-    }
-
-    .nav-rail[data-rail-expanded="true"] .nav-rail__item {
-      flex-direction: row;
-      justify-content: flex-start;
-      gap: var(--md-sys-spacing-3);
-      min-height: 56px;
-      padding-inline: var(--md-sys-spacing-3);
-      border-radius: var(--md-sys-shape-corner-extra-large);
-      font-size: var(--md-sys-typescale-label-large-size);
-    }
-
-    .nav-rail[data-rail-expanded="true"] .nav-rail__pill {
-      width: auto;
-      height: auto;
-      background: transparent;
-    }
-
-    .nav-rail[data-rail-expanded="true"] .nav-rail__item[aria-current="page"] {
-      background: var(--md-sys-color-secondary-container);
-      color: var(--md-sys-color-on-secondary-container);
-      --md-sys-icon-fill: 1;
+    .nav-rail[data-rail-expanded="true"] .nav-rail__item[aria-current="page"] .nav-rail__indicator {
+      width: calc(100% - 8px);
     }
 
     .nav-rail[data-rail-expanded="true"] .nav-rail__item:hover {
       background: color-mix(in oklab, currentColor calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), transparent);
     }
 
-    .nav-rail[data-rail-expanded="true"] .nav-rail__item[aria-current="page"]:hover {
+    .nav-rail[data-rail-expanded="true"] .nav-rail__item[aria-current="page"]:hover .nav-rail__indicator {
       background: color-mix(in oklab, var(--md-sys-color-on-secondary-container) calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), var(--md-sys-color-secondary-container));
     }
 
@@ -501,7 +540,7 @@
     }
 
     .nav-rail[data-rail-expanded="true"] .nav-rail__footer {
-      display: flex;
+      justify-content: flex-start;
     }
   }
 
@@ -744,15 +783,46 @@
   @keyframes md3e-card-enter {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateY(14px) scale(0.96);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateY(0) scale(1);
     }
   }
 
+  .shell {
+    transform-origin: center top;
+    transition: opacity var(--md-sys-motion-fast-effects),
+                transform var(--md-sys-motion-fast-spatial);
+  }
+
+  .shell.is-view-exiting {
+    opacity: 0;
+    transform: scale(0.985);
+    transition: opacity 90ms var(--md-sys-motion-easing-emphasized-accelerate),
+                transform 90ms var(--md-sys-motion-easing-emphasized-accelerate);
+  }
+
+  .view-filter-banner {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--md-sys-spacing-3);
+    padding: var(--md-sys-spacing-2) var(--md-sys-spacing-4);
+    border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-surface-container-low);
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: var(--md-sys-typescale-label-large-size);
+  }
+
+  .view-filter-banner[hidden] {
+    display: none;
+  }
+
   .section-card {
+    --md3e-stagger-idx: 0;
     min-width: 0;
     padding: var(--md-sys-spacing-5);
     background: var(--md-sys-color-surface-container-low);
@@ -760,6 +830,10 @@
     border: none;
     transition: background-color var(--md-sys-motion-fast-effects),
                 padding var(--md-sys-motion-fast-spatial);
+  }
+
+  .section-card[hidden] {
+    display: none;
   }
 
   @media (min-width: 840px) {
@@ -771,11 +845,13 @@
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .section-card {
+    .section-card,
+    .section-card.is-stagger-enter {
       animation-name: md3e-card-enter;
-      animation-duration: var(--md-sys-motion-default-effects-duration);
-      animation-timing-function: var(--md-sys-motion-default-effects-easing);
-      animation-fill-mode: backwards;
+      animation-duration: var(--md-sys-motion-default-spatial-duration);
+      animation-timing-function: var(--md-sys-motion-default-spatial-easing);
+      animation-delay: calc(var(--md3e-stagger-idx, 0) * 30ms);
+      animation-fill-mode: both;
     }
   }
 
@@ -1965,13 +2041,35 @@
 
   /* --- Connected Button Group --- */
   .btn-group {
+    position: relative;
+    isolation: isolate;
     display: inline-flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 2px;
   }
+  .btn-group[data-group-mode="single"] {
+    flex-wrap: nowrap;
+    overflow: hidden;
+    padding: 2px;
+    border-radius: var(--md-sys-shape-corner-large-increased);
+    background: var(--md-sys-color-surface-container-high);
+  }
+  .md3e-seg-indicator {
+    position: absolute;
+    inset-block: 2px;
+    inset-inline-start: 0;
+    width: 0;
+    border-radius: var(--md-sys-shape-corner-large-increased);
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    pointer-events: none;
+    z-index: 0;
+    will-change: transform, width;
+  }
   .btn-group__item {
     position: relative;
+    z-index: 1;
     display: grid;
     place-items: center;
     min-width: var(--md-sys-touch-target-min);
@@ -1987,6 +2085,9 @@
     transition: border-radius var(--md-sys-motion-fast-spatial),
                 background-color var(--md-sys-motion-fast-effects),
                 color var(--md-sys-motion-fast-effects);
+  }
+  .btn-group[data-group-mode="single"] .btn-group__item {
+    background: transparent;
   }
   .btn-group__item::before {
     content: "";
@@ -2006,19 +2107,24 @@
     pointer-events: none;
     transition: opacity var(--md-sys-motion-fast-effects);
   }
-  .btn-group__item:first-child {
+  .btn-group__item:first-of-type {
     border-start-start-radius: var(--md-sys-shape-corner-large-increased);
     border-end-start-radius: var(--md-sys-shape-corner-large-increased);
   }
-  .btn-group__item:last-child {
+  .btn-group__item:last-of-type {
     border-start-end-radius: var(--md-sys-shape-corner-large-increased);
     border-end-end-radius: var(--md-sys-shape-corner-large-increased);
   }
   .btn-group__item:active:not(:disabled) {
     border-radius: var(--md-sys-shape-corner-extra-small);
   }
-  .btn-group__item[aria-pressed="true"] {
+  .btn-group[data-group-mode="multi"] .btn-group__item[aria-pressed="true"] {
     background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    border-radius: var(--md-sys-shape-corner-large-increased);
+    --md-sys-icon-fill: 1;
+  }
+  .btn-group[data-group-mode="single"] .btn-group__item[aria-pressed="true"] {
     color: var(--md-sys-color-on-secondary-container);
     border-radius: var(--md-sys-shape-corner-large-increased);
     --md-sys-icon-fill: 1;
@@ -2311,26 +2417,33 @@
   }
 
   .btn-group--squeeze {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
     display: inline-flex;
     align-items: center;
     gap: 2px;
+    padding: 2px;
     inline-size: min(100%, 280px);
+    border-radius: var(--md-sys-shape-corner-large-increased);
+    background: var(--md-sys-color-surface-container-high);
   }
   .squeeze-btn {
     position: relative;
+    z-index: 1;
     flex: 1 1 0;
     min-inline-size: 48px;
     height: 40px;
     border: none;
     border-radius: var(--md-sys-shape-corner-small);
-    background: var(--md-sys-color-surface-container-high);
+    background: transparent;
     color: var(--md-sys-color-on-surface-variant);
     font-family: var(--md-sys-typescale-plain-font);
     font-size: var(--md-sys-typescale-label-medium-size);
     cursor: pointer;
     transition: flex-grow var(--md-sys-motion-fast-spatial),
                 border-radius var(--md-sys-motion-fast-spatial),
-                background-color var(--md-sys-motion-fast-effects);
+                color var(--md-sys-motion-fast-effects);
   }
   .squeeze-btn::before {
     content: "";
@@ -2352,13 +2465,13 @@
   .squeeze-btn:hover::after { opacity: var(--md-sys-state-hover-state-layer-opacity); }
   .squeeze-btn:focus-visible::after { opacity: var(--md-sys-state-focus-state-layer-opacity); }
   .squeeze-btn:active::after { opacity: var(--md-sys-state-pressed-state-layer-opacity); }
-  .squeeze-btn:first-child { border-start-start-radius: var(--md-sys-shape-corner-large-increased); border-end-start-radius: var(--md-sys-shape-corner-large-increased); }
-  .squeeze-btn:last-child { border-start-end-radius: var(--md-sys-shape-corner-large-increased); border-end-end-radius: var(--md-sys-shape-corner-large-increased); }
+  .squeeze-btn:first-of-type { border-start-start-radius: var(--md-sys-shape-corner-large-increased); border-end-start-radius: var(--md-sys-shape-corner-large-increased); }
+  .squeeze-btn:last-of-type { border-start-end-radius: var(--md-sys-shape-corner-large-increased); border-end-end-radius: var(--md-sys-shape-corner-large-increased); }
   .squeeze-btn:is(:active, [aria-pressed="true"]) {
     flex-grow: 1.5;
-    background: var(--md-sys-color-secondary-container);
     color: var(--md-sys-color-on-secondary-container);
     border-radius: var(--md-sys-shape-corner-large-increased);
+    font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
   }
   .squeeze-btn:has(+ .squeeze-btn:is(:active, [aria-pressed="true"])),
   .squeeze-btn:is(:active, [aria-pressed="true"]) + .squeeze-btn {
@@ -3056,7 +3169,17 @@
     html {
       scroll-behavior: auto;
     }
-    .section-card {
+    .shell,
+    .shell.is-view-exiting,
+    .nav-rail,
+    .nav-rail__compose,
+    .nav-rail__compose-label,
+    .nav-rail__label,
+    .nav-rail__indicator {
+      transition: none;
+    }
+    .section-card,
+    .section-card.is-stagger-enter {
       animation: none;
     }
   }
@@ -3076,9 +3199,14 @@
       background: Highlight;
       color: HighlightText;
     }
+    .nav-rail__indicator,
+    .md3e-seg-indicator {
+      display: none;
+    }
     .choice-chip[aria-pressed="true"],
     .toggle-btn[aria-pressed="true"],
     .btn-group__item[aria-pressed="true"],
+    .squeeze-btn[aria-pressed="true"],
     .nav-bar__item[aria-current="page"] .nav-bar__pill,
     .nav-rail__item[aria-current="page"] .nav-rail__pill,
     .nav-rail[data-rail-expanded="true"] .nav-rail__item[aria-current="page"] {
@@ -3226,27 +3354,31 @@
       <span class="material-symbols-outlined" aria-hidden="true">close</span>
     </button>
   </div>
-  <a class="nav-sheet__link" href="#section-color" aria-current="page">
+  <a class="nav-sheet__link" href="#main-content" data-section-view="all" aria-current="page">
+    <span class="material-symbols-outlined" aria-hidden="true">dashboard_customize</span>
+    All Views (6)
+  </a>
+  <a class="nav-sheet__link" href="#section-color" data-section-view="#section-color">
     <span class="material-symbols-outlined" aria-hidden="true">palette</span>
     Dynamic Colour Studio
   </a>
-  <a class="nav-sheet__link" href="#section-shapes">
+  <a class="nav-sheet__link" href="#section-shapes" data-section-view="#section-shapes">
     <span class="material-symbols-outlined" aria-hidden="true">category</span>
     35 Shapes &amp; Loader
   </a>
-  <a class="nav-sheet__link" href="#section-motion">
+  <a class="nav-sheet__link" href="#section-motion" data-section-view="#section-motion">
     <span class="material-symbols-outlined" aria-hidden="true">speed</span>
     Springs &amp; Frosted Chrome
   </a>
-  <a class="nav-sheet__link" href="#section-buttons">
+  <a class="nav-sheet__link" href="#section-buttons" data-section-view="#section-buttons">
     <span class="material-symbols-outlined" aria-hidden="true">smart_button</span>
     Buttons &amp; 5-Size Scale
   </a>
-  <a class="nav-sheet__link" href="#section-expressive">
+  <a class="nav-sheet__link" href="#section-expressive" data-section-view="#section-expressive">
     <span class="material-symbols-outlined" aria-hidden="true">animation</span>
     Expressive Components
   </a>
-  <a class="nav-sheet__link" href="#section-primitives">
+  <a class="nav-sheet__link" href="#section-primitives" data-section-view="#section-primitives">
     <span class="material-symbols-outlined" aria-hidden="true">widgets</span>
     Semantic Primitives
   </a>
@@ -3254,45 +3386,62 @@
 
 <!-- Adaptive App Frame -->
 <div class="app-frame" id="app-frame">
-  <!-- Persistent Expandable Navigation Rail (Medium 600px+ Collapsed / Desktop 840px+ 80<->220px) -->
+  <!-- Persistent Expandable Navigation Rail (Dual-Spring 80px <-> 220px) -->
   <nav class="nav-rail" id="nav-rail" aria-label="Primary sections" data-rail-expanded="false">
     <button type="button" class="nav-rail__compose" id="rail-compose-btn" aria-label="New action">
       <span class="material-symbols-outlined" aria-hidden="true">edit</span>
       <span class="nav-rail__compose-label">Compose</span>
     </button>
     <div class="nav-rail__items">
-      <a class="nav-rail__item" href="#section-color" aria-current="page">
+      <a class="nav-rail__item" href="#main-content" data-section-view="all" aria-current="page" aria-label="All Views">
+        <span class="nav-rail__indicator" aria-hidden="true"></span>
+        <span class="nav-rail__pill"><span class="material-symbols-outlined" aria-hidden="true">dashboard_customize</span></span>
+        <span class="nav-rail__label">All Views</span>
+      </a>
+      <a class="nav-rail__item" href="#section-color" data-section-view="#section-color" aria-label="Colour">
+        <span class="nav-rail__indicator" aria-hidden="true"></span>
         <span class="nav-rail__pill"><span class="material-symbols-outlined" aria-hidden="true">palette</span></span>
-        <span>Colour</span>
+        <span class="nav-rail__label">Colour</span>
       </a>
-      <a class="nav-rail__item" href="#section-shapes">
+      <a class="nav-rail__item" href="#section-shapes" data-section-view="#section-shapes" aria-label="Shapes">
+        <span class="nav-rail__indicator" aria-hidden="true"></span>
         <span class="nav-rail__pill"><span class="material-symbols-outlined" aria-hidden="true">category</span></span>
-        <span>Shapes</span>
+        <span class="nav-rail__label">Shapes</span>
       </a>
-      <a class="nav-rail__item" href="#section-motion">
+      <a class="nav-rail__item" href="#section-motion" data-section-view="#section-motion" aria-label="Motion">
+        <span class="nav-rail__indicator" aria-hidden="true"></span>
         <span class="nav-rail__pill"><span class="material-symbols-outlined" aria-hidden="true">speed</span></span>
-        <span>Motion</span>
+        <span class="nav-rail__label">Motion</span>
       </a>
-      <a class="nav-rail__item" href="#section-buttons">
+      <a class="nav-rail__item" href="#section-buttons" data-section-view="#section-buttons" aria-label="Buttons">
+        <span class="nav-rail__indicator" aria-hidden="true"></span>
         <span class="nav-rail__pill"><span class="material-symbols-outlined" aria-hidden="true">smart_button</span></span>
-        <span>Buttons</span>
+        <span class="nav-rail__label">Buttons</span>
       </a>
-      <a class="nav-rail__item" href="#section-expressive">
+      <a class="nav-rail__item" href="#section-expressive" data-section-view="#section-expressive" aria-label="Expressive">
+        <span class="nav-rail__indicator" aria-hidden="true"></span>
         <span class="nav-rail__pill"><span class="material-symbols-outlined" aria-hidden="true">animation</span></span>
-        <span>Expressive</span>
+        <span class="nav-rail__label">Expressive</span>
       </a>
-      <a class="nav-rail__item" href="#section-primitives">
+      <a class="nav-rail__item" href="#section-primitives" data-section-view="#section-primitives" aria-label="Primitives">
+        <span class="nav-rail__indicator" aria-hidden="true"></span>
         <span class="nav-rail__pill"><span class="material-symbols-outlined" aria-hidden="true">widgets</span></span>
-        <span>Primitives</span>
+        <span class="nav-rail__label">Primitives</span>
       </a>
     </div>
     <div class="nav-rail__footer">
-      <kbd class="kbd-hint">[</kbd>
-      <span>Collapse rail</span>
+      <button type="button" class="nav-rail__collapse-btn" id="rail-collapse-btn" aria-label="Toggle navigation rail width" aria-controls="nav-rail" aria-expanded="false">
+        <kbd class="kbd-hint">[</kbd>
+        <span class="nav-rail__label" id="rail-collapse-label">Collapse rail</span>
+      </button>
     </div>
   </nav>
 
   <main class="shell" id="main-content" tabindex="-1">
+    <div class="view-filter-banner" id="view-filter-banner" hidden>
+      <span id="view-filter-label">Viewing focused section</span>
+      <button type="button" class="choice-chip" id="btn-show-all-sections">Show All (6)</button>
+    </div>
 
     <!-- Section 1: Dynamic Colour Studio, Typography & Icons -->
     <section class="section-card section-card--wide" id="section-color">
@@ -3721,7 +3870,8 @@
           </div>
         </div>
 
-        <div class="btn-group" role="group" aria-label="Text alignment" data-group-mode="single">
+        <div class="btn-group" id="align-seg-group" role="group" aria-label="Text alignment" data-group-mode="single">
+          <span class="md3e-seg-indicator" id="align-seg-indicator" aria-hidden="true"></span>
           <button type="button" class="btn-group__item" aria-label="Align left" aria-pressed="true" data-group-val="Left">
             <span class="material-symbols-outlined" aria-hidden="true">format_align_left</span>
           </button>
@@ -3812,6 +3962,7 @@
       <div class="subsection-label">Neighbor Width Squeeze (`animateWidth`) &amp; Variable-Width Icon Buttons</div>
       <div class="demo-row">
         <div class="btn-group--squeeze" id="squeeze-group" role="group" aria-label="Neighbor squeeze group">
+          <span class="md3e-seg-indicator" id="squeeze-seg-indicator" aria-hidden="true"></span>
           <button type="button" class="squeeze-btn" aria-pressed="true" data-squeeze-val="Overview">Overview</button>
           <button type="button" class="squeeze-btn" aria-pressed="false" data-squeeze-val="Metrics">Metrics</button>
           <button type="button" class="squeeze-btn" aria-pressed="false" data-squeeze-val="Logs">Logs</button>
@@ -3966,7 +4117,11 @@
 
 <!-- Compact Bottom Navigation Bar (< 600px) -->
 <nav class="nav-bar" id="nav-bar" aria-label="Compact navigation">
-  <a class="nav-bar__item" href="#section-color" aria-current="page">
+  <a class="nav-bar__item" href="#main-content" data-section-view="all" aria-current="page">
+    <span class="nav-bar__pill"><span class="material-symbols-outlined" aria-hidden="true">dashboard_customize</span></span>
+    <span>All</span>
+  </a>
+  <a class="nav-bar__item" href="#section-color" data-section-view="#section-color">
     <span class="nav-bar__pill"><span class="material-symbols-outlined" aria-hidden="true">palette</span></span>
     <span>Colour</span>
   </a>
@@ -4936,6 +5091,9 @@
     floatingChromeEls.forEach((el) => { if (el) el.inert = anyModal; });
   }
 
+  const railCollapseBtn = document.getElementById('rail-collapse-btn');
+  const railCollapseLabel = document.getElementById('rail-collapse-label');
+
   function syncResponsiveNavMode() {
     const isDesktop = window.innerWidth >= 840;
     if (isDesktop) {
@@ -4944,12 +5102,15 @@
       navMenuBtn.setAttribute('aria-controls', 'nav-rail');
       navMenuBtn.setAttribute('aria-expanded', String(railExpandedDesktop));
       navMenuIcon.textContent = railExpandedDesktop ? 'menu_open' : 'menu';
+      railCollapseBtn?.setAttribute('aria-expanded', String(railExpandedDesktop));
+      if (railCollapseLabel) railCollapseLabel.textContent = railExpandedDesktop ? 'Collapse rail' : 'Expand rail';
     } else {
       navRail.dataset.railExpanded = 'false';
       navMenuBtn.setAttribute('aria-controls', 'nav-sheet');
       const sheetOpen = !navSheet.inert;
       navMenuBtn.setAttribute('aria-expanded', String(sheetOpen));
       navMenuIcon.textContent = sheetOpen ? 'menu_open' : 'menu';
+      railCollapseBtn?.setAttribute('aria-expanded', 'false');
     }
     syncModalInert();
   }
@@ -4989,6 +5150,7 @@
   }
 
   navMenuBtn.addEventListener('click', toggleNavigationChrome);
+  railCollapseBtn?.addEventListener('click', toggleNavigationChrome);
   navSheetClose.addEventListener('click', () => setNavSheetOpen(false, { restoreFocus: true }));
   navSheetScrim.addEventListener('click', () => setNavSheetOpen(false));
   navSheet.addEventListener('keydown', (e) => {
@@ -5002,30 +5164,98 @@
     showToast('Rail Compose action triggered');
   });
 
-  // Sync active page indicator across Rail, Bottom Bar, and Sheet
+  // View-Switch Fade Through + 30ms Staggered Section Entrance & Active Page Indicator
   const allNavLinks = document.querySelectorAll('.nav-rail__item, .nav-bar__item, .nav-sheet__link');
-  function setActiveSection(hash) {
+  const sectionCards = [...document.querySelectorAll('main > section[id]')];
+  const viewFilterBanner = document.getElementById('view-filter-banner');
+  const viewFilterLabel = document.getElementById('view-filter-label');
+  const btnShowAllSections = document.getElementById('btn-show-all-sections');
+  const rmMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let activeSectionView = 'all';
+  let viewFadeTimer = null;
+
+  function setActiveSection(viewTarget) {
     allNavLinks.forEach((link) => {
-      if (link.getAttribute('href') === hash) {
+      const target = link.dataset.sectionView || link.getAttribute('href');
+      if (target === viewTarget) {
         link.setAttribute('aria-current', 'page');
       } else {
         link.removeAttribute('aria-current');
       }
     });
   }
+
+  function switchSectionView(viewTarget, { animate = true } = {}) {
+    const normalized = !viewTarget || viewTarget === '#main-content' ? 'all' : viewTarget;
+    activeSectionView = normalized;
+    setActiveSection(normalized);
+    clearTimeout(viewFadeTimer);
+
+    const applyView = () => {
+      let idx = 0;
+      let matchedTitle = '';
+      sectionCards.forEach((sec) => {
+        const show = normalized === 'all' || `#${sec.id}` === normalized;
+        sec.hidden = !show;
+        sec.classList.remove('is-stagger-enter');
+        sec.style.removeProperty('--md3e-stagger-idx');
+        if (show) {
+          sec.style.setProperty('--md3e-stagger-idx', String(idx));
+          idx += 1;
+          matchedTitle = sec.querySelector('h2')?.textContent || sec.id;
+        }
+      });
+      if (viewFilterBanner) {
+        viewFilterBanner.hidden = normalized === 'all';
+        if (viewFilterLabel && normalized !== 'all') {
+          viewFilterLabel.textContent = `Viewing: ${matchedTitle}`;
+        }
+      }
+      if (!rmMotionQuery.matches) {
+        void mainEl.offsetWidth;
+        sectionCards.forEach((sec) => {
+          if (!sec.hidden) sec.classList.add('is-stagger-enter');
+        });
+      }
+      syncAllSegIndicators(true);
+    };
+
+    if (!animate || rmMotionQuery.matches) {
+      applyView();
+      return;
+    }
+    mainEl.classList.add('is-view-exiting');
+    viewFadeTimer = setTimeout(() => {
+      mainEl.classList.remove('is-view-exiting');
+      applyView();
+    }, 90);
+  }
+
   allNavLinks.forEach((link) => {
-    link.addEventListener('click', () => setActiveSection(link.getAttribute('href')));
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = link.dataset.sectionView || link.getAttribute('href') || 'all';
+      switchSectionView(target, { animate: true });
+      if (target === 'all' || target === '#main-content') {
+        window.scrollTo({ top: 0, behavior: rmMotionQuery.matches ? 'auto' : 'smooth' });
+      }
+    });
+  });
+
+  btnShowAllSections?.addEventListener('click', () => {
+    switchSectionView('all', { animate: true });
   });
 
   if ('IntersectionObserver' in window) {
     const sectionObserver = new IntersectionObserver((entries) => {
+      if (activeSectionView !== 'all') return;
       entries.forEach((entry) => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && window.scrollY > 120) {
           setActiveSection(`#${entry.target.id}`);
         }
       });
     }, { rootMargin: '-25% 0px -65% 0px' });
-    document.querySelectorAll('main > section[id]').forEach((sec) => sectionObserver.observe(sec));
+    sectionCards.forEach((sec) => sectionObserver.observe(sec));
   }
 
   function syncSliderPct(el) {
@@ -5102,6 +5332,65 @@
     expressiveStatus.textContent = `Align: ${align} | Format: ${formats}`;
   }
 
+  const segSyncHandlers = [];
+  function syncAllSegIndicators(immediate = false) {
+    segSyncHandlers.forEach((fn) => fn(immediate));
+  }
+
+  function attachSpringSegmentedIndicator(groupEl, itemSelector, indicatorEl) {
+    if (!groupEl || !indicatorEl) return;
+    const items = [...groupEl.querySelectorAll(itemSelector)];
+    if (!items.length) return;
+    let curX = 0;
+    let curW = 0;
+    const render = () => {
+      indicatorEl.style.transform = `translateX(${curX.toFixed(2)}px)`;
+      indicatorEl.style.width = `${Math.max(0, curW).toFixed(2)}px`;
+    };
+    const xSpring = createSpringAnimator({
+      initialValue: 0,
+      stiffness: 1400,
+      damping: 0.86,
+      onUpdate: (v) => { curX = v; render(); },
+    });
+    const wSpring = createSpringAnimator({
+      initialValue: 0,
+      stiffness: 1400,
+      damping: 0.86,
+      onUpdate: (v) => { curW = v; render(); },
+    });
+    const sync = (immediate = false) => {
+      const active = items.find((b) => b.getAttribute('aria-pressed') === 'true') || items[0];
+      if (!active || active.offsetWidth === 0) return;
+      if (immediate) {
+        xSpring.snap(active.offsetLeft);
+        wSpring.snap(active.offsetWidth);
+      } else {
+        xSpring.setTarget(active.offsetLeft);
+        wSpring.setTarget(active.offsetWidth);
+      }
+    };
+    segSyncHandlers.push(sync);
+    if ('ResizeObserver' in window) {
+      const ro = new ResizeObserver(() => sync(false));
+      ro.observe(groupEl);
+      items.forEach((it) => ro.observe(it));
+    }
+    sync(true);
+    requestAnimationFrame(() => sync(true));
+  }
+
+  attachSpringSegmentedIndicator(
+    document.getElementById('align-seg-group'),
+    '.btn-group__item',
+    document.getElementById('align-seg-indicator'),
+  );
+  attachSpringSegmentedIndicator(
+    document.getElementById('squeeze-group'),
+    '.squeeze-btn',
+    document.getElementById('squeeze-seg-indicator'),
+  );
+
   document.querySelectorAll('.btn-group').forEach((group) => {
     const mode = group.dataset.groupMode || 'single';
     group.querySelectorAll('.btn-group__item').forEach((btn) => {
@@ -5111,6 +5400,7 @@
         } else {
           group.querySelectorAll('.btn-group__item').forEach((b) => b.setAttribute('aria-pressed', 'false'));
           btn.setAttribute('aria-pressed', 'true');
+          syncAllSegIndicators(false);
         }
         updateGroupSummary();
       });
@@ -5241,6 +5531,9 @@
         setInspectorOpen(true);
       } else if (item.id === 'fab-item-upload') {
         setFabMenuOpen(false);
+        if (activeSectionView !== 'all' && activeSectionView !== '#section-color') {
+          switchSectionView('all', { animate: false });
+        }
         document.getElementById('section-color')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         imageInput.click();
       } else {
@@ -5581,6 +5874,7 @@
     btn.addEventListener('click', () => {
       document.querySelectorAll('#squeeze-group .squeeze-btn').forEach((b) => b.setAttribute('aria-pressed', 'false'));
       btn.setAttribute('aria-pressed', 'true');
+      syncAllSegIndicators(false);
       showToast(`Squeeze group -> ${btn.dataset.squeezeVal}`);
     });
   });

@@ -1780,6 +1780,22 @@ class Checker:
                         self.path, ln, line_text,
                     )
 
+            cls_attr_m = re.search(r"""\b(?:class|className)\s*=\s*(?:"([^"]*)"|'([^']*)')""", attrs, re.I)
+            if cls_attr_m and not has_jsx_spread:
+                cls_val = cls_attr_m.group(1) if cls_attr_m.group(1) is not None else cls_attr_m.group(2)
+                cls_set_check = set(cls_val.split())
+                if (
+                    any(c in cls_set_check for c in ("context-menu", "md3e-context-menu", "bento-context-menu"))
+                    and role != "menu"
+                    and not re.search(r"\bfocusgroup\s*=", attrs, re.I)
+                ):
+                    self.add(
+                        "MD3E020", "error",
+                        f"Context menu container `<{tag}>` lacks `role=\"menu\"` (or `focusgroup=\"menu\"`).",
+                        "Expose `role=\"menu\"` with `role=\"menuitem\"` children, ArrowUp/ArrowDown/Home/End/Escape handling, and outside-dismiss.",
+                        self.path, ln, line_text,
+                    )
+
             # Check MD3E token class bindings (MD3E026)
             for cm in re.finditer(r"""\b(?:class|className)\s*=\s*(?:"([^"]*)"|'([^']*)')""", attrs, re.I):
                 raw_cls = cm.group(1) if cm.group(1) is not None else cm.group(2)

@@ -531,8 +531,7 @@
 :where([aria-pressed="true"], [aria-selected="true"], [aria-current="page"]) > :is(
   .material-symbols-outlined,
   .material-symbols-rounded,
-  .material-symbols-sharp,
-  md-icon
+  .material-symbols-sharp
 ) {
   --md-sys-icon-fill: 1;
   font-variation-settings:
@@ -741,6 +740,32 @@
   :root {
     scrollbar-width: auto;
   }
+}
+
+/* ============================================================================
+ * GLOBAL DYNAMIC HCT TEXT SELECTION HIGHLIGHT & TABULAR NUMERIC UTILITY
+ * Links selected prose to Primary Container and code/tabular metrics to
+ * Tertiary Container across all seed palettes and light/dark themes.
+ * ========================================================================== */
+::selection {
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+code::selection,
+code *::selection,
+pre::selection,
+pre *::selection,
+kbd::selection,
+samp::selection,
+.tabular-nums::selection,
+.tabular-nums *::selection {
+  background-color: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
 }
 
 /* ============================================================================

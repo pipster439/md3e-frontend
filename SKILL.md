@@ -57,6 +57,23 @@ Downstream agents operate with a finite context window. Preserve token budget st
 7. **Keep Layer 3 extensions opt-in.** *(Product Extension / `CUSTOM`)* Fixed rail widths (`80/220px` or `64px`), borderless multi-tier Bento nesting, and Hero wave/sparkline motifs apply only when intentionally opted in (`desktop-bento.md`, `expressive-tactics.md`).
 8. **Run `scripts/audit_md3e.py` + rendered browser inspection** before concluding.
 
+## Composability: Co-mounting with `frontend-design`
+
+When both `md3e-frontend` and `frontend-design` are active in the same turn, apply the division of authority below without blending conflicting styling defaults:
+
+1. **Adopt from `frontend-design` (Domain Grounding, Spatial Composition & Copy):**
+   - **Subject Grounding**: Anchor the UI in the concrete product domain, target users, and operational vocabulary before picking layouts or components.
+   - **Two-Pass Spatial Composition**: Plan visual focal hierarchy, reading order, alignment grid, and breathing room before writing code, followed by a post-draft anti-default composition check.
+   - **Anti-Templated Layout Self-Critique**: Reject generic repetitive SaaS card grids, decorative unsequenced `01 / 02 / 03` markers, ubiquitous ALL-CAPS eyebrows above every heading, `WORD — fragment` headers, and gratuitous trailing `→` on button labels.
+   - **Plain Active-Voice Microcopy**: Write directly for end users — keep verbs consistent from button/CTA label to confirmation toast, frame error messages with calm actionable recovery steps, and make empty states action-inviting.
+
+2. **Mandatorily Overridden by `md3e-frontend` (Tokens, Typography, Shapes, Physics & Audit):**
+   - **Ignore** `frontend-design`'s fallback instructions to invent a 4–6 hex base palette, pick arbitrary external display font pairs, define bespoke micro CSS variable sets, or use arbitrary `rgba()` shadows.
+   - **Color**: Route 100% of surface, ink, container, and state colors through HCT semantic roles (`assets/tokens/md3e-tokens.css`, `md3e-palettes.css`, or `assets/tokens/md3e-dynamic-color.js` `SPEC_2025`), strictly pairing every container with its matching `on-*` role.
+   - **Typography**: Use only the MD3E `15 + 15` baseline + emphasized typescale and variable font axes (`Google Sans Flex` / `Roboto Flex` `wght`, `GRAD`, `ROND`, `wdth`).
+   - **Geometry & Physics**: Use `md3e-shapes.css`, `md3e-morph.js`, and `md3e-spring.js` / `md3e-motion.css` (or `OFFICIAL_WEB_CURVES` + calibrated durations) for all shape morphs, blur chrome (`md3e-blur.css`), and spatial choreography.
+   - **Verification Gate**: Every UI deliverable MUST pass `python scripts/audit_md3e.py` (`0` `ERROR`) before final delivery.
+
 ## Phase 1 — Install the token layer
 
 Copy the token files into the project (never emit broken `/styles/md3e-*.css` paths unless those files actually exist at that path; for standalone single-file HTML deliverables, copy the stylesheets alongside the HTML with relative `./tokens/` links or inline `md3e-tokens.css` + `md3e-motion.css` directly) and import them on demand, in this order:
