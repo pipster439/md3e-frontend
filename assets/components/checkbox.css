@@ -1,0 +1,66 @@
+/* ============================================================================
+ * MD3E Component: Checkbox (18x18dp box, 2px corner, 48x48dp ::before target)
+ * Requires: assets/tokens/md3e-tokens.css, assets/tokens/md3e-motion.css
+ * ========================================================================== */
+
+.md3e-checkbox,
+.md3e-checkbox::before,
+.md3e-checkbox::after {
+  box-sizing: border-box;
+}
+
+.md3e-checkbox {
+  appearance: none;
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border-radius: 2px;
+  border: 2px solid var(--md-sys-color-on-surface-variant);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color var(--md-sys-motion-fast-effects),
+              border-color var(--md-sys-motion-fast-effects);
+}
+.md3e-checkbox::before {
+  content: "";
+  position: absolute;
+  inset: -15px;
+  min-width: var(--md-sys-touch-target-min);
+  min-height: var(--md-sys-touch-target-min);
+}
+.md3e-checkbox:checked {
+  background: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-primary);
+}
+.md3e-checkbox:checked::after {
+  content: "\2713";
+  color: var(--md-sys-color-on-primary);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
+  line-height: 1;
+}
+.md3e-checkbox:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-checkbox {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .md3e-checkbox {
+    border: 1px solid CanvasText;
+  }
+  .md3e-checkbox:checked {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+}

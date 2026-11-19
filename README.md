@@ -32,11 +32,21 @@ Instead of wrapping legacy custom elements or fighting Shadow DOM style encapsul
 
 ```
 md3e-frontend/
-├── SKILL.md                                 # Main AI agent instruction file (3-Layer Spec Architecture + Dormant Layer 4)
+├── SKILL.md                                 # Router-style AI agent entry point (<150 lines)
 ├── OFFICIAL_SPEC_AUDIT.md                   # Verification ledger & certified vs uncertified scope
 ├── assets/
+│   ├── components/
+│   │   ├── md3e-components.css              # Bundled MD3E component CSS (all 16 modules)
+│   │   ├── button.css / fab.css / ...       # Per-component standalone stylesheets
+│   │   └── dialog.css / text-field.css / ...# Interactive & form component styles
+│   ├── fonts/
+│   │   ├── md3e-fonts.css                   # Offline-first @font-face declarations
+│   │   ├── *.woff2                          # Self-hosted Google Sans Flex, Roboto Flex, Material Symbols Outlined
+│   │   ├── OFL-1.1-LICENSE.txt              # SIL Open Font License 1.1 & Apache 2.0 notice
+│   │   └── README.md                        # Font inventory, CJK fallback & re-fetch guide
 │   ├── starter/
 │   │   ├── index.html                       # Interactive Layer 1 & 2 showcase, color studio & morph lab
+│   │   ├── minimal.html                     # Minimal zero-build starter (tokens + components + fonts)
 │   │   └── desktop-bento.html               # Opt-in Layer 3 Desktop Bento (+ Layer 4 Personal Studio demo)
 │   ├── tailwind/
 │   │   ├── md3e-theme.css                   # Tailwind CSS v4 @theme configuration
@@ -72,10 +82,14 @@ md3e-frontend/
 │       ├── selection.md                     # Checkbox, Chips, Radio, Select (Skin Contract + base-select), Switch, Sliders
 │       ├── text-input.md                    # Text Fields (<fieldset><legend> notch), Date Pickers (Single/Range), Time Pickers
 │       └── expressive-recipes.md            # Production recipes (sliders, switch/checkbox, loader, wavy progress, toolbars)
+    └── integration.md                       # Coexistence & token mapping for Tailwind / MUI / antd
 └── scripts/
     ├── audit_md3e.py                        # 4-tier deterministic auditor (ERROR/WARNING/INFO/CUSTOM)
+    ├── build_components.py                  # Rebuild assets/components/md3e-components.css bundle
+    ├── fetch_fonts.py                       # Download/refresh self-hosted WOFF2 fonts & md3e-fonts.css
+    ├── spring_to_css.py                     # Harmonic oscillator physics-to-CSS generator
     ├── test_md3e.py                         # Unit & compliance test suite
-    └── spring_to_css.py                     # Harmonic oscillator physics-to-CSS generator
+    └── verify_visual.py                     # Offline Playwright font/CJK/component visual verifier
 ```
 
 ---
@@ -97,21 +111,37 @@ Invoke via slash command:
 Or simply describe your intent in natural language; Antigravity will automatically discover and activate the skill.
 
 #### Cursor / Claude Code / Windsurf
-Copy `SKILL.md` and the `references/` directory into your project's `.cursor/rules/`, `.agents/skills/`, or prompt context.
+You **must copy `assets/` alongside `SKILL.md` and `references/`** so that fonts, design tokens, and component stylesheets are all present in your target workspace (without `assets/`, `.md3e-*` classes and local fonts will not load):
+
+```text
+your-project/
+├── .cursor/skills/md3e-frontend/   (or .agents/skills/md3e-frontend/)
+│   ├── SKILL.md
+│   └── references/
+└── assets/                         # Required in your web root / public assets
+    ├── fonts/md3e-fonts.css + *.woff2
+    ├── tokens/md3e-tokens.css + md3e-motion.css + md3e-shapes.css
+    ├── components/md3e-components.css  (or individual *.css files)
+    ├── starter/minimal.html
+    └── tailwind/
+```
 
 ---
 
-### 2. Turnkey Token Integration
+### 2. Turnkey Token & Component Integration
 
-Import the token files into your project:
+Copy `assets/` into your web root (or inspect [minimal.html](assets/starter/minimal.html)) and link the offline-first fonts, tokens, and pre-built component styles:
 ```html
-<!-- Google Material Symbols Icons (axes MUST be strictly alphabetical for v2 API) -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:FILL,GRAD,opsz,wght@0..1,-50..200,20..48,100..700&display=block">
+<!-- Offline-first self-hosted fonts & Material Symbols Outlined icons (zero external network dependency) -->
+<link rel="stylesheet" href="./assets/fonts/md3e-fonts.css">
+<!-- Optional CDN fallback if you omit assets/fonts/: axes MUST be strictly alphabetical -->
+<!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:FILL,GRAD,opsz,wght@0..1,-50..200,20..48,100..700&display=block"> -->
 
-<!-- MD3E Token Layer -->
-<link rel="stylesheet" href="./styles/md3e-tokens.css">
-<link rel="stylesheet" href="./styles/md3e-motion.css">
-<link rel="stylesheet" href="./styles/md3e-shapes.css">
+<!-- MD3E Token & Component Layers -->
+<link rel="stylesheet" href="./assets/tokens/md3e-tokens.css">
+<link rel="stylesheet" href="./assets/tokens/md3e-motion.css">
+<link rel="stylesheet" href="./assets/tokens/md3e-shapes.css">
+<link rel="stylesheet" href="./assets/components/md3e-components.css">
 ```
 
 Activate dark mode or vibrant expressive color variants on `<html>`:
@@ -168,10 +198,10 @@ Use the copy-ready zero-dependency semantic HTML/CSS/JS recipes in [`references/
 ### 5. Tailwind CSS Support
 
 #### Tailwind v4 (`@theme`)
-Import `assets/tailwind/md3e-theme.css`:
+Import `assets/tokens/md3e-tokens.css` and `assets/tailwind/md3e-theme.css` (see [integration.md](references/integration.md) for Tailwind v3/v4, MUI, Ant Design, and custom token coexistence & conflict avoidance):
 ```css
-@import "./styles/md3e-tokens.css";
-@import "./styles/md3e-theme.css";
+@import "./assets/tokens/md3e-tokens.css";
+@import "./assets/tailwind/md3e-theme.css";
 ```
 
 #### Tailwind v3

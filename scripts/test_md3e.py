@@ -20,6 +20,7 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 import audit_md3e  # noqa: E402
+import build_components  # noqa: E402
 import color_to_css  # noqa: E402
 import shapes_to_css  # noqa: E402
 import spring_to_css  # noqa: E402
@@ -31,11 +32,15 @@ MOTION_CSS = ROOT_DIR / "assets" / "tokens" / "md3e-motion.css"
 SPRING_JS = ROOT_DIR / "assets" / "tokens" / "md3e-spring.js"
 STUDIO_CSS = ROOT_DIR / "assets" / "tokens" / "md3e-studio.css"
 STUDIO_JS = ROOT_DIR / "assets" / "tokens" / "md3e-studio.js"
+COMPONENTS_CSS = ROOT_DIR / "assets" / "components" / "md3e-components.css"
+FONTS_CSS = ROOT_DIR / "assets" / "fonts" / "md3e-fonts.css"
 TAILWIND_THEME_CSS = ROOT_DIR / "assets" / "tailwind" / "md3e-theme.css"
 TAILWIND_CONFIG_JS = ROOT_DIR / "assets" / "tailwind" / "tailwind.config.js"
 STARTER_HTML = ROOT_DIR / "assets" / "starter" / "index.html"
+MINIMAL_HTML = ROOT_DIR / "assets" / "starter" / "minimal.html"
 BENTO_HTML = ROOT_DIR / "assets" / "starter" / "desktop-bento.html"
 SKILL_MD = ROOT_DIR / "SKILL.md"
+README_MD = ROOT_DIR / "README.md"
 OFFICIAL_AUDIT_MD = ROOT_DIR / "OFFICIAL_SPEC_AUDIT.md"
 REFERENCES_DIR = ROOT_DIR / "references"
 
@@ -386,7 +391,7 @@ class SemanticPrimitivesAndZeroMwcTests(unittest.TestCase):
         scan_files.extend(sorted((ROOT_DIR / "assets").rglob("*")))
         offenders: list[tuple[str, int, str]] = []
         for fp in scan_files:
-            if not fp.is_file():
+            if not fp.is_file() or fp.suffix.lower() not in (audit_md3e.CODE_EXTENSIONS | {".md", ".txt"}):
                 continue
             for idx, line in enumerate(fp.read_text(encoding="utf-8").splitlines(), start=1):
                 if banned.search(line):
@@ -395,13 +400,14 @@ class SemanticPrimitivesAndZeroMwcTests(unittest.TestCase):
 
     def test_starter_native_primitives_and_headless_guidance(self) -> None:
         html = STARTER_HTML.read_text(encoding="utf-8")
+        combined_styles = html + "\n" + COMPONENTS_CSS.read_text(encoding="utf-8")
         for variant in ("filled", "tonal", "elevated", "outlined", "text"):
-            self.assertIn(f".md3e-btn--{variant}", html)
+            self.assertIn(f".md3e-btn--{variant}", combined_styles)
         for size in ("xs", "s", "m", "l", "xl"):
-            self.assertIn(f".md3e-btn--{size}", html)
-        self.assertIn(".md3e-btn--square", html)
-        self.assertIn(".md3e-btn::before", html)
-        self.assertIn("calc(var(--md-btn-h) / 2)", html)
+            self.assertIn(f".md3e-btn--{size}", combined_styles)
+        self.assertIn(".md3e-btn--square", combined_styles)
+        self.assertIn(".md3e-btn::before", combined_styles)
+        self.assertIn("calc(var(--md-btn-h) / 2)", combined_styles)
         for selector in (
             'id="section-primitives"',
             'id="prim-switch"',
@@ -409,9 +415,9 @@ class SemanticPrimitivesAndZeroMwcTests(unittest.TestCase):
             'id="prim-text-field"',
             'id="volume-slider"',
             'id="prim-dialog"',
-            ".md3e-fab--medium",
         ):
             self.assertIn(selector, html)
+        self.assertIn(".md3e-fab--medium", combined_styles)
 
         for doc in (
             SKILL_MD,
@@ -497,11 +503,17 @@ class CrossReferenceAndStructuralTests(unittest.TestCase):
 
     def test_cross_reference_var_integrity(self) -> None:
         defined_tokens: set[str] = set()
-        for css_file in sorted((ROOT_DIR / "assets" / "tokens").glob("*.css")):
-            cleaned = audit_md3e.strip_css_comments(css_file.read_text(encoding="utf-8"))
-            defined_tokens.update(re.findall(r"(--md(?:3e)?-[a-z0-9-]+)\s*:", cleaned))
+        for css_dir in (ROOT_DIR / "assets" / "tokens", ROOT_DIR / "assets" / "components"):
+            for css_file in sorted(css_dir.glob("*.css")):
+                cleaned = audit_md3e.strip_css_comments(css_file.read_text(encoding="utf-8"))
+                defined_tokens.update(re.findall(r"(--md(?:3e)?-[a-z0-9-]+)\s*:", cleaned))
 
-        targets = (TAILWIND_THEME_CSS, TAILWIND_CONFIG_JS, STARTER_HTML)
+        targets = [
+            TAILWIND_THEME_CSS,
+            TAILWIND_CONFIG_JS,
+            STARTER_HTML,
+            *sorted((ROOT_DIR / "assets" / "components").glob("*.css")),
+        ]
         for target in targets:
             raw = target.read_text(encoding="utf-8")
             cleaned = audit_md3e.strip_css_comments(raw)
@@ -541,9 +553,9 @@ class CrossReferenceAndStructuralTests(unittest.TestCase):
                 for ref_id in val.split():
                     self.assertIn(ref_id, id_set, f"{attr_name}=\"{val}\" targets missing id #{ref_id}")
 
-        # 3. Alphabetical Material Symbols Google Fonts URL axis order
+        # 3. Offline-first Material Symbols stylesheet (plus alphabetical axes if any active Google Fonts link)
+        self.assertIn("../fonts/md3e-fonts.css", markup, "Expected local ../fonts/md3e-fonts.css <link> in starter HTML")
         ms_matches = list(audit_md3e.MS_FONT_AXES_RE.finditer(markup))
-        self.assertTrue(ms_matches, "Expected Material Symbols Google Fonts <link> in starter HTML")
         for m in ms_matches:
             raw_axes = [a.strip() for a in m.group(1).split(",") if a.strip()]
             expected = sorted((audit_md3e.CANONICAL_MS_AXES.get(a.lower(), a) for a in raw_axes), key=str.lower)
@@ -582,6 +594,7 @@ class CrossReferenceAndStructuralTests(unittest.TestCase):
         rules: list[audit_md3e.RuleBlock] = []
         for blk, start_line in audit_md3e.extract_style_blocks(html):
             rules.extend(audit_md3e.parse_css_rules(blk, base_line=start_line))
+        rules.extend(audit_md3e.parse_css_rules(COMPONENTS_CSS.read_text(encoding="utf-8"), base_line=1))
 
         def decls_for(sel_predicate) -> dict[str, list[str]]:
             collected: dict[str, list[str]] = {}
@@ -651,7 +664,7 @@ class AuditorTests(unittest.TestCase):
 
     def test_shipped_assets_and_all_22_markdown_docs_pass_compliance(self) -> None:
         reports, scanned = audit_md3e.audit([str(ROOT_DIR / "assets")], [], mode="strict")
-        self.assertEqual(scanned, 14)
+        self.assertEqual(scanned, 33)
         self.assertEqual(reports, [], f"Unexpected strict asset findings: {reports}")
 
         for bento_mode in ("desktop-bento", "personal-studio"):
@@ -664,13 +677,13 @@ class AuditorTests(unittest.TestCase):
             self.assertEqual(bento_reports, [], f"Unexpected {bento_mode} HTML findings: {bento_reports}")
 
         md_reports, md_scanned = audit_md3e.audit(
-            [str(SKILL_MD), str(ROOT_DIR / "README.md"), str(OFFICIAL_AUDIT_MD), str(REFERENCES_DIR)],
+            [str(SKILL_MD), str(README_MD), str(OFFICIAL_AUDIT_MD), str(REFERENCES_DIR)],
             [],
             include_markdown=True,
             mode="strict",
         )
-        self.assertEqual(md_scanned, 22)
-        self.assertEqual(md_reports, [], f"Unexpected markdown compliance findings across 22 docs: {md_reports}")
+        self.assertEqual(md_scanned, 23)
+        self.assertEqual(md_reports, [], f"Unexpected markdown compliance findings across 23 docs: {md_reports}")
 
         for doc_path, doc_mode in (
             (REFERENCES_DIR / "desktop-bento.md", "desktop-bento"),
@@ -1473,7 +1486,7 @@ class DualSkillAndDesktopChoreographyTests(unittest.TestCase):
         # Preserve prior slider & FAB menu red-line fixes
         self.assertIn('id="wavy-progress-slider"', index_html)
         self.assertIn('id="volume-slider"', index_html)
-        self.assertIn("pointer-events: none", index_html)
+        self.assertIn("pointer-events: none", index_html + "\n" + COMPONENTS_CSS.read_text(encoding="utf-8"))
 
     def test_auditor_catches_context_menu_without_role(self) -> None:
         bad_menu = "<!doctype html><html><body><div class='bento-context-menu'><button type='button'>Inspect</button></div></body></html>"
@@ -2330,7 +2343,9 @@ console.log(JSON.stringify({
                 out.extend(audit_md3e.parse_css_rules(blk, base_line=start_line))
             return out
 
-        index_rules = parse_rules(index_html)
+        index_rules = parse_rules(index_html) + audit_md3e.parse_css_rules(
+            COMPONENTS_CSS.read_text(encoding="utf-8"), base_line=1
+        )
         bento_rules = parse_rules(bento_html)
 
         # 1. Scoped .is-toolbar-morphing in BOTH HTML files (never permanent view-transition-name on base toolbar)
@@ -2451,12 +2466,13 @@ console.log(JSON.stringify({
 
     def test_five_complex_components_in_starter_and_docs(self) -> None:
         index_html = STARTER_HTML.read_text(encoding="utf-8")
+        index_styles = index_html + "\n" + COMPONENTS_CSS.read_text(encoding="utf-8")
 
         # 1. Native <dialog id="prim-dialog"> (no redundant role/aria-modal, dialog:modal overscroll-behavior: contain)
         self.assertIn('id="prim-dialog"', index_html)
         self.assertNotRegex(index_html, r"<dialog\b[^>]*\brole\s*=\s*[\"']dialog[\"']")
         self.assertNotRegex(index_html, r"<dialog\b[^>]*\baria-modal\s*=")
-        self.assertRegex(index_html, r"dialog:modal[\s\S]*?overscroll-behavior\s*:\s*contain")
+        self.assertRegex(index_styles, r"dialog:modal[\s\S]*?overscroll-behavior\s*:\s*contain")
 
         # 2. Outlined Text Field with transparent <fieldset><legend> notch
         for snippet in (
@@ -2484,7 +2500,7 @@ console.log(JSON.stringify({
             "transition-behavior: allow-discrete",
             "@starting-style",
         ):
-            self.assertIn(snippet, index_html)
+            self.assertIn(snippet, index_styles)
 
         # 4. Select Skin Contract + Top-Layer Listbox + progressive base-select
         for snippet in (
@@ -2496,7 +2512,7 @@ console.log(JSON.stringify({
             "data-disabled",
             "appearance: base-select",
         ):
-            self.assertIn(snippet, index_html)
+            self.assertIn(snippet, index_styles)
 
         # 5. Date Picker Single <-> Range mode + continuous range track
         for snippet in (
@@ -2509,7 +2525,7 @@ console.log(JSON.stringify({
             "data-range-end",
             "data-today",
         ):
-            self.assertIn(snippet, index_html)
+            self.assertIn(snippet, index_styles)
 
         # Verify all 5 complex components and HDR/FLIP choreography are documented in references/
         text_input_md = (REFERENCES_DIR / "components" / "text-input.md").read_text(encoding="utf-8")
@@ -2630,12 +2646,18 @@ class SwarmBugHuntRegressionTests(unittest.TestCase):
 
         # Index showcase regression markers
         self.assertIn(".app-frame:has(#inspector-sheet.is-open) .shell", index_html)
-        self.assertIn("max(0px, calc((100% - var(--md3e-dp-cap-size)) / 2))", index_html)
+        self.assertIn(
+            "max(0px, calc((100% - var(--md3e-dp-cap-size)) / 2))",
+            COMPONENTS_CSS.read_text(encoding="utf-8"),
+        )
         self.assertIn("addMonthsClamped", index_html)
         self.assertIn("minSelectableDate", index_html)
         self.assertIn('id="prim-text-field" value="antigravity-project" placeholder=" "', index_html)
         self.assertIn("#main-content:focus,", index_html)
-        self.assertIn(".md3e-text-field:has(.md3e-text-field__input:focus-visible)", index_html)
+        self.assertIn(
+            ".md3e-text-field:has(.md3e-text-field__input:focus-visible)",
+            COMPONENTS_CSS.read_text(encoding="utf-8"),
+        )
 
     def test_runtime_spring_morph_and_studio_regressions(self) -> None:
         node_bin = shutil.which("node")
@@ -2708,6 +2730,86 @@ console.log(JSON.stringify({ postStopCalls, pressedAfterKeyboardClick, remaining
         self.assertEqual(out["pressedAfterKeyboardClick"], "true")
         self.assertEqual(out["remainingListeners"], 0)
         self.assertGreater(out["dUpdates"], 0)
+
+    def test_t1_to_t5_distribution_architecture_contracts(self) -> None:
+        # T1: Extracted per-component CSS + exact bundled match
+        comp_dir = ROOT_DIR / "assets" / "components"
+        for name in build_components.COMPONENT_ORDER:
+            comp_file = comp_dir / name
+            self.assertTrue(comp_file.is_file(), f"Missing component CSS: {comp_file}")
+        self.assertEqual(
+            COMPONENTS_CSS.read_text(encoding="utf-8"),
+            build_components.build_bundle(),
+            "assets/components/md3e-components.css is out of sync with scripts/build_components.py",
+        )
+        index_html = STARTER_HTML.read_text(encoding="utf-8")
+        self.assertIn("../components/md3e-components.css", index_html)
+
+        # T2: Offline self-hosted fonts & CJK typography fallback
+        tokens_css = TOKENS_CSS.read_text(encoding="utf-8")
+        for cjk_fam in ('"PingFang SC"', '"Noto Sans SC"', '"Microsoft YaHei"'):
+            self.assertIn(cjk_fam, tokens_css)
+        fonts_css = FONTS_CSS.read_text(encoding="utf-8")
+        self.assertIn(".material-symbols-outlined", fonts_css)
+        self.assertIn("font-family: 'Material Symbols Outlined'", fonts_css)
+        for rel_woff in re.findall(r"url\(['\"](\./[^'\"]+\.woff2)['\"]\)", fonts_css):
+            self.assertTrue((FONTS_CSS.parent / rel_woff).is_file(), f"Missing local font: {rel_woff}")
+        for starter_path in (STARTER_HTML, BENTO_HTML, MINIMAL_HTML):
+            uncommented = audit_md3e.strip_html_comments(starter_path.read_text(encoding="utf-8"))
+            self.assertIn("../fonts/md3e-fonts.css", uncommented, f"{starter_path.name} must link local md3e-fonts.css")
+            self.assertNotIn("fonts.googleapis.com", uncommented, f"{starter_path.name} should not require active CDN")
+
+        # T3: Router-style SKILL.md under 300 lines with zero file-reading bans
+        skill_text = SKILL_MD.read_text(encoding="utf-8")
+        skill_lines = skill_text.splitlines()
+        self.assertLess(len(skill_lines), 300, f"SKILL.md too long: {len(skill_lines)} lines")
+        self.assertIn("references/integration.md", skill_text)
+        self.assertIn("assets/components/md3e-components.css", skill_text)
+        self.assertIn("assets/starter/minimal.html", skill_text)
+        self.assertNotRegex(skill_text, r"禁止.*读取|Never read.*starter/index\.html|Prohibited from reading")
+
+        # T4 / T4.5: Minimal starter, integration guide, README accuracy & zero broken paths
+        minimal_text = MINIMAL_HTML.read_text(encoding="utf-8")
+        self.assertIn("../tokens/md3e-tokens.css", minimal_text)
+        self.assertIn("../components/md3e-components.css", minimal_text)
+        min_reports, min_scanned = audit_md3e.audit([str(MINIMAL_HTML)], [], mode="strict")
+        self.assertEqual(min_scanned, 1)
+        self.assertEqual(min_reports, [], f"minimal.html failed strict audit: {min_reports}")
+
+        integration_md = REFERENCES_DIR / "integration.md"
+        self.assertTrue(integration_md.is_file())
+        integ_text = integration_md.read_text(encoding="utf-8")
+        for topic in ("Tailwind", "MUI", "Ant Design"):
+            self.assertIn(topic, integ_text)
+
+        readme_text = README_MD.read_text(encoding="utf-8")
+        self.assertNotIn("./styles/", readme_text)
+        self.assertIn("assets/", readme_text)
+        for doc_name, doc_text in (("SKILL.md", skill_text), ("README.md", readme_text)):
+            for m in re.finditer(r"\[[^\]]+\]\(([^)]+)\)", doc_text):
+                target = m.group(1).split("#")[0]
+                if not target or target.startswith(("http://", "https://", "mailto:")):
+                    continue
+                self.assertTrue((ROOT_DIR / target).exists(), f"{doc_name} links missing path: {target}")
+            for m in re.finditer(r"(?:\./)?((?:assets|references|scripts)/[A-Za-z0-9_./*-]+)", doc_text):
+                ref_path = m.group(1).rstrip(".,:;)")
+                if "*" in ref_path or ref_path.endswith("/"):
+                    continue
+                self.assertTrue((ROOT_DIR / ref_path).exists(), f"{doc_name} references missing path: {ref_path}")
+
+    def test_offline_visual_rendering_and_parity(self) -> None:
+        try:
+            import verify_visual  # noqa: E402
+        except ImportError as exc:
+            self.skipTest(f"Visual verifier optional dependencies unavailable: {exc}")
+
+        with tempfile.TemporaryDirectory(prefix="md3e-test-visual-") as tmp_dir:
+            try:
+                passed, results = verify_visual.run_verification(ROOT_DIR, pathlib.Path(tmp_dir))
+            except RuntimeError as exc:
+                self.skipTest(f"No Chromium browser available for visual verification: {exc}")
+        failures = [f"{r.name}: {r.detail}" for r in results if not r.passed]
+        self.assertTrue(passed, f"Offline visual verification failures: {failures}")
 
 
 if __name__ == "__main__":

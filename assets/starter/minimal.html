@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en" data-motion-scheme="expressive">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:,">
+<title>MD3E Minimal Starter — Tokens + Components</title>
+
+<!-- 1. Self-hosted fonts & Material Symbols Outlined (works 100% offline) -->
+<link rel="stylesheet" href="../fonts/md3e-fonts.css">
+
+<!-- 2. Core MD3E Token Layer -->
+<link rel="stylesheet" href="../tokens/md3e-tokens.css">
+<link rel="stylesheet" href="../tokens/md3e-motion.css">
+
+<!-- 3. MD3E Component Layer (or link individual files: button.css, fab.css, switch.css, text-field.css, dialog.css, toolbar.css) -->
+<link rel="stylesheet" href="../components/md3e-components.css">
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--md-sys-color-surface-container);
+    color: var(--md-sys-color-on-surface);
+    font-family: var(--md-sys-typescale-plain-font);
+    font-size: var(--md-sys-typescale-body-large-size);
+    line-height: var(--md-sys-typescale-body-large-line-height);
+  }
+
+  .minimal-shell {
+    max-width: 960px;
+    margin-inline: auto;
+    padding: var(--md-sys-spacing-6);
+    padding-block-end: 112px;
+    display: grid;
+    gap: var(--md-sys-spacing-6);
+  }
+
+  .minimal-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--md-sys-spacing-3);
+  }
+
+  .minimal-header h1 {
+    margin: 0;
+    font-family: var(--md-sys-typescale-brand-font);
+    font-size: var(--md-sys-typescale-headline-medium-size);
+    line-height: var(--md-sys-typescale-headline-medium-line-height);
+    font-weight: var(--md-sys-typescale-headline-medium-emphasized-weight);
+  }
+
+  .minimal-card {
+    padding: var(--md-sys-spacing-6);
+    border-radius: var(--md-sys-shape-corner-extra-large);
+    background: var(--md-sys-color-surface);
+    display: grid;
+    gap: var(--md-sys-spacing-4);
+  }
+
+  .minimal-card h2 {
+    margin: 0;
+    font-family: var(--md-sys-typescale-brand-font);
+    font-size: var(--md-sys-typescale-title-large-size);
+    line-height: var(--md-sys-typescale-title-large-line-height);
+    font-weight: var(--md-sys-typescale-title-large-emphasized-weight);
+  }
+
+  .minimal-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--md-sys-spacing-3);
+  }
+
+  .minimal-note {
+    margin: 0;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: var(--md-sys-typescale-body-medium-line-height);
+  }
+
+  .minimal-field-grow {
+    flex: 1 1 260px;
+    min-width: 0;
+  }
+</style>
+</head>
+<body>
+<main class="minimal-shell">
+  <header class="minimal-header">
+    <div>
+      <h1>MD3E Minimal Starter</h1>
+      <p class="minimal-note" lang="zh-CN">离线字体与中文回退示例：Material 3 Expressive 最小可复用模板</p>
+    </div>
+    <button type="button" class="md3e-btn md3e-btn--tonal md3e-btn--s" id="minimal-theme-btn" aria-pressed="false">
+      <span class="material-symbols-outlined" aria-hidden="true">contrast</span>
+      <span id="minimal-theme-label">Dark Mode</span>
+    </button>
+  </header>
+
+  <!-- 1. Buttons -->
+  <section class="minimal-card" id="min-buttons" aria-labelledby="min-buttons-title">
+    <h2 id="min-buttons-title">Buttons</h2>
+    <div class="minimal-row">
+      <button type="button" class="md3e-btn md3e-btn--filled md3e-btn--s">
+        <span class="material-symbols-outlined" aria-hidden="true">send</span>
+        <span>Send Message</span>
+      </button>
+      <button type="button" class="md3e-btn md3e-btn--tonal md3e-btn--s">Tonal</button>
+      <button type="button" class="md3e-btn md3e-btn--elevated md3e-btn--s">Elevated</button>
+      <button type="button" class="md3e-btn md3e-btn--outlined md3e-btn--s">Outlined</button>
+      <button type="button" class="md3e-btn md3e-btn--text md3e-btn--s">Text</button>
+      <button type="button" class="md3e-btn md3e-btn--tonal md3e-btn--m md3e-btn--square">Square Medium</button>
+      <button type="button" class="md3e-icon-btn md3e-icon-btn--tonal" id="min-icon-toggle" aria-label="Bookmark" aria-pressed="false">
+        <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- 2. FAB -->
+  <section class="minimal-card" id="min-fab" aria-labelledby="min-fab-title">
+    <h2 id="min-fab-title">Floating Action Buttons (Standard 56dp &amp; Medium 80dp)</h2>
+    <div class="minimal-row">
+      <button type="button" class="md3e-fab" aria-label="Create note">
+        <span class="material-symbols-outlined" aria-hidden="true">add</span>
+      </button>
+      <button type="button" class="md3e-fab md3e-fab--medium" aria-label="Compose message">
+        <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- 3. Switch -->
+  <section class="minimal-card" id="min-switch" aria-labelledby="min-switch-title">
+    <h2 id="min-switch-title">Switch</h2>
+    <div class="minimal-row">
+      <label class="field-label" for="min-switch-wifi">
+        <input type="checkbox" role="switch" class="md3e-switch" id="min-switch-wifi" checked aria-checked="true">
+        <span>Wi-Fi</span>
+      </label>
+      <label class="field-label" for="min-switch-sync">
+        <input type="checkbox" role="switch" class="md3e-switch" id="min-switch-sync" aria-checked="false">
+        <span>Auto-sync</span>
+      </label>
+    </div>
+  </section>
+
+  <!-- 4. Text Field -->
+  <section class="minimal-card" id="min-text-field" aria-labelledby="min-text-field-title">
+    <h2 id="min-text-field-title">Text Fields</h2>
+    <div class="minimal-row">
+      <div class="md3e-text-field minimal-field-grow">
+        <label class="md3e-text-field__label" for="min-simple-input">Project Name</label>
+        <input type="text" class="md3e-text-field__input" id="min-simple-input" value="md3e-starter" placeholder=" ">
+      </div>
+    </div>
+    <div class="md3e-field" id="min-outlined-field" data-populated="true" data-invalid="false">
+      <div class="md3e-field__box">
+        <fieldset class="md3e-field__outline" aria-hidden="true">
+          <legend class="md3e-field__notch"><span>Workspace URI</span></legend>
+        </fieldset>
+        <span class="material-symbols-outlined md3e-field__leading" aria-hidden="true">language</span>
+        <span class="md3e-field__prefix">https://</span>
+        <label class="md3e-field__label" for="min-outlined-input">Workspace URI</label>
+        <input
+          type="text"
+          class="md3e-field__input"
+          id="min-outlined-input"
+          value="studio.md3e.dev/app"
+          maxlength="60"
+          placeholder=" "
+          aria-describedby="min-field-helper"
+        >
+        <button type="button" class="md3e-field__clear" id="min-outlined-clear" aria-label="Clear input" data-empty="false">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </div>
+      <div class="md3e-field__supporting">
+        <span class="md3e-field__helper" id="min-field-helper">Enter host and path without scheme</span>
+        <span class="md3e-field__counter" id="min-field-counter">19 / 60</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Dialog -->
+  <section class="minimal-card" id="min-dialog" aria-labelledby="min-dialog-sec-title">
+    <h2 id="min-dialog-sec-title">Native Dialog</h2>
+    <div class="minimal-row">
+      <button type="button" class="md3e-btn md3e-btn--filled md3e-btn--s" id="min-dialog-open" aria-haspopup="dialog" aria-controls="minimal-dialog">
+        <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+        <span>Open Dialog</span>
+      </button>
+      <span class="minimal-note" id="min-dialog-status" role="status">Closed</span>
+    </div>
+    <dialog class="md3e-dialog" id="minimal-dialog" aria-labelledby="minimal-dialog-title">
+      <h3 class="md3e-dialog__title" id="minimal-dialog-title">Confirm Changes</h3>
+      <p class="md3e-dialog__body">Native top-layer modal styled directly with MD3E surface, corner, and elevation tokens.</p>
+      <div class="md3e-dialog__actions">
+        <button type="button" class="md3e-btn md3e-btn--text md3e-btn--s" id="min-dialog-cancel">Cancel</button>
+        <button type="button" class="md3e-btn md3e-btn--filled md3e-btn--s" id="min-dialog-confirm">Confirm</button>
+      </div>
+    </dialog>
+  </section>
+
+  <!-- 6. Toolbars (Docked + Floating) -->
+  <section class="minimal-card" id="min-toolbar" aria-labelledby="min-toolbar-title">
+    <h2 id="min-toolbar-title">Docked &amp; Floating Toolbars</h2>
+    <div class="toolbar-docked" role="toolbar" aria-label="Docked actions">
+      <button type="button" class="toolbar-btn" aria-label="Inbox" aria-pressed="true">
+        <span class="material-symbols-outlined" aria-hidden="true">inbox</span>
+      </button>
+      <button type="button" class="toolbar-btn" aria-label="Calendar">
+        <span class="material-symbols-outlined" aria-hidden="true">calendar_today</span>
+      </button>
+      <button type="button" class="toolbar-btn" aria-label="Folders">
+        <span class="material-symbols-outlined" aria-hidden="true">folder</span>
+      </button>
+      <button type="button" class="toolbar-btn toolbar-btn--primary" aria-label="New item">
+        <span class="material-symbols-outlined" aria-hidden="true">add_box</span>
+      </button>
+    </div>
+  </section>
+</main>
+
+<div class="toolbar-floating" role="toolbar" aria-label="Floating quick actions">
+  <button type="button" class="toolbar-btn" aria-label="Home">
+    <span class="material-symbols-outlined" aria-hidden="true">home</span>
+  </button>
+  <button type="button" class="toolbar-btn" aria-label="Search">
+    <span class="material-symbols-outlined" aria-hidden="true">search</span>
+  </button>
+  <div class="toolbar-divider" role="separator" aria-orientation="vertical"></div>
+  <button type="button" class="toolbar-btn" aria-label="Favorite" aria-pressed="false">
+    <span class="material-symbols-outlined" aria-hidden="true">favorite</span>
+  </button>
+  <button type="button" class="toolbar-btn toolbar-btn--primary" aria-label="Add new">
+    <span class="material-symbols-outlined" aria-hidden="true">add_circle</span>
+  </button>
+</div>
+
+<script>
+  const themeBtn = document.getElementById('minimal-theme-btn');
+  const themeLabel = document.getElementById('minimal-theme-label');
+  themeBtn?.addEventListener('click', () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    themeBtn.setAttribute('aria-pressed', String(!isDark));
+    if (themeLabel) themeLabel.textContent = isDark ? 'Dark Mode' : 'Light Mode';
+  });
+
+  document.querySelectorAll('.md3e-switch').forEach((sw) => {
+    sw.addEventListener('change', () => sw.setAttribute('aria-checked', String(sw.checked)));
+  });
+
+  document.querySelectorAll('[aria-pressed]').forEach((btn) => {
+    if (btn === themeBtn) return;
+    btn.addEventListener('click', () => {
+      const next = btn.getAttribute('aria-pressed') !== 'true';
+      btn.setAttribute('aria-pressed', String(next));
+    });
+  });
+
+  const field = document.getElementById('min-outlined-field');
+  const fieldInput = document.getElementById('min-outlined-input');
+  const fieldClear = document.getElementById('min-outlined-clear');
+  const fieldCounter = document.getElementById('min-field-counter');
+  const syncField = () => {
+    if (!field || !fieldInput || !fieldClear || !fieldCounter) return;
+    const len = fieldInput.value.length;
+    const pop = len > 0;
+    field.dataset.populated = String(pop);
+    fieldClear.dataset.empty = String(!pop);
+    fieldClear.tabIndex = pop ? 0 : -1;
+    fieldCounter.textContent = `${len} / ${fieldInput.maxLength || 60}`;
+  };
+  fieldInput?.addEventListener('input', syncField);
+  fieldClear?.addEventListener('click', () => {
+    if (!fieldInput) return;
+    fieldInput.value = '';
+    syncField();
+    fieldInput.focus();
+  });
+  syncField();
+
+  const dlg = document.getElementById('minimal-dialog');
+  const dlgStatus = document.getElementById('min-dialog-status');
+  document.getElementById('min-dialog-open')?.addEventListener('click', () => {
+    dlg?.showModal();
+    if (dlgStatus) dlgStatus.textContent = 'Open';
+  });
+  document.getElementById('min-dialog-cancel')?.addEventListener('click', () => {
+    dlg?.close('cancel');
+    if (dlgStatus) dlgStatus.textContent = 'Dismissed';
+  });
+  document.getElementById('min-dialog-confirm')?.addEventListener('click', () => {
+    dlg?.close('confirm');
+    if (dlgStatus) dlgStatus.textContent = 'Confirmed';
+  });
+</script>
+</body>
+</html>

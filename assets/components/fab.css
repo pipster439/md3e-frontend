@@ -1,0 +1,274 @@
+/* ============================================================================
+ * MD3E Component: Floating Action Button (FAB) & FAB Menu
+ * Requires: assets/tokens/md3e-tokens.css, assets/tokens/md3e-motion.css
+ * ========================================================================== */
+
+.md3e-fab,
+.md3e-fab--medium,
+.md3e-fab--large,
+.fab-trigger,
+.fab-menu__item {
+  box-sizing: border-box;
+}
+
+.md3e-fab {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-large);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  box-shadow: var(--md-sys-elevation-level3);
+  --md-sys-icon-size: 24px;
+  --md-sys-icon-opsz: 24;
+  cursor: pointer;
+  transition: transform var(--md-sys-motion-fast-spatial),
+              border-radius var(--md-sys-motion-fast-spatial),
+              background-color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-fab--medium {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 80px;
+  height: 80px;
+  padding: 0;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-large-increased);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  box-shadow: var(--md-sys-elevation-level3);
+  --md-sys-icon-size: 28px;
+  --md-sys-icon-opsz: 24;
+  cursor: pointer;
+  transition: transform var(--md-sys-motion-fast-spatial),
+              border-radius var(--md-sys-motion-fast-spatial),
+              background-color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-fab--large {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  padding: 0;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-extra-large);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  box-shadow: var(--md-sys-elevation-level3);
+  --md-sys-icon-size: 36px;
+  --md-sys-icon-opsz: 36;
+  cursor: pointer;
+  transition: transform var(--md-sys-motion-fast-spatial),
+              border-radius var(--md-sys-motion-fast-spatial),
+              background-color var(--md-sys-motion-fast-effects);
+}
+
+.md3e-fab::after,
+.md3e-fab--medium::after,
+.md3e-fab--large::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-fast-effects);
+}
+
+.md3e-fab:hover::after,
+.md3e-fab--medium:hover::after,
+.md3e-fab--large:hover::after { opacity: var(--md-sys-state-hover-state-layer-opacity); }
+.md3e-fab:focus-visible::after,
+.md3e-fab--medium:focus-visible::after,
+.md3e-fab--large:focus-visible::after { opacity: var(--md-sys-state-focus-state-layer-opacity); }
+.md3e-fab:active::after,
+.md3e-fab--medium:active::after,
+.md3e-fab--large:active::after { opacity: var(--md-sys-state-pressed-state-layer-opacity); }
+
+.md3e-fab:active,
+.md3e-fab--medium:active,
+.md3e-fab--large:active {
+  border-radius: var(--md-sys-shape-corner-medium);
+  transform: scale(0.97);
+}
+.md3e-fab:focus-visible,
+.md3e-fab--medium:focus-visible,
+.md3e-fab--large:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+}
+
+/* --- FAB Menu (position: relative + z-index: 910 paints above scrim 890) --- */
+.fab-scrim {
+  position: fixed;
+  inset: 0;
+  --md3e-fab-t: 0;
+  background: var(--md-sys-color-scrim);
+  opacity: calc(0.32 * clamp(0, var(--md3e-fab-t, 0), 1));
+  pointer-events: none;
+  transition: none;
+  z-index: 890;
+}
+.fab-scrim.is-open {
+  --md3e-fab-t: 1;
+  pointer-events: auto;
+}
+.fab-menu-container {
+  position: fixed;
+  inset-block-end: calc(84px + env(safe-area-inset-bottom, 0px));
+  inset-inline-end: var(--md-sys-spacing-3);
+  --md3e-fab-t: 0;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: var(--md-sys-spacing-1);
+  pointer-events: none;
+  z-index: 130;
+}
+.fab-menu-container.is-open,
+.fab-menu-container.is-animating {
+  z-index: 900;
+}
+.fab-menu-container.is-open {
+  --md3e-fab-t: 1;
+}
+@media (min-width: 600px) {
+  .fab-menu-container {
+    inset-block-end: var(--md-sys-spacing-4);
+    inset-inline-end: var(--md-sys-spacing-4);
+  }
+}
+.fab-trigger {
+  position: relative;
+  z-index: 910;
+  pointer-events: auto;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--md-sys-shape-corner-large);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  border: none;
+  --md-sys-icon-size: 24px;
+  --md-sys-icon-opsz: 24;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--md-sys-elevation-level3);
+  transition: border-radius var(--md-sys-motion-default-spatial),
+              background-color var(--md-sys-motion-fast-effects),
+              color var(--md-sys-motion-fast-effects);
+}
+.fab-trigger::after,
+.fab-menu__item::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-fast-effects);
+}
+.fab-trigger:hover::after,
+.fab-menu__item:hover::after { opacity: var(--md-sys-state-hover-state-layer-opacity); }
+.fab-trigger:focus-visible::after,
+.fab-menu__item:focus-visible::after { opacity: var(--md-sys-state-focus-state-layer-opacity); }
+.fab-trigger:active::after,
+.fab-menu__item:active::after { opacity: var(--md-sys-state-pressed-state-layer-opacity); }
+.fab-trigger[aria-expanded="true"] {
+  border-radius: var(--md-sys-shape-corner-extra-large);
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+.fab-trigger__icon {
+  transform: rotate(calc(45deg * clamp(0, var(--md3e-fab-t, 0), 1.08)));
+  transition: none;
+}
+.fab-trigger:focus-visible,
+.fab-menu__item:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+}
+.fab-menu {
+  position: relative;
+  z-index: 910;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--md-sys-spacing-1);
+  margin-block-end: var(--md-sys-spacing-1);
+  opacity: clamp(0, var(--md3e-fab-t, 0), 1);
+  pointer-events: none;
+  transform: translateY(calc((1 - var(--md3e-fab-t, 0)) * 12px))
+             scale(calc(0.95 + 0.05 * clamp(0, var(--md3e-fab-t, 0), 1.04)));
+  transform-origin: bottom right;
+  transition: none;
+}
+.fab-menu[aria-hidden="false"] {
+  pointer-events: auto;
+}
+.fab-menu__item {
+  position: relative;
+  --md3e-fab-idx: 0;
+  --md3e-fab-local: clamp(0, calc((var(--md3e-fab-t, 0) - var(--md3e-fab-idx) * 0.08) / (1 - var(--md3e-fab-idx) * 0.08)), 1);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-2);
+  height: 56px;
+  padding-inline: var(--md-sys-spacing-6);
+  border: none;
+  border-radius: var(--md-sys-shape-corner-extra-large);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  font-family: var(--md-sys-typescale-plain-font);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+  --md-sys-icon-size: 24px;
+  --md-sys-icon-opsz: 24;
+  box-shadow: var(--md-sys-elevation-level2);
+  cursor: pointer;
+  opacity: var(--md3e-fab-local);
+  transform: translateY(calc((1 - var(--md3e-fab-local)) * 10px))
+             scale(calc(0.95 + 0.05 * var(--md3e-fab-local)));
+  transition: none;
+}
+.fab-menu__item:nth-last-child(2) {
+  --md3e-fab-idx: 1;
+}
+.fab-menu__item:nth-last-child(3) {
+  --md3e-fab-idx: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-fab,
+  .md3e-fab::after,
+  .md3e-fab--medium,
+  .md3e-fab--medium::after,
+  .md3e-fab--large,
+  .md3e-fab--large::after,
+  .fab-trigger,
+  .fab-trigger::after,
+  .fab-menu__item::after {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .md3e-fab,
+  .md3e-fab--medium,
+  .md3e-fab--large,
+  .fab-trigger,
+  .fab-menu__item {
+    border: 1px solid CanvasText;
+  }
+}

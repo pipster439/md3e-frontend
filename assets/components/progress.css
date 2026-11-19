@@ -1,0 +1,43 @@
+/* ============================================================================
+ * MD3E Component: Wavy Progress Indicators & Loading Indicator Helpers
+ * Requires: assets/tokens/md3e-tokens.css, assets/tokens/md3e-shapes.css
+ * ========================================================================== */
+
+.md3e-loading-indicator.is-paused .md3e-loading-indicator__svg,
+.md3e-loading-indicator.is-paused .md3e-loading-indicator__path {
+  animation-play-state: paused;
+}
+
+.md3e-wavy-progress {
+  box-sizing: border-box;
+  inline-size: 100%;
+  block-size: 16px;
+  display: flex;
+  align-items: center;
+}
+.md3e-wavy-progress svg,
+.md3e-wavy-progress canvas {
+  inline-size: 100%;
+  block-size: 16px;
+  display: block;
+}
+.md3e-wavy__track {
+  fill: none;
+  stroke: var(--md-sys-color-secondary-container);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.md3e-wavy__active {
+  fill: none;
+  stroke: var(--md-sys-color-primary);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.md3e-wavy__stop {
+  fill: var(--md-sys-color-primary);
+}
+.md3e-wavy-ring {
+  inline-size: 52px;
+  block-size: 52px;
+  flex-shrink: 0;
+}

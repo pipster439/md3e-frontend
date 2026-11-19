@@ -108,10 +108,16 @@ Google Sans Flex and Roboto Flex expose:
 | `opsz` | `6–144` / `8–144` | optical letterform proportions at display vs caption scale | Static per role |
 | `wdth` | `25%–151%` | horizontal compression, ultra-condensed → expanded | Layout-affecting |
 
-Google Fonts CSS2 `<head>` loading (axes **must** be strictly sorted alphabetically, uppercase A–Z before lowercase):
+Default offline-first setup links `assets/fonts/md3e-fonts.css` (bundling `Google Sans Flex` and `Roboto Flex` WOFF2 files under SIL OFL 1.1; `md3e-tokens.css` appends CJK fallbacks `"PingFang SC", "Noto Sans SC", "Microsoft YaHei"` automatically):
 
 ```html
-<!-- Google Sans Flex (GRAD, ROND, opsz, wdth, wght) + Roboto Flex fallback -->
+<link rel="stylesheet" href="./assets/fonts/md3e-fonts.css">
+```
+
+Optional Google Fonts CSS2 `<head>` loading if omitting local font files (axes **must** be strictly sorted alphabetically, uppercase A–Z before lowercase):
+
+```html
+<!-- Optional CDN: Google Sans Flex (GRAD, ROND, opsz, wdth, wght) + Roboto Flex fallback -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:GRAD,ROND,opsz,wdth,wght@-50..200,0..100,6..144,25..151,100..1000&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:GRAD,opsz,wdth,wght@-200..150,8..144,25..151,100..1000&display=swap">
 ```

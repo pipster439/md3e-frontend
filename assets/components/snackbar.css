@@ -1,0 +1,57 @@
+/* ============================================================================
+ * MD3E Component: Expressive Capsule Toast & Actionable Snackbar
+ * Requires: assets/tokens/md3e-tokens.css, assets/tokens/md3e-motion.css
+ * ========================================================================== */
+
+.md3e-snackbar {
+  box-sizing: border-box;
+  position: fixed;
+  inset-block-end: calc(156px + env(safe-area-inset-bottom, 0px));
+  inset-inline-start: 50%;
+  transform: translate(-50%, 16px);
+  opacity: 0;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-3);
+  min-height: 48px;
+  max-width: min(480px, calc(100vw - var(--md-sys-spacing-8)));
+  padding: var(--md-sys-spacing-2) var(--md-sys-spacing-5);
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  font-family: var(--md-sys-typescale-plain-font);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  box-shadow: var(--md-sys-elevation-level3);
+  z-index: 950;
+  transition: opacity var(--md-sys-motion-fast-effects),
+              transform var(--md-sys-motion-fast-spatial);
+}
+.md3e-snackbar--action {
+  border-radius: var(--md-sys-shape-corner-large);
+  padding-inline: var(--md-sys-spacing-4);
+}
+@media (min-width: 600px) {
+  .md3e-snackbar {
+    inset-block-end: calc(92px + env(safe-area-inset-bottom, 0px));
+  }
+}
+.md3e-snackbar.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-snackbar {
+    transition: opacity var(--md-sys-motion-fast-effects);
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (forced-colors: active) {
+  .md3e-snackbar {
+    border: 1px solid CanvasText;
+  }
+}

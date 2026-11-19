@@ -1,0 +1,80 @@
+/* ============================================================================
+ * MD3E Component: Native Top-Layer <dialog> (.md3e-dialog)
+ * Requires: assets/tokens/md3e-tokens.css, assets/tokens/md3e-motion.css
+ * ========================================================================== */
+
+.md3e-dialog,
+.md3e-dialog__title,
+.md3e-dialog__body,
+.md3e-dialog__actions {
+  box-sizing: border-box;
+}
+
+dialog:modal,
+.md3e-dialog:modal {
+  overscroll-behavior: contain;
+}
+dialog::backdrop,
+.md3e-dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+.md3e-dialog {
+  --md3e-dialog-t: 1;
+  --md3e-dialog-blur: 0px;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-extra-large);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  padding: var(--md-sys-spacing-6);
+  width: min(420px, calc(100vw - var(--md-sys-spacing-8)));
+  box-shadow: var(--md-sys-elevation-level3);
+  opacity: clamp(0, var(--md3e-dialog-t, 1), 1);
+  transform: translateY(calc((1 - var(--md3e-dialog-t, 1)) * 18px))
+             scale(calc(0.88 + 0.12 * var(--md3e-dialog-t, 1)));
+  will-change: transform, opacity;
+}
+.md3e-dialog::backdrop {
+  background: color-mix(in oklab, var(--md-sys-color-scrim) 36%, transparent);
+  backdrop-filter: blur(var(--md3e-dialog-blur, 0px));
+  -webkit-backdrop-filter: blur(var(--md3e-dialog-blur, 0px));
+  opacity: clamp(0, var(--md3e-dialog-t, 1), 1);
+}
+.md3e-dialog__title {
+  margin: 0 0 var(--md-sys-spacing-4);
+  font-family: var(--md-sys-typescale-brand-font);
+  font-size: var(--md-sys-typescale-headline-small-size);
+  line-height: var(--md-sys-typescale-headline-small-line-height);
+  color: var(--md-sys-color-on-surface);
+}
+.md3e-dialog__body {
+  margin: 0 0 var(--md-sys-spacing-6);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  color: var(--md-sys-color-on-surface-variant);
+}
+.md3e-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--md-sys-spacing-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-dialog {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  dialog::backdrop,
+  .md3e-dialog::backdrop {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .md3e-dialog {
+    border: 1px solid CanvasText;
+  }
+}

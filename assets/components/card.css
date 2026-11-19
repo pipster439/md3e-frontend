@@ -1,0 +1,104 @@
+/* ============================================================================
+ * MD3E Component: Optical-Corner Cards (Elevated, Filled, Outlined)
+ * Requires: assets/tokens/md3e-tokens.css, assets/tokens/md3e-motion.css
+ * ========================================================================== */
+
+.optical-card-grid,
+.optical-card,
+.optical-card::after,
+.optical-card__inner,
+.optical-card__body {
+  box-sizing: border-box;
+}
+
+.optical-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--md-sys-spacing-3);
+  margin-block: var(--md-sys-spacing-3);
+}
+.optical-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--md-sys-spacing-2);
+  padding: var(--md-sys-spacing-3);
+  border: none;
+  border-radius: var(--md-sys-shape-corner-extra-large);
+  text-align: start;
+  font-family: var(--md-sys-typescale-plain-font);
+  cursor: pointer;
+  transition: box-shadow var(--md-sys-motion-fast-effects),
+              background-color var(--md-sys-motion-fast-effects),
+              transform var(--md-sys-motion-fast-spatial);
+}
+.optical-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-fast-effects);
+}
+.optical-card:hover::after { opacity: var(--md-sys-state-hover-state-layer-opacity); }
+.optical-card:focus-visible::after { opacity: var(--md-sys-state-focus-state-layer-opacity); }
+.optical-card:active::after { opacity: var(--md-sys-state-pressed-state-layer-opacity); }
+.optical-card:active { transform: scale(0.98); }
+.optical-card--elevated {
+  background: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface);
+  box-shadow: var(--md-sys-elevation-level1);
+}
+.optical-card--elevated:hover { box-shadow: var(--md-sys-elevation-level2); }
+.optical-card--filled {
+  background: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface);
+}
+.optical-card--outlined {
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  box-shadow: inset 0 0 0 1px var(--md-sys-color-outline-variant);
+}
+.optical-card[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 2px var(--md-sys-color-primary);
+}
+.optical-card--elevated[aria-pressed="true"] {
+  box-shadow: var(--md-sys-elevation-level1), inset 0 0 0 2px var(--md-sys-color-primary);
+}
+.optical-card:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+}
+.optical-card__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--md-sys-spacing-3) var(--md-sys-spacing-4);
+  border-radius: calc(var(--md-sys-shape-corner-extra-large) - var(--md-sys-spacing-3));
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  font-size: var(--md-sys-typescale-title-small-size);
+  font-weight: var(--md-sys-typescale-title-small-emphasized-weight);
+}
+.optical-card__body {
+  padding-inline: var(--md-sys-spacing-1);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .optical-card,
+  .optical-card::after {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .optical-card {
+    border: 1px solid CanvasText;
+  }
+}

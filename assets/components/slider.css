@@ -1,0 +1,143 @@
+/* ============================================================================
+ * MD3E Component: Split-Track Expressive Slider (.md3e-range / .wavy-slider)
+ * Requires: assets/tokens/md3e-tokens.css, assets/tokens/md3e-motion.css
+ * ========================================================================== */
+
+.wavy-slider,
+.md3e-range,
+.wavy-slider::-webkit-slider-thumb,
+.md3e-range::-webkit-slider-thumb,
+.wavy-slider::-moz-range-thumb,
+.md3e-range::-moz-range-thumb {
+  box-sizing: border-box;
+}
+
+.wavy-slider,
+.md3e-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  min-height: var(--md-sys-touch-target-min);
+  margin: 0;
+  padding: 0;
+  border: none;
+  outline: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+  --md3e-slider-pct: 50%;
+}
+.wavy-slider:focus-visible,
+.md3e-range:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+  border-radius: var(--md-sys-shape-corner-small);
+}
+.wavy-slider::-webkit-slider-runnable-track,
+.md3e-range::-webkit-slider-runnable-track {
+  height: 16px;
+  border: none;
+  box-shadow: none;
+  border-radius: var(--md-sys-shape-corner-small);
+  background:
+    radial-gradient(circle at calc(100% - 6px) 50%, var(--md-sys-color-primary) 0 2px, transparent 2.6px),
+    linear-gradient(
+      to right,
+      var(--md-sys-color-primary) 0 max(0px, calc(var(--md3e-slider-pct, 50%) - 6px)),
+      transparent max(0px, calc(var(--md3e-slider-pct, 50%) - 6px)) min(100%, calc(var(--md3e-slider-pct, 50%) + 6px)),
+      var(--md-sys-color-secondary-container) min(100%, calc(var(--md3e-slider-pct, 50%) + 6px)) 100%
+    );
+}
+.wavy-slider::-moz-range-track,
+.md3e-range::-moz-range-track {
+  height: 16px;
+  border: none;
+  box-shadow: none;
+  border-radius: var(--md-sys-shape-corner-small);
+  background:
+    radial-gradient(circle at calc(100% - 6px) 50%, var(--md-sys-color-primary) 0 2px, transparent 2.6px),
+    linear-gradient(
+      to right,
+      var(--md-sys-color-primary) 0 max(0px, calc(var(--md3e-slider-pct, 50%) - 6px)),
+      transparent max(0px, calc(var(--md3e-slider-pct, 50%) - 6px)) min(100%, calc(var(--md3e-slider-pct, 50%) + 6px)),
+      var(--md-sys-color-secondary-container) min(100%, calc(var(--md3e-slider-pct, 50%) + 6px)) 100%
+    );
+}
+.wavy-slider::-webkit-slider-thumb,
+.md3e-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 4px;
+  height: 44px;
+  margin-top: -14px;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-primary);
+  transition: transform var(--md-sys-motion-fast-spatial),
+              background-color var(--md-sys-motion-fast-effects);
+}
+.wavy-slider::-moz-range-thumb,
+.md3e-range::-moz-range-thumb {
+  appearance: none;
+  width: 4px;
+  height: 44px;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-primary);
+  transition: transform var(--md-sys-motion-fast-spatial),
+              background-color var(--md-sys-motion-fast-effects);
+}
+.wavy-slider:active::-webkit-slider-thumb,
+.md3e-range:active::-webkit-slider-thumb {
+  transform: scaleX(0.6);
+}
+.wavy-slider:active::-moz-range-thumb,
+.md3e-range:active::-moz-range-thumb {
+  transform: scaleX(0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wavy-slider::-webkit-slider-thumb,
+  .md3e-range::-webkit-slider-thumb {
+    transition: none;
+  }
+  .wavy-slider::-moz-range-thumb,
+  .md3e-range::-moz-range-thumb {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .wavy-slider::-webkit-slider-runnable-track,
+  .md3e-range::-webkit-slider-runnable-track {
+    forced-color-adjust: none;
+    border: 1px solid CanvasText;
+    background: linear-gradient(
+      to right,
+      Highlight 0 max(0px, calc(var(--md3e-slider-pct, 50%) - 6px)),
+      Canvas max(0px, calc(var(--md3e-slider-pct, 50%) - 6px)) 100%
+    );
+  }
+  .wavy-slider::-moz-range-track,
+  .md3e-range::-moz-range-track {
+    forced-color-adjust: none;
+    border: 1px solid CanvasText;
+    background: linear-gradient(
+      to right,
+      Highlight 0 max(0px, calc(var(--md3e-slider-pct, 50%) - 6px)),
+      Canvas max(0px, calc(var(--md3e-slider-pct, 50%) - 6px)) 100%
+    );
+  }
+  .wavy-slider::-webkit-slider-thumb,
+  .md3e-range::-webkit-slider-thumb {
+    forced-color-adjust: none;
+    background: Highlight;
+    border: 1px solid CanvasText;
+  }
+  .wavy-slider::-moz-range-thumb,
+  .md3e-range::-moz-range-thumb {
+    forced-color-adjust: none;
+    background: Highlight;
+    border: 1px solid CanvasText;
+  }
+}

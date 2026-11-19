@@ -4,9 +4,15 @@ Material 3 Expressive uses **Material Symbols** (variable icon font, Outlined by
 
 ---
 
-## 1. Required `<head>` Setup (Preventing Raw Ligature Text Flash / Layout Blowup)
+## 1. Required `<head>` Setup (Offline-First Self-Hosted Default & Optional CDN)
 
-Always add `preconnect` links and **`&display=block`** to the Google Fonts stylesheet URL, and keep the variable axis list in **strictly alphabetical order (`FILL,GRAD,opsz,wght`)** — Google Fonts CSS2 returns HTTP 400 when axes are ordered `opsz,wght,...`. Without `&display=block`, browsers briefly render raw snake_case ligature strings (such as `notifications_active` or `format_align_center`) in the fallback system font (`FOUT`), breaking button widths and overflowing fixed containers.
+**Default (recommended, works 100% offline):** link the self-hosted `assets/fonts/md3e-fonts.css` stylesheet, which bundles `Material Symbols Outlined` locally (`assets/fonts/material-symbols-outlined.woff2`, SIL OFL 1.1) with `font-display: block` to prevent raw snake_case ligature text flash (`FOUT`):
+
+```html
+<link rel="stylesheet" href="./assets/fonts/md3e-fonts.css">
+```
+
+**Optional CDN alternative:** if you omit `assets/fonts/` and target environments with reliable access to `fonts.googleapis.com`, always add `preconnect` links, **`&display=block`**, and keep the variable axis list in **strictly alphabetical order (`FILL,GRAD,opsz,wght`)** — Google Fonts CSS2 returns HTTP 400 when axes are ordered `opsz,wght,...`:
 
 ```html
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,9 +22,9 @@ Always add `preconnect` links and **`&display=block`** to the Google Fonts style
 
 `assets/tokens/md3e-tokens.css` also enforces a defensive `1em × 1em` box with `display: inline-flex; overflow: hidden; white-space: nowrap; flex-shrink: 0;` on `.material-symbols-outlined`, `.material-symbols-rounded`, and `.material-symbols-sharp` so an unloaded or slow font never stretches parent flex layouts.
 
-### Offline / Intranet Environments (Zero-CDN SVG Fallback)
+### Zero-Font Inline SVG Alternative
 
-If the target environment cannot reach `fonts.googleapis.com` (offline desktop apps, corporate intranets, air-gapped demos), **do not use ligature text spans** (`<span>search</span>`). Render inline `<svg>` icons instead, sized to `1em` and coloured via `currentColor`:
+If you cannot ship `assets/fonts/` or use `@fontsource-variable/material-symbols-outlined`, render inline `<svg>` icons sized to `1em` and coloured via `currentColor`:
 
 ```html
 <button type="button" class="md3e-btn md3e-btn--filled md3e-btn--s">

@@ -2572,12 +2572,32 @@ class Checker:
         doc_has_dialog = bool(re.search(r"<dialog\b", markup_clean, re.I))
 
         has_custom_external_css = False
+        linked_component_rules: list[RuleBlock] = []
+        shipped_components_dir = pathlib.Path(__file__).resolve().parent.parent / "assets" / "components"
         for lm in re.finditer(r"""<link\b([^>]*\brel\s*=\s*["']stylesheet["'][^>]*)>""", markup_clean, re.I):
             href_m = re.search(r"""\bhref\s*=\s*(?:"([^"]*)"|'([^']*)')""", lm.group(1), re.I)
             href = (href_m.group(1) or href_m.group(2) or "") if href_m else ""
-            if href and not re.search(r"fonts\.googleapis\.com|md3e-[a-z0-9-]+\.css", href, re.I):
+            if not href:
+                continue
+            is_remote = bool(re.match(r"^(?:https?:)?//", href, re.I))
+            is_known_md3e = bool(
+                re.search(r"fonts\.googleapis\.com|md3e-[a-z0-9-]+\.css|(?:^|/)components/[a-z0-9-]+\.css", href, re.I)
+            )
+            if not is_remote:
+                clean_href = href.split("?", 1)[0].split("#", 1)[0]
+                candidate_path = (pathlib.Path(self.path).parent / clean_href)
+                if not candidate_path.is_file() and is_known_md3e:
+                    fallback_path = shipped_components_dir / pathlib.Path(clean_href).name
+                    if fallback_path.is_file():
+                        candidate_path = fallback_path
+                if candidate_path.is_file() and candidate_path.suffix.lower() == ".css":
+                    try:
+                        ext_css = candidate_path.read_text(encoding="utf-8", errors="replace")
+                        linked_component_rules.extend(parse_css_rules(ext_css, base_line=1))
+                    except OSError:
+                        pass
+            if not is_known_md3e:
                 has_custom_external_css = True
-                break
 
         # 1. Audit all <style> blocks using full CSS parser
         style_blocks = extract_style_blocks(text)
@@ -2681,7 +2701,7 @@ class Checker:
         self._audit_complex_components_document(
             text,
             combined_css,
-            all_rules,
+            all_rules + linked_component_rules,
             markup_clean,
             lines,
             exempt_lines,
@@ -2927,7 +2947,11 @@ class Checker:
         )
         uses_ligature_icons = bool(re.search(r"\bmaterial-symbols-(?:outlined|rounded|sharp)\b", markup_clean))
         has_ms_font_link = bool(
-            re.search(r"Material\+Symbols|Material\s+Symbols", full_text)
+            re.search(
+                r"Material\+Symbols|Material\s+Symbols|md3e-fonts\.css|material-symbols-(?:outlined|rounded|sharp)\.css|@fontsource[^\"']*/material-symbols",
+                full_text,
+                re.I,
+            )
         )
         if is_full_doc and uses_ligature_icons and not has_ms_font_link:
             self.add(

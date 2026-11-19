@@ -1,0 +1,136 @@
+/* ============================================================================
+ * MD3E Component: Top-Layer [popover="auto"] Menu (.md3e-menu)
+ * Requires: assets/tokens/md3e-tokens.css, assets/tokens/md3e-motion.css
+ * ========================================================================== */
+
+.md3e-menu,
+.md3e-menu__list,
+.md3e-menu__item {
+  box-sizing: border-box;
+}
+
+.md3e-menu {
+  position: fixed;
+  margin: 0;
+  padding: var(--md-sys-spacing-1);
+  min-width: 224px;
+  max-width: calc(100vw - var(--md-sys-spacing-4));
+  border: none;
+  border-radius: var(--md-sys-shape-corner-large);
+  background: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface);
+  box-shadow: var(--md-sys-elevation-level2);
+  overflow: visible;
+  overscroll-behavior: contain;
+  pointer-events: none;
+}
+.md3e-menu:is(:popover-open, .\:popover-open) {
+  display: block;
+  pointer-events: auto;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .md3e-menu {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+    transform-origin: top left;
+    transition: opacity var(--md-sys-motion-fast-effects),
+                transform var(--md-sys-motion-fast-spatial),
+                display var(--md-sys-motion-fast-effects),
+                overlay var(--md-sys-motion-fast-effects);
+    transition-behavior: allow-discrete;
+  }
+  .md3e-menu:is(:popover-open, .\:popover-open) {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  @starting-style {
+    .md3e-menu:is(:popover-open, .\:popover-open) {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.96);
+    }
+  }
+}
+.md3e-menu__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-block-size: min(360px, calc(100dvh - var(--md-sys-spacing-8)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.md3e-menu__divider {
+  width: 100%;
+  height: 1px;
+  margin: var(--md-sys-spacing-1) 0;
+  border: none;
+  background: var(--md-sys-color-outline-variant);
+}
+.md3e-menu__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-3);
+  width: 100%;
+  min-height: var(--md-sys-touch-target-min);
+  padding-inline: var(--md-sys-spacing-3);
+  border: none;
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-sys-typescale-plain-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  --md-sys-icon-size: 20px;
+  --md-sys-icon-opsz: 20;
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--md-sys-motion-fast-effects),
+              color var(--md-sys-motion-fast-effects);
+}
+.md3e-menu__item[aria-checked="true"] {
+  background: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
+  font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
+}
+.md3e-menu__item[aria-checked="false"] .md3e-menu__check {
+  opacity: 0;
+}
+.md3e-menu__item:hover,
+.md3e-menu__item[data-highlighted="true"] {
+  background: color-mix(in oklab, var(--md-sys-color-on-surface) calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), transparent);
+}
+.md3e-menu__item[aria-checked="true"]:hover,
+.md3e-menu__item[aria-checked="true"][data-highlighted="true"] {
+  background: color-mix(in oklab, var(--md-sys-color-on-tertiary-container) calc(var(--md-sys-state-hover-state-layer-opacity) * 100%), var(--md-sys-color-tertiary-container));
+}
+.md3e-menu__item:active {
+  background: color-mix(in oklab, var(--md-sys-color-on-surface) calc(var(--md-sys-state-pressed-state-layer-opacity) * 100%), transparent);
+}
+.md3e-menu__item:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: -3px;
+}
+.md3e-menu__trailing {
+  margin-inline-start: auto;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-menu,
+  .md3e-menu__item {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .md3e-menu {
+    border: 1px solid CanvasText;
+  }
+  .md3e-menu__item[aria-checked="true"],
+  .md3e-menu__item[data-highlighted="true"] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+}

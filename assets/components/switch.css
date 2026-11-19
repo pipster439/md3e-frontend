@@ -1,0 +1,108 @@
+/* ============================================================================
+ * MD3E Component: Switch (52x32dp track, 28dp pressed handle, 48px target)
+ * Requires: assets/tokens/md3e-tokens.css, assets/tokens/md3e-motion.css
+ * ========================================================================== */
+
+.field-label,
+.md3e-switch,
+.md3e-switch::before,
+.md3e-switch::after {
+  box-sizing: border-box;
+}
+
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--md-sys-spacing-2);
+  min-height: var(--md-sys-touch-target-min);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  cursor: pointer;
+}
+
+.md3e-switch {
+  appearance: none;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 52px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--md-sys-shape-corner-full);
+  border: 2px solid var(--md-sys-color-outline);
+  background: var(--md-sys-color-surface-container-highest);
+  cursor: pointer;
+  transition: background-color var(--md-sys-motion-fast-effects),
+              border-color var(--md-sys-motion-fast-effects);
+}
+.md3e-switch::before {
+  content: "";
+  position: absolute;
+  inset-block: -8px;
+  inset-inline: 0;
+  min-width: var(--md-sys-touch-target-min);
+  min-height: var(--md-sys-touch-target-min);
+}
+.md3e-switch::after {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-outline);
+  transform: translateX(6px);
+  transition: transform var(--md-sys-motion-fast-spatial),
+              width var(--md-sys-motion-fast-spatial),
+              height var(--md-sys-motion-fast-spatial),
+              background-color var(--md-sys-motion-fast-effects);
+}
+.md3e-switch:checked {
+  background: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-primary);
+}
+.md3e-switch:checked::after {
+  width: 24px;
+  height: 24px;
+  background: var(--md-sys-color-on-primary);
+  transform: translateX(22px);
+}
+.md3e-switch:active:not(:disabled)::after {
+  width: 28px;
+  height: 28px;
+  transform: translateX(0);
+}
+.md3e-switch:checked:active:not(:disabled)::after {
+  width: 28px;
+  height: 28px;
+  transform: translateX(20px);
+}
+.md3e-switch:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-color-secondary);
+  outline-offset: var(--md-sys-focus-ring-gap);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md3e-switch,
+  .md3e-switch::after {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .md3e-switch {
+    border: 1px solid CanvasText;
+  }
+  .md3e-switch:checked {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+  .md3e-switch::after {
+    forced-color-adjust: none;
+    background: CanvasText;
+  }
+  .md3e-switch:checked::after {
+    background: HighlightText;
+  }
+}
