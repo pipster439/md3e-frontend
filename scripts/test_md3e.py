@@ -820,6 +820,10 @@ class AuditorTests(unittest.TestCase):
         self.assertIn("MD3E018", self._codes(bad_mix, "mix.css"))
         bad_mix_var = ".btn:hover { background: color-mix(in srgb, currentColor var(--md-sys-state-hover-state-layer-opacity), transparent); }"
         self.assertIn("MD3E018", self._codes(bad_mix_var, "mixvar.css"))
+        good_mix_hex = ".card { border-color: color-mix(in oklab, #059669 38%, var(--md-sys-color-outline-variant)); }"
+        self.assertNotIn("MD3E018", self._codes(good_mix_hex, "mixhex.css"))
+        bad_mix_hex = ".card { border-color: color-mix(in oklab, #059669 0.38, transparent); }"
+        self.assertIn("MD3E018", self._codes(bad_mix_hex, "mixhexbad.css"))
 
         # MD3E019: composite animation token delay + 9999px morph snap
         bad_anim = ".loader { animation: spin 2.4s var(--md-sys-motion-default-spatial) infinite; }"

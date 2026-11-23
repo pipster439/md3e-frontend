@@ -904,7 +904,7 @@ def check_color_mix(cx, value, lineno, line) -> None:
         top_args = [a.strip() for a in _strip_nested_parens(inner).split(",")]
         stop_args = top_args[1:] if len(top_args) > 1 else top_args
         bare_number = any(
-            re.search(r"(?<![\w.-])(?:\d*\.\d+|\d+)(?!\s*%)(?=\s|$)", seg)
+            re.search(r"(?<![\w.#-])(?:\d*\.\d+|\d+)(?!\s*%)(?=\s|$)", HEX_RE.sub(" ", seg))
             for seg in stop_args
         )
         unscaled_opacity_var = (
